@@ -1,106 +1,106 @@
 # Corpus statistics (Phase 2, NOT frozen)
 
 Command: `python scripts/process.py --write` (offline; reads data/raw records only).
-Token counter: **regex-proxy**. Parameters: {"max_incl_overlap": 300, "min": 200, "near_dup_threshold": 0.8, "overlap_max": 40, "shingle": 5, "tail_merge_below": 100, "target": 250}.
+Token counter: **tokenizer.json sha256:21106b6d7dab**. Parameters: {"max_incl_overlap": 300, "min": 200, "near_dup_threshold": 0.8, "overlap_max": 40, "shingle": 5, "tail_merge_below": 100, "target": 250}.
 
 ## Reconciliation
 
 - records: 97 in = 96 kept + 1 exact duplicates + 0 hold-out (url/title)
-- chunks: 1419 created = 1387 out + 32 hold-out (text) + 0 near duplicates
+- chunks: 1726 created = 1696 out + 30 hold-out (text) + 0 near duplicates
 
-## Size: 1387 chunks
+## Size: 1696 chunks
 
-Estimate 1943 (range 1619 to 2429, D39 (ii), LOG.md 2026-10-19); difference -556.
-Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0. Chunking: {"merged_tails": 16, "oversize_splits": 0, "short_tails": 10}.
+Estimate 1943 (range 1619 to 2429, D39 (ii), LOG.md 2026-10-19); difference -247.
+Tokens per chunk: min 52, p50 259, p95 287, max 300; under 200: 55; over 300: 0. Chunking: {"merged_tails": 14, "oversize_splits": 0, "short_tails": 17}.
 
 ## Chunks per source_type
 
 | value | chunks |
 |---|---|
-| blog | 242 |
-| reference | 556 |
-| wikivoyage | 589 |
+| blog | 283 |
+| reference | 696 |
+| wikivoyage | 717 |
 
 ## Chunks per state
 
 | value | chunks |
 |---|---|
-| AP | 110 |
-| KA | 438 |
-| KL | 263 |
-| PY | 73 |
-| TN | 342 |
-| TS | 161 |
+| AP | 142 |
+| KA | 524 |
+| KL | 333 |
+| PY | 89 |
+| TN | 416 |
+| TS | 192 |
 
 ## Chunks per published year
 
 | value | chunks |
 |---|---|
-| 2004 | 9 |
-| 2005 | 9 |
+| 2004 | 11 |
+| 2005 | 10 |
 | 2006 | 9 |
-| 2007 | 21 |
-| 2008 | 16 |
-| 2011 | 52 |
-| 2012 | 8 |
-| 2013 | 6 |
+| 2007 | 25 |
+| 2008 | 18 |
+| 2011 | 60 |
+| 2012 | 9 |
+| 2013 | 7 |
 | 2015 | 3 |
-| 2018 | 41 |
-| 2019 | 5 |
-| 2021 | 20 |
-| 2022 | 21 |
-| 2023 | 7 |
-| 2024 | 8 |
+| 2018 | 47 |
+| 2019 | 6 |
+| 2021 | 25 |
+| 2022 | 26 |
+| 2023 | 9 |
+| 2024 | 11 |
 | 2025 | 7 |
-| none | 1145 |
+| none | 1413 |
 
 ## Chunks per revised year (wiki API revision date)
 
 | value | chunks |
 |---|---|
-| 2026 | 1102 |
-| none | 285 |
+| 2026 | 1358 |
+| none | 338 |
 
 ## Chunks per date_kind
 
 | value | chunks |
 |---|---|
-| published | 242 |
-| revised | 1102 |
-| sitemap_lastmod | 43 |
+| published | 283 |
+| revised | 1358 |
+| sitemap_lastmod | 55 |
 
 ## Chunks per place
 
 | place | chunks | by source_type |
 |---|---|---|
-| Alappuzha | 43 | {"reference": 22, "wikivoyage": 21} |
-| Auroville | 27 | {"reference": 12, "wikivoyage": 15} |
-| Badami | 32 | {"blog": 18, "reference": 7, "wikivoyage": 7} |
-| Bengaluru | 131 | {"blog": 29, "reference": 48, "wikivoyage": 54} |
-| Bhadrachalam | 9 | {"reference": 1, "wikivoyage": 8} |
-| Chennai | 90 | {"blog": 3, "reference": 41, "wikivoyage": 46} |
-| Gokarna | 47 | {"blog": 20, "reference": 8, "wikivoyage": 19} |
-| Hampi | 81 | {"blog": 14, "reference": 35, "wikivoyage": 32} |
-| Hyderabad | 124 | {"blog": 36, "reference": 46, "wikivoyage": 42} |
-| Kanniyakumari | 39 | {"blog": 13, "reference": 9, "wikivoyage": 17} |
-| Kochi | 125 | {"blog": 5, "reference": 73, "wikivoyage": 47} |
-| Kodagu | 62 | {"blog": 39, "reference": 11, "wikivoyage": 12} |
-| Kodaikanal | 32 | {"reference": 12, "wikivoyage": 20} |
-| Madurai | 75 | {"blog": 6, "reference": 30, "wikivoyage": 39} |
-| Mahabalipuram | 28 | {"blog": 3, "reference": 6, "wikivoyage": 19} |
-| Munnar | 28 | {"reference": 7, "wikivoyage": 21} |
-| Mysuru | 85 | {"blog": 10, "reference": 27, "wikivoyage": 48} |
-| Ooty | 48 | {"blog": 13, "reference": 14, "wikivoyage": 21} |
-| Pondicherry | 46 | {"blog": 3, "reference": 13, "wikivoyage": 30} |
-| Rameswaram | 30 | {"reference": 21, "wikivoyage": 9} |
-| Srisailam | 8 | {"reference": 3, "wikivoyage": 5} |
-| Tirupati | 43 | {"blog": 8, "reference": 24, "wikivoyage": 11} |
-| Varkala | 22 | {"reference": 4, "wikivoyage": 18} |
-| Visakhapatnam | 59 | {"blog": 6, "reference": 32, "wikivoyage": 21} |
-| Warangal | 28 | {"blog": 16, "reference": 12} |
-| Wayanad | 45 | {"reference": 38, "wikivoyage": 7} |
+| Alappuzha | 55 | {"reference": 29, "wikivoyage": 26} |
+| Auroville | 33 | {"reference": 15, "wikivoyage": 18} |
+| Badami | 38 | {"blog": 21, "reference": 9, "wikivoyage": 8} |
+| Bengaluru | 152 | {"blog": 33, "reference": 56, "wikivoyage": 63} |
+| Bhadrachalam | 12 | {"reference": 2, "wikivoyage": 10} |
+| Chennai | 106 | {"blog": 3, "reference": 49, "wikivoyage": 54} |
+| Gokarna | 57 | {"blog": 25, "reference": 10, "wikivoyage": 22} |
+| Hampi | 100 | {"blog": 17, "reference": 45, "wikivoyage": 38} |
+| Hyderabad | 148 | {"blog": 42, "reference": 57, "wikivoyage": 49} |
+| Kanniyakumari | 49 | {"blog": 16, "reference": 12, "wikivoyage": 21} |
+| Kochi | 155 | {"blog": 6, "reference": 92, "wikivoyage": 57} |
+| Kodagu | 74 | {"blog": 45, "reference": 13, "wikivoyage": 16} |
+| Kodaikanal | 41 | {"reference": 16, "wikivoyage": 25} |
+| Madurai | 94 | {"blog": 7, "reference": 37, "wikivoyage": 50} |
+| Mahabalipuram | 33 | {"blog": 3, "reference": 8, "wikivoyage": 22} |
+| Munnar | 37 | {"reference": 9, "wikivoyage": 28} |
+| Mysuru | 103 | {"blog": 12, "reference": 32, "wikivoyage": 59} |
+| Ooty | 54 | {"blog": 13, "reference": 16, "wikivoyage": 25} |
+| Pondicherry | 56 | {"blog": 4, "reference": 16, "wikivoyage": 36} |
+| Rameswaram | 39 | {"reference": 27, "wikivoyage": 12} |
+| Srisailam | 10 | {"reference": 4, "wikivoyage": 6} |
+| Tirupati | 56 | {"blog": 11, "reference": 32, "wikivoyage": 13} |
+| Varkala | 27 | {"reference": 5, "wikivoyage": 22} |
+| Visakhapatnam | 76 | {"blog": 7, "reference": 42, "wikivoyage": 27} |
+| Warangal | 32 | {"blog": 18, "reference": 14} |
+| Wayanad | 59 | {"reference": 49, "wikivoyage": 10} |
 
-Null-date share: 0.8255. Freshness (published dates only, window 2025-04-18 to 2026-10-18; reference date from --reference-date (overrides .env)): 0 chunks, share 0.0. The reference date is used only here; it is in no chunk.
+Null-date share: 0.8331. Freshness (published dates only, window 2025-04-18 to 2026-10-18; reference date from EVAL_REFERENCE_DATE in .env): 0 chunks, share 0.0. The reference date is used only here; it is in no chunk.
 
 ## Removed text (characters per rule)
 
@@ -116,7 +116,7 @@ Null-date share: 0.8255. Freshness (published dates only, window 2025-04-18 to 2
 
 ## Drops
 
-- chunk: 32
+- chunk: 30
 - exact_duplicate: 1
 
 Exact duplicates:
@@ -129,10 +129,10 @@ Hold-out drops per hold-out, source and level:
 | hold-out | source | level | n |
 |---|---|---|---|
 | Araku Valley | blog | chunk | 4 |
-| Araku Valley | wikipedia | chunk | 2 |
+| Araku Valley | wikipedia | chunk | 1 |
 | Araku Valley | wikivoyage | chunk | 3 |
 | Thanjavur | wikipedia | chunk | 5 |
-| Thanjavur | wikivoyage | chunk | 3 |
+| Thanjavur | wikivoyage | chunk | 2 |
 | Thekkady | wikipedia | chunk | 2 |
 | Thekkady | wikivoyage | chunk | 13 |
 
@@ -145,7 +145,7 @@ Boundary-free stem scan of the OUTPUT chunks (case-insensitive substring; hits a
 - kumil: 1
 - chikm: 0
 - chikk: 7
-- periyar: 16
+- periyar: 13
 
 ## D23 / D33 dry run (nothing removed)
 

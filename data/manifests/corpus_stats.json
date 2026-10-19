@@ -1,11 +1,11 @@
 {
  "chunking": {
-  "merged_tails": 16,
+  "merged_tails": 14,
   "oversize_splits": 0,
-  "short_tails": 10
+  "short_tails": 17
  },
- "chunks": 1387,
- "counter": "regex-proxy",
+ "chunks": 1696,
+ "counter": "tokenizer.json sha256:21106b6d7dab",
  "d23_dry_run": {
   "Alappuzha": {
    "passes_chunks": false,
@@ -233,17 +233,17 @@
   }
  },
  "date_kind": {
-  "published": 242,
-  "revised": 1102,
-  "sitemap_lastmod": 43
+  "published": 283,
+  "revised": 1358,
+  "sitemap_lastmod": 55
  },
  "drops": {
-  "chunk": 32,
+  "chunk": 30,
   "exact_duplicate": 1
  },
  "estimate": {
   "chunks": 1943,
-  "difference": -556,
+  "difference": -247,
   "high": 2429,
   "low": 1619,
   "source": "D39 (ii), LOG.md 2026-10-19"
@@ -251,7 +251,7 @@
  "freshness": {
   "published_in_window": 0,
   "reference_date": "2026-10-18",
-  "reference_date_source": "--reference-date (overrides .env)",
+  "reference_date_source": "EVAL_REFERENCE_DATE in .env",
   "share": 0.0,
   "window_start": "2025-04-18"
  },
@@ -265,7 +265,7 @@
   {
    "holdout": "Araku Valley",
    "level": "chunk",
-   "n": 2,
+   "n": 1,
    "source": "wikipedia"
   },
   {
@@ -283,7 +283,7 @@
   {
    "holdout": "Thanjavur",
    "level": "chunk",
-   "n": 3,
+   "n": 2,
    "source": "wikivoyage"
   },
   {
@@ -299,7 +299,7 @@
    "source": "wikivoyage"
   }
  ],
- "null_date_share": 0.8255,
+ "null_date_share": 0.8331,
  "params": {
   "max_incl_overlap": 300,
   "min": 200,
@@ -311,165 +311,165 @@
  },
  "per_place": {
   "Alappuzha": {
-   "reference": 22,
-   "wikivoyage": 21
+   "reference": 29,
+   "wikivoyage": 26
   },
   "Auroville": {
-   "reference": 12,
-   "wikivoyage": 15
+   "reference": 15,
+   "wikivoyage": 18
   },
   "Badami": {
-   "blog": 18,
-   "reference": 7,
-   "wikivoyage": 7
+   "blog": 21,
+   "reference": 9,
+   "wikivoyage": 8
   },
   "Bengaluru": {
-   "blog": 29,
-   "reference": 48,
-   "wikivoyage": 54
+   "blog": 33,
+   "reference": 56,
+   "wikivoyage": 63
   },
   "Bhadrachalam": {
-   "reference": 1,
-   "wikivoyage": 8
+   "reference": 2,
+   "wikivoyage": 10
   },
   "Chennai": {
    "blog": 3,
-   "reference": 41,
-   "wikivoyage": 46
+   "reference": 49,
+   "wikivoyage": 54
   },
   "Gokarna": {
-   "blog": 20,
-   "reference": 8,
-   "wikivoyage": 19
+   "blog": 25,
+   "reference": 10,
+   "wikivoyage": 22
   },
   "Hampi": {
-   "blog": 14,
-   "reference": 35,
-   "wikivoyage": 32
+   "blog": 17,
+   "reference": 45,
+   "wikivoyage": 38
   },
   "Hyderabad": {
-   "blog": 36,
-   "reference": 46,
-   "wikivoyage": 42
+   "blog": 42,
+   "reference": 57,
+   "wikivoyage": 49
   },
   "Kanniyakumari": {
-   "blog": 13,
-   "reference": 9,
-   "wikivoyage": 17
+   "blog": 16,
+   "reference": 12,
+   "wikivoyage": 21
   },
   "Kochi": {
-   "blog": 5,
-   "reference": 73,
-   "wikivoyage": 47
+   "blog": 6,
+   "reference": 92,
+   "wikivoyage": 57
   },
   "Kodagu": {
-   "blog": 39,
-   "reference": 11,
-   "wikivoyage": 12
+   "blog": 45,
+   "reference": 13,
+   "wikivoyage": 16
   },
   "Kodaikanal": {
-   "reference": 12,
-   "wikivoyage": 20
+   "reference": 16,
+   "wikivoyage": 25
   },
   "Madurai": {
-   "blog": 6,
-   "reference": 30,
-   "wikivoyage": 39
+   "blog": 7,
+   "reference": 37,
+   "wikivoyage": 50
   },
   "Mahabalipuram": {
    "blog": 3,
-   "reference": 6,
-   "wikivoyage": 19
+   "reference": 8,
+   "wikivoyage": 22
   },
   "Munnar": {
-   "reference": 7,
-   "wikivoyage": 21
+   "reference": 9,
+   "wikivoyage": 28
   },
   "Mysuru": {
-   "blog": 10,
-   "reference": 27,
-   "wikivoyage": 48
+   "blog": 12,
+   "reference": 32,
+   "wikivoyage": 59
   },
   "Ooty": {
    "blog": 13,
-   "reference": 14,
-   "wikivoyage": 21
+   "reference": 16,
+   "wikivoyage": 25
   },
   "Pondicherry": {
-   "blog": 3,
-   "reference": 13,
-   "wikivoyage": 30
+   "blog": 4,
+   "reference": 16,
+   "wikivoyage": 36
   },
   "Rameswaram": {
-   "reference": 21,
-   "wikivoyage": 9
+   "reference": 27,
+   "wikivoyage": 12
   },
   "Srisailam": {
-   "reference": 3,
-   "wikivoyage": 5
+   "reference": 4,
+   "wikivoyage": 6
   },
   "Tirupati": {
-   "blog": 8,
-   "reference": 24,
-   "wikivoyage": 11
+   "blog": 11,
+   "reference": 32,
+   "wikivoyage": 13
   },
   "Varkala": {
-   "reference": 4,
-   "wikivoyage": 18
+   "reference": 5,
+   "wikivoyage": 22
   },
   "Visakhapatnam": {
-   "blog": 6,
-   "reference": 32,
-   "wikivoyage": 21
+   "blog": 7,
+   "reference": 42,
+   "wikivoyage": 27
   },
   "Warangal": {
-   "blog": 16,
-   "reference": 12
+   "blog": 18,
+   "reference": 14
   },
   "Wayanad": {
-   "reference": 38,
-   "wikivoyage": 7
+   "reference": 49,
+   "wikivoyage": 10
   }
  },
  "per_published_year": {
-  "2004": 9,
-  "2005": 9,
+  "2004": 11,
+  "2005": 10,
   "2006": 9,
-  "2007": 21,
-  "2008": 16,
-  "2011": 52,
-  "2012": 8,
-  "2013": 6,
+  "2007": 25,
+  "2008": 18,
+  "2011": 60,
+  "2012": 9,
+  "2013": 7,
   "2015": 3,
-  "2018": 41,
-  "2019": 5,
-  "2021": 20,
-  "2022": 21,
-  "2023": 7,
-  "2024": 8,
+  "2018": 47,
+  "2019": 6,
+  "2021": 25,
+  "2022": 26,
+  "2023": 9,
+  "2024": 11,
   "2025": 7,
-  "none": 1145
+  "none": 1413
  },
  "per_revised_year": {
-  "2026": 1102,
-  "none": 285
+  "2026": 1358,
+  "none": 338
  },
  "per_source_type": {
-  "blog": 242,
-  "reference": 556,
-  "wikivoyage": 589
+  "blog": 283,
+  "reference": 696,
+  "wikivoyage": 717
  },
  "per_state": {
-  "AP": 110,
-  "KA": 438,
-  "KL": 263,
-  "PY": 73,
-  "TN": 342,
-  "TS": 161
+  "AP": 142,
+  "KA": 524,
+  "KL": 333,
+  "PY": 89,
+  "TN": 416,
+  "TS": 192
  },
  "reconciliation": [
   "records: 97 in = 96 kept + 1 exact duplicates + 0 hold-out (url/title)",
-  "chunks: 1419 created = 1387 out + 32 hold-out (text) + 0 near duplicates"
+  "chunks: 1726 created = 1696 out + 30 hold-out (text) + 0 near duplicates"
  ],
  "removed_chars": {
   "blocked_section": 17744,
@@ -488,17 +488,17 @@
   "chikk": 7,
   "chikm": 0,
   "kumil": 1,
-  "periyar": 16,
+  "periyar": 13,
   "tanj": 1,
   "thanj": 0,
   "thekk": 5
  },
  "tokens": {
   "max": 300,
-  "min": 55,
+  "min": 52,
   "over_max": 0,
-  "p50": 256,
-  "p95": 278,
-  "under_min": 54
+  "p50": 259,
+  "p95": 287,
+  "under_min": 55
  }
 }

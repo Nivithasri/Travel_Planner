@@ -25,6 +25,16 @@ PROCESSED = REPO_ROOT / "data" / "processed"
 MANIFEST = REPO_ROOT / "data" / "manifests" / "raw_manifest.jsonl"
 
 
+def _counter():
+    """The same counter as scripts/process.py: TOKENIZER_DIR from .env, else the proxy."""
+    from src.common.schemas import load_tokenizer_dir
+
+    return P.load_counter(load_tokenizer_dir())
+
+
+COUNT, COUNTER_NAME = _counter()
+
+
 def records() -> list[dict]:
     out = []
     for f in sorted(glob.glob(str(RAW_ROOT / "*" / "*" / "records.jsonl"))):
@@ -277,16 +287,16 @@ def short() -> None:
             continue
         done_urls.add(r["url"])
         c = P.clean_record(r, rl)
-        spans, _ = P.chunk_text(c.text, c.header_offsets, P.proxy_count)
+        spans, _ = P.chunk_text(c.text, c.header_offsets, COUNT)
         for k, (s, e) in enumerate(spans):
             cid = P.make_chunk_id(r["url"], s)
-            if cid not in kept_ids or P.proxy_count(c.text[s:e]) >= P.MIN_TOKENS:
+            if cid not in kept_ids or COUNT(c.text[s:e]) >= P.MIN_TOKENS:
                 continue
             if len(spans) == 1:
                 why = "short document (one chunk)"
             elif k == len(spans) - 1:
                 why = ("end of document: tail < 100 that could not merge" if
-                       P.proxy_count(c.text[s:e]) < P.TAIL else "end of document: tail 100-199")
+                       COUNT(c.text[s:e]) < P.TAIL else "end of document: tail 100-199")
             elif spans[k + 1][0] in c.header_offsets:
                 why = "section boundary"
             else:
@@ -447,7 +457,7 @@ def holdoutdrops() -> None:
     texts = {}
     for r in records():
         c = P.clean_record(r, rl)
-        for s, e in P.chunk_text(c.text, c.header_offsets, P.proxy_count)[0]:
+        for s, e in P.chunk_text(c.text, c.header_offsets, COUNT)[0]:
             texts[P.make_chunk_id(r["url"], s)] = c.text[s:e]
     rows: dict[tuple, int] = collections.Counter()
     multi = []

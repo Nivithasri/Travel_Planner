@@ -1,5 +1,5 @@
 {
- "counter": "regex-proxy",
+ "counter": "tokenizer.json sha256:21106b6d7dab",
  "files": {
   "data/processed/attribution.json": {
    "bytes": 28136,
@@ -7,14 +7,14 @@
    "sha256": "0b5b73bd28b3f278aaaa8d532574dc765e194f85cd4ddc3821745d62551ee7bf"
   },
   "data/processed/chunks.jsonl": {
-   "bytes": 2211242,
-   "lines": 1387,
-   "sha256": "b3265a455fafc6573c8519b56771d2f049f8025a0d37cfd9a2e5a84d72a16d05"
+   "bytes": 2309383,
+   "lines": 1696,
+   "sha256": "ee11755106409fd0d6ae8656453fc1ec70560593a9c25348572f01ec804a0003"
   },
   "data/processed/drops.jsonl": {
-   "bytes": 6375,
-   "lines": 33,
-   "sha256": "354cc552e974d8b1dde34f331859415bc9597c4fced73f3fe07e7b171712119d"
+   "bytes": 5981,
+   "lines": 31,
+   "sha256": "51fc0cd78423533c43a5f482d4d04ffc163e83dad80f2eb35304c2372046b2f9"
   }
  }
 }
