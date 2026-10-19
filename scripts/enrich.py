@@ -45,6 +45,7 @@ from src.common.llm import (  # noqa: E402
 from src.common.schemas import (  # noqa: E402
     REPO_ROOT,
     ConfigError,
+    EnrichedChunk,
     env_duplicate_keys,
     load_llm_settings,
     load_tokenizer_dir,
@@ -179,6 +180,29 @@ def audit(rows: list[dict], holdout: HoldoutFilter) -> int:
     return hits
 
 
+def assemble_partial(args, frozen, recs, holdout) -> int:
+    """SCRATCH file with only the chunks that have a checkpoint record (for dry runs of the index
+    code). Never the real data/enriched/chunks.jsonl, no manifest, does not match the frozen set."""
+    if args.out is None or args.out.resolve() == OUT.resolve():
+        print("--partial needs --out PATH, and never the real data/enriched/chunks.jsonl")
+        return 2
+    rows = []
+    for c in frozen:
+        if c["chunk_id"] in recs:
+            row = {**c, **{k: recs[c["chunk_id"]]["fields"][k] for k in ENRICHED_FIELDS}}
+            EnrichedChunk(**row)
+            rows.append(row)
+    hits = audit(rows, holdout)
+    if hits:
+        print(f"LEAK AUDIT FAILED: {hits} hold-out hits; nothing written")
+        return 1
+    text = "".join(json.dumps(r, sort_keys=True, ensure_ascii=False) + "\n" for r in rows)
+    atomic_write_text(args.out, text)
+    print(f"SCRATCH partial enriched file: {len(rows)} of {len(frozen)} chunks written to "
+          f"{args.out} (not the real file; does not match the frozen id set)")
+    return 0
+
+
 def assemble(args, frozen, excluded, titles, registry, holdout) -> int:
     ckpts = sorted(ENRICHED.glob(f"checkpoint_{PROMPT_VERSION}_*.jsonl"))
     if len(ckpts) != 1:
@@ -189,6 +213,8 @@ def assemble(args, frozen, excluded, titles, registry, holdout) -> int:
     if len(models) != 1:
         print("the checkpoint holds records of more than one model: refusing to assemble")
         return 1
+    if args.partial:
+        return assemble_partial(args, frozen, recs, holdout)
     try:
         rows, prov = assemble_labelled(
             frozen, recs, titles, registry, excluded_places=excluded,
@@ -234,6 +260,9 @@ def main(argv: list[str] | None = None) -> int:
     sel.add_argument("--gold", action="store_true", help="the 30 gold_sample.csv chunks")
     sel.add_argument("--full", action="store_true", help="every chunk in scope")
     ap.add_argument("--assemble", action="store_true", help="write the enriched file, no API call")
+    ap.add_argument("--partial", action="store_true",
+                    help="with --assemble --out PATH: a SCRATCH file of the chunks done so far")
+    ap.add_argument("--out", type=Path, help="scratch output for --assemble --partial")
     ap.add_argument("--report", action="store_true", help="summarise the checkpoint, no API call")
     ap.add_argument("--limit", type=int, metavar="N", help="stop after N NEW chunks this run")
     ap.add_argument("--eligible-only", action="store_true", help="only the 17 D33-eligible places")
