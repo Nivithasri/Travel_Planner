@@ -383,7 +383,7 @@ def test_base_chunk_has_no_fake_phase3_values():
 
 def test_enriched_roundtrip_matches_contract_fields():
     c = EnrichedChunk(**ENRICHED)
-    assert c.model_dump(mode="json") == ENRICHED
+    assert c.model_dump(mode="json") == {**ENRICHED, "mentioned_places": []}  # D50 default
 
 
 def test_enriched_requires_everything():
@@ -1268,3 +1268,41 @@ def test_from_settings(tmp_path, monkeypatch):
     assert client.seed == 99 and client.retry_budget_s == 120
     assert client.chat(MSGS, "g") == "hi"
     assert any((tmp_path / "c").rglob("*.json"))
+
+
+def test_enriched_closed_enums_for_place_type_and_season_tags():
+    from src.common.schemas import PlaceType, SeasonTag
+
+    assert {p.value for p in PlaceType} == {
+        "hill_station", "beach", "temple", "heritage", "wildlife", "backwater", "waterfall",
+        "city", "region", "other"}
+    assert {t.value for t in SeasonTag} == {"winter", "summer", "monsoon", "post_monsoon",
+                                            "all_year"}
+    EnrichedChunk(**{**ENRICHED, "place_type": "region", "season_tags": ["winter", "monsoon"]})
+    for bad in ({"place_type": "mountain"}, {"place_type": ""}, {"season_tags": ["spring"]},
+                {"season_tags": []}, {"season_tags": ["winter", "winter"]},
+                {"season_tags": ["all_year", "winter"]}):
+        with pytest.raises(ValidationError):
+            EnrichedChunk(**{**ENRICHED, **bad})
+    assert EnrichedChunk(**{**ENRICHED, "season_tags": ["all_year"]}).season_tags == ["all_year"]
+
+
+def test_enriched_mentioned_places_is_optional_and_a_list_of_strings():
+    assert EnrichedChunk(**ENRICHED).mentioned_places == []
+    c = EnrichedChunk(**{**ENRICHED, "mentioned_places": ["Munnar", "Ooty"]})
+    assert c.mentioned_places == ["Munnar", "Ooty"]
+    with pytest.raises(ValidationError):
+        EnrichedChunk(**{**ENRICHED, "mentioned_places": "Munnar"})
+    with pytest.raises(ValidationError):  # BaseChunk (Phase 2) does not know the field
+        BaseChunk(**{**BASE, "mentioned_places": []})
+
+
+def test_load_embed_local_dir_reads_only_the_env(tmp_path, monkeypatch):
+    from src.common.schemas import load_embed_local_dir
+
+    monkeypatch.delenv("EMBED_LOCAL_DIR", raising=False)
+    env = tmp_path / ".env"
+    env.write_text("OTHER=1\n", encoding="utf-8")
+    assert load_embed_local_dir(env) is None
+    env.write_text("EMBED_LOCAL_DIR=models/bge-m3-full\n", encoding="utf-8")
+    assert load_embed_local_dir(env) == Path("models/bge-m3-full")

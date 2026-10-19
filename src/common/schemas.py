@@ -128,6 +128,14 @@ def load_tokenizer_dir(env_file: str | os.PathLike | None = None) -> Path | None
     return Path(raw) if raw else None
 
 
+def load_embed_local_dir(env_file: str | os.PathLike | None = None) -> Path | None:
+    """EMBED_LOCAL_DIR (optional): a local folder with the bge-m3 model for sentence-transformers
+    (D51). The owner downloads it; nothing here ever downloads."""
+    load_dotenv(env_file if env_file is not None else REPO_ROOT / ".env", override=False)
+    raw = _opt("EMBED_LOCAL_DIR")
+    return Path(raw) if raw else None
+
+
 def load_collect_settings(env_file: str | os.PathLike | None = None) -> CollectSettings:
     """CONTACT_EMAIL is required: Wikimedia and polite crawling need a way to reach us. The other
     credentials are optional; a collector without its credentials is skipped, never faked."""
@@ -243,13 +251,56 @@ class BaseChunk(BaseModel):
         return self
 
 
+class PlaceType(str, Enum):
+    """The chunk's SUBJECT, not a property of `place` (D53). region and city fit chunks that are
+    about no single site."""
+
+    hill_station = "hill_station"
+    beach = "beach"
+    temple = "temple"
+    heritage = "heritage"
+    wildlife = "wildlife"
+    backwater = "backwater"
+    waterfall = "waterfall"
+    city = "city"
+    region = "region"
+    other = "other"
+
+
+class SeasonTag(str, Enum):
+    winter = "winter"  # Dec-Feb
+    summer = "summer"  # Mar-May
+    monsoon = "monsoon"  # Jun-Sep
+    post_monsoon = "post_monsoon"  # Oct-Nov
+    all_year = "all_year"  # exclusive
+
+
+def check_season_tags(tags: list) -> list[str]:
+    """Closed enum, no duplicates, non-empty, all_year only on its own (D53)."""
+    values = [SeasonTag(t).value for t in tags]
+    if not values:
+        raise ValueError("season_tags must not be empty (use [\"all_year\"])")
+    if len(set(values)) != len(values):
+        raise ValueError("season_tags must not repeat a tag")
+    if SeasonTag.all_year.value in values and len(values) > 1:
+        raise ValueError("all_year excludes the other season tags")
+    return values
+
+
 class EnrichedChunk(BaseChunk):
     context_note: str = Field(min_length=1)
     place: str = Field(min_length=1)
-    place_type: str = Field(min_length=1)
+    place_type: PlaceType
     season_tags: list[str]
     aspect: Aspect
     is_warning: bool = Field(strict=True)
+    # D50: other registry places (non-hold-out) the chunk mentions; optional, default []
+    mentioned_places: list[str] = Field(default_factory=list)
+
+    @field_validator("season_tags")
+    @classmethod
+    def _season_tags(cls, v: list[str]) -> list[str]:
+        return check_season_tags(v)
 
 
 class PlaceRegistryEntry(BaseModel):
