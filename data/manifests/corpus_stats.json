@@ -4,7 +4,7 @@
   "oversize_splits": 0,
   "short_tails": 10
  },
- "chunks": 1388,
+ "chunks": 1387,
  "counter": "regex-proxy",
  "d23_dry_run": {
   "Alappuzha": {
@@ -234,16 +234,16 @@
  },
  "date_kind": {
   "published": 242,
-  "revised": 1103,
+  "revised": 1102,
   "sitemap_lastmod": 43
  },
  "drops": {
-  "chunk": 31,
+  "chunk": 32,
   "exact_duplicate": 1
  },
  "estimate": {
   "chunks": 1943,
-  "difference": -555,
+  "difference": -556,
   "high": 2429,
   "low": 1619,
   "source": "D39 (ii), LOG.md 2026-10-19"
@@ -265,7 +265,7 @@
   {
    "holdout": "Araku Valley",
    "level": "chunk",
-   "n": 1,
+   "n": 2,
    "source": "wikipedia"
   },
   {
@@ -299,7 +299,7 @@
    "source": "wikivoyage"
   }
  ],
- "null_date_share": 0.8256,
+ "null_date_share": 0.8255,
  "params": {
   "max_incl_overlap": 300,
   "min": 200,
@@ -419,7 +419,7 @@
   },
   "Visakhapatnam": {
    "blog": 6,
-   "reference": 33,
+   "reference": 32,
    "wikivoyage": 21
   },
   "Warangal": {
@@ -448,19 +448,19 @@
   "2023": 7,
   "2024": 8,
   "2025": 7,
-  "none": 1146
+  "none": 1145
  },
  "per_revised_year": {
-  "2026": 1103,
+  "2026": 1102,
   "none": 285
  },
  "per_source_type": {
   "blog": 242,
-  "reference": 557,
+  "reference": 556,
   "wikivoyage": 589
  },
  "per_state": {
-  "AP": 111,
+  "AP": 110,
   "KA": 438,
   "KL": 263,
   "PY": 73,
@@ -469,7 +469,7 @@
  },
  "reconciliation": [
   "records: 97 in = 96 kept + 1 exact duplicates + 0 hold-out (url/title)",
-  "chunks: 1419 created = 1388 out + 31 hold-out (text) + 0 near duplicates"
+  "chunks: 1419 created = 1387 out + 32 hold-out (text) + 0 near duplicates"
  ],
  "removed_chars": {
   "blocked_section": 17744,

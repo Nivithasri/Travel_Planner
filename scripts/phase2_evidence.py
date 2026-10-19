@@ -224,16 +224,17 @@ def rejoin() -> None:
             frag = len(line) <= P.INLINE_LINK_CHARS and bool(P._CONTINUES.match(nxt))
             if i and (P._CONTINUES.match(line) or frag):
                 joined += 1
-                if len(samples) < 5 and i >= 1 and len(before[i - 1]) < 120:
-                    samples.append((url, before[i - 1:i + 2]))
+                if (len(samples) < 5 and len(before[i - 1]) < 120
+                        and r["place"] not in {x[2] for x in samples}):
+                    samples.append((url, before[i - 1:i + 2], r["place"]))
             elif (i and len(line) <= P.INLINE_LINK_CHARS and len(negatives) < 6
                   and not P._CONTINUES.match(nxt)):
                 negatives.append((url, before[i - 1][-50:], line, nxt[:50]))
         affected += joined
     print(f"lines joined to the previous line: {affected}")
-    for url, ctx in samples:
+    for url, ctx, place in samples:
         after = P._join_inline_links(list(ctx), collections.Counter())
-        print(f"  {url}\n     before: {ctx}\n     after:  {after}")
+        print(f"  [{place}] {url}\n     before: {ctx}\n     after:  {after}")
     print("short lines kept separate (real data; previous tail | line | next head):")
     for url, prev, line, nxt in negatives:
         print(f"  {url}: ...{prev!r} | {line!r} | {nxt!r}...")
@@ -247,7 +248,7 @@ def credits() -> None:
         hits += [(url, x) for x in lines if P._CREDIT.match(x)]
     print(f"SCOPE: source 'blog' only, {len(blogs)} distinct urls. Image-credit lines dropped: "
           f"{len(hits)}")
-    for url, x in hits[:10]:
+    for url, x in hits:
         print(f"  {x!r}   ({url})")
 
 
@@ -332,17 +333,19 @@ def d23() -> None:
     per = collections.defaultdict(collections.Counter)
     for c in cs:
         per[c["place"]][c["source_type"]] += 1
-    print("| place | popularity | chunks | types in chunks | D23 raw | D23 chunks |")
-    print("|---|---|---|---|---|---|")
+    print("| place | popularity | raw types | chunk types | raw pass | chunk pass | chunks |")
+    print("|---|---|---|---|---|---|---|")
     keep_chunks, keep_hidden, fail = 0, 0, []
     for e in reg.entries:
         if e.holdout:
             continue
-        raw = place_coverage(e, RAW_ROOT).passes
+        cov = place_coverage(e, RAW_ROOT)
+        raw = cov.passes
         types = set(per[e.name])
         ok = P.passes_rule(types)
         n = sum(per[e.name].values())
-        print(f"| {e.name} | {e.popularity} | {n} | {', '.join(sorted(types))} | {raw} | {ok} |")
+        print(f"| {e.name} | {e.popularity} | {', '.join(cov.types)} | "
+              f"{', '.join(sorted(types))} | {raw} | {ok} | {n} |")
         if ok:
             keep_chunks += n
             keep_hidden += e.popularity == "hidden_gem"
@@ -366,7 +369,75 @@ def attribution() -> None:
                                                  if a["revid"] is not None))
 
 
-SECTIONS = {"manifest": manifest, "holdout": holdout, "blogdates": blogdates, "rejoin": rejoin,
+def periyar() -> None:
+    cs = chunks()
+    print("SCOPE: text of all chunks in data/processed/chunks.jsonl; case-insensitive 'Periyar'")
+    n = 0
+    for c in cs:
+        for m in re.finditer(r"periyar", c["text"], re.IGNORECASE):
+            n += 1
+            left = c["text"][max(0, m.start() - 60):m.start()].replace("\n", " / ")
+            right = c["text"][m.end():m.end() + 60].replace("\n", " / ")
+            print(f"  {c['chunk_id']} {c['place']}: ...{left}[{m.group(0)}]{right}...")
+    print(f"total text hits: {n}")
+    rx = re.compile(r"mullaperiyar|periyar.{0,40}?\b(?:dam|lake)\b|\b(?:dam|lake)\b.{0,40}?periyar",
+                    re.IGNORECASE | re.DOTALL)
+    raw = [(r, m) for r in records() for m in rx.finditer(r["body"])]
+    surviving = sum(len(rx.findall(c["text"])) for c in cs)
+    print(f"RAW bodies (97 records): 'Mullaperiyar', or Dam/Lake within 40 chars of 'Periyar': "
+          f"{len(raw)} occurrences in {len({r['url'] for r, _ in raw})} urls; occurrences left in "
+          f"final chunks: {surviving}")
+
+
+HOLDOUT_TERMS = {
+    "Thekkady": [r"thekkady", r"thekkadi", r"kumily", r"mullaperiyar",
+                 r"periyar\s+(?:lake|dam|tiger\s+reserve|national\s+park|wildlife\s+sanctuary)",
+                 r"(?:national\s+park|wildlife\s+sanctuary)\W+periyar"],
+    "Araku Valley": [r"araku"],
+    "Thanjavur": [r"thanjavur", r"tanjavur", r"tanjore", r"thanjai", r"brihadisvara",
+                  r"brihadeeswarar?", r"brihadeshwara"],
+    "Chikmagalur": [r"chikmagalur", r"chikkamagaluru", r"chikmagaluru"],
+    "Borra Caves (Araku Valley)": [r"borra\s+caves"],
+}
+
+
+def rawholdout() -> None:
+    rl = rules()
+    drops = [json.loads(x) for x in open(PROCESSED / "drops.jsonl", encoding="utf-8")]
+    per_url = collections.Counter((d["url"], d["place"]) for d in drops
+                                  if d["level"] in ("chunk", "record"))
+    recs = records()
+    print("SCOPE: body + title + url of the 97 records in data/raw/*/*/records.jsonl; word-bounded "
+          "case-insensitive regex, independent of HoldoutFilter; Periyar only in the O8 context")
+    all_hit: dict[tuple, set] = collections.defaultdict(set)
+    for h, pats in HOLDOUT_TERMS.items():
+        rx = re.compile(r"(?<!\w)(?:" + "|".join(pats) + r")(?!\w)", re.IGNORECASE)
+        hits = [r for r in recs if rx.search(r["body"] + " " + (r.get("title") or "") + " "
+                                             + re.sub(r"[^A-Za-z0-9]+", " ", r["url"]))]
+        print(f"{h}: {len(hits)} records")
+        for r in hits:
+            all_hit[(r["source"], r["url"], r["place"])].add(h)
+            only_removed = not rx.search(P.clean_record(r, rl).text)
+            print(f"    {r['source']:<10} {r['place']:<14} {r['url']}  chunk drops for this "
+                  f"record: {per_url.get((r['url'], r['place']), 0)}"
+                  + ("  [term ONLY in text removed by cleaning]" if only_removed else ""))
+    print(f"DISTINCT records naming any hold-out (incl. Borra Caves): {len(all_hit)}")
+    bare = re.compile(r"(?<!\w)(?:periyar|brihadisvara)(?!\w)", re.IGNORECASE)
+    extra = [r for r in recs if (r["source"], r["url"], r["place"]) not in all_hit
+             and bare.search(r["body"])]
+    print(f"records with a BARE 'Periyar'/'Brihadisvara' only (counted by the Phase 1 review "
+          f"pattern, not a hold-out mention under O8): {len(extra)}")
+    for r in extra:
+        print(f"    {r['source']:<10} {r['place']:<14} {r['url']}")
+    print(f"Phase 1 comparable count = {len(all_hit)} + {len(extra)} = "
+          f"{len(all_hit) + len(extra)} (Phase 1 reported 19 distinct records)")
+    total = sum(per_url.values())
+    on_listed = sum(per_url.get((u, p), 0) for _, u, p in all_hit)
+    print(f"hold-out chunk drops in drops.jsonl: {total}; on the records listed above: {on_listed}")
+
+
+SECTIONS = {"periyar": periyar, "rawholdout": rawholdout,
+            "manifest": manifest, "holdout": holdout, "blogdates": blogdates, "rejoin": rejoin,
             "credits": credits, "splitter": splitter, "short": short, "neardup": neardup,
             "d23": d23, "attribution": attribution}
 
