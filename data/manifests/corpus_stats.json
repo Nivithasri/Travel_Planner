@@ -4,7 +4,7 @@
   "oversize_splits": 0,
   "short_tails": 10
  },
- "chunks": 1389,
+ "chunks": 1388,
  "counter": "regex-proxy",
  "d23_dry_run": {
   "Alappuzha": {
@@ -234,16 +234,16 @@
  },
  "date_kind": {
   "published": 242,
-  "revised": 1104,
+  "revised": 1103,
   "sitemap_lastmod": 43
  },
  "drops": {
-  "chunk": 30,
+  "chunk": 31,
   "exact_duplicate": 1
  },
  "estimate": {
   "chunks": 1943,
-  "difference": -554,
+  "difference": -555,
   "high": 2429,
   "low": 1619,
   "source": "D39 (ii), LOG.md 2026-10-19"
@@ -251,6 +251,7 @@
  "freshness": {
   "published_in_window": 0,
   "reference_date": "2026-10-18",
+  "reference_date_source": "--reference-date (overrides .env)",
   "share": 0.0,
   "window_start": "2025-04-18"
  },
@@ -288,7 +289,7 @@
   {
    "holdout": "Thekkady",
    "level": "chunk",
-   "n": 1,
+   "n": 2,
    "source": "wikipedia"
   },
   {
@@ -298,7 +299,7 @@
    "source": "wikivoyage"
   }
  ],
- "null_date_share": 0.8258,
+ "null_date_share": 0.8256,
  "params": {
   "max_incl_overlap": 300,
   "min": 200,
@@ -372,7 +373,7 @@
   },
   "Madurai": {
    "blog": 6,
-   "reference": 31,
+   "reference": 30,
    "wikivoyage": 39
   },
   "Mahabalipuram": {
@@ -447,15 +448,15 @@
   "2023": 7,
   "2024": 8,
   "2025": 7,
-  "none": 1147
+  "none": 1146
  },
  "per_revised_year": {
-  "2026": 1104,
+  "2026": 1103,
   "none": 285
  },
  "per_source_type": {
   "blog": 242,
-  "reference": 558,
+  "reference": 557,
   "wikivoyage": 589
  },
  "per_state": {
@@ -463,12 +464,12 @@
   "KA": 438,
   "KL": 263,
   "PY": 73,
-  "TN": 343,
+  "TN": 342,
   "TS": 161
  },
  "reconciliation": [
   "records: 97 in = 96 kept + 1 exact duplicates + 0 hold-out (url/title)",
-  "chunks: 1419 created = 1389 out + 30 hold-out (text) + 0 near duplicates"
+  "chunks: 1419 created = 1388 out + 31 hold-out (text) + 0 near duplicates"
  ],
  "removed_chars": {
   "blocked_section": 17744,
@@ -487,7 +488,7 @@
   "chikk": 7,
   "chikm": 0,
   "kumil": 1,
-  "periyar": 17,
+  "periyar": 16,
   "tanj": 1,
   "thanj": 0,
   "thekk": 5

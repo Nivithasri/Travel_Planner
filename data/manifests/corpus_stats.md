@@ -6,11 +6,11 @@ Token counter: **regex-proxy**. Parameters: {"max_incl_overlap": 300, "min": 200
 ## Reconciliation
 
 - records: 97 in = 96 kept + 1 exact duplicates + 0 hold-out (url/title)
-- chunks: 1419 created = 1389 out + 30 hold-out (text) + 0 near duplicates
+- chunks: 1419 created = 1388 out + 31 hold-out (text) + 0 near duplicates
 
-## Size: 1389 chunks
+## Size: 1388 chunks
 
-Estimate 1943 (range 1619 to 2429, D39 (ii), LOG.md 2026-10-19); difference -554.
+Estimate 1943 (range 1619 to 2429, D39 (ii), LOG.md 2026-10-19); difference -555.
 Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0. Chunking: {"merged_tails": 16, "oversize_splits": 0, "short_tails": 10}.
 
 ## Chunks per source_type
@@ -18,7 +18,7 @@ Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0.
 | value | chunks |
 |---|---|
 | blog | 242 |
-| reference | 558 |
+| reference | 557 |
 | wikivoyage | 589 |
 
 ## Chunks per state
@@ -29,7 +29,7 @@ Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0.
 | KA | 438 |
 | KL | 263 |
 | PY | 73 |
-| TN | 343 |
+| TN | 342 |
 | TS | 161 |
 
 ## Chunks per published year
@@ -52,13 +52,13 @@ Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0.
 | 2023 | 7 |
 | 2024 | 8 |
 | 2025 | 7 |
-| none | 1147 |
+| none | 1146 |
 
 ## Chunks per revised year (wiki API revision date)
 
 | value | chunks |
 |---|---|
-| 2026 | 1104 |
+| 2026 | 1103 |
 | none | 285 |
 
 ## Chunks per date_kind
@@ -66,7 +66,7 @@ Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0.
 | value | chunks |
 |---|---|
 | published | 242 |
-| revised | 1104 |
+| revised | 1103 |
 | sitemap_lastmod | 43 |
 
 ## Chunks per place
@@ -86,7 +86,7 @@ Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0.
 | Kochi | 125 | {"blog": 5, "reference": 73, "wikivoyage": 47} |
 | Kodagu | 62 | {"blog": 39, "reference": 11, "wikivoyage": 12} |
 | Kodaikanal | 32 | {"reference": 12, "wikivoyage": 20} |
-| Madurai | 76 | {"blog": 6, "reference": 31, "wikivoyage": 39} |
+| Madurai | 75 | {"blog": 6, "reference": 30, "wikivoyage": 39} |
 | Mahabalipuram | 28 | {"blog": 3, "reference": 6, "wikivoyage": 19} |
 | Munnar | 28 | {"reference": 7, "wikivoyage": 21} |
 | Mysuru | 85 | {"blog": 10, "reference": 27, "wikivoyage": 48} |
@@ -100,7 +100,7 @@ Tokens per chunk: min 55, p50 256, p95 278, max 300; under 200: 54; over 300: 0.
 | Warangal | 28 | {"blog": 16, "reference": 12} |
 | Wayanad | 45 | {"reference": 38, "wikivoyage": 7} |
 
-Null-date share: 0.8258. Freshness (published dates only, window 2025-04-18 to 2026-10-18): 0 chunks, share 0.0.
+Null-date share: 0.8256. Freshness (published dates only, window 2025-04-18 to 2026-10-18; reference date from --reference-date (overrides .env)): 0 chunks, share 0.0. The reference date is used only here; it is in no chunk.
 
 ## Removed text (characters per rule)
 
@@ -116,7 +116,7 @@ Null-date share: 0.8258. Freshness (published dates only, window 2025-04-18 to 2
 
 ## Drops
 
-- chunk: 30
+- chunk: 31
 - exact_duplicate: 1
 
 Exact duplicates:
@@ -133,7 +133,7 @@ Hold-out drops per hold-out, source and level:
 | Araku Valley | wikivoyage | chunk | 3 |
 | Thanjavur | wikipedia | chunk | 5 |
 | Thanjavur | wikivoyage | chunk | 3 |
-| Thekkady | wikipedia | chunk | 1 |
+| Thekkady | wikipedia | chunk | 2 |
 | Thekkady | wikivoyage | chunk | 13 |
 
 Boundary-free stem scan of the OUTPUT chunks (case-insensitive substring; hits are other words or concatenations, listed for review):
@@ -145,7 +145,7 @@ Boundary-free stem scan of the OUTPUT chunks (case-insensitive substring; hits a
 - kumil: 1
 - chikm: 0
 - chikk: 7
-- periyar: 17
+- periyar: 16
 
 ## D23 / D33 dry run (nothing removed)
 
