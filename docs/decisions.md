@@ -386,3 +386,26 @@ D48 (amendment 2026-10-19, hold-out spellings) A stem scan of the 97 raw bodies 
    Mahabalipuram inditales footer, "Brihadeeswara Temple, Tanjore"). Both are added to DROP_NAMES (src/facts/facts.py) as Thekkady and
    Thanjavur. The other stem hits are different words (Thekkumbhagom, Chikkadpally, Mathukumilli, Gitanjali, ...). Status: accepted,
    flagged to the owner.
+D48 (amendment 2026-10-19, rules added while building; owner review requested)
+   (a) Inline-link joins (blog): the Phase 1 page-to-text step put inline link text on its own line ("The whole / Bangalore /
+   international airport"). A line starting with a lowercase letter or , . ; : ! ? ) % is joined to the previous one, and so is a line
+   of <= 40 characters whose next line starts that way. 244 joins on the snapshot. Without it the learned-line rule picked up
+   "Bangalore", "Hyderabad" and "." as boilerplate (they are sentence fragments).
+   (b) Image credits (blog, fixed rule): lines that are exactly "/", "Image courtesy" / "Image source", or a Shutterstock credit
+   ("Shutterstock", "Shutterstock.com", "Image courtesy Shutterstock"); 228 characters.
+   (c) Mid-post "Read more" / "Recommended Read" lines with more than 400 characters after them drop only themselves and the
+   following line if it is under 80 characters (the linked post title); 312 characters.
+   (d) Learned rule file: candidates are counted once per URL (the Ooty/Kodaikanal post was counted twice). After (a) and (b) the
+   rule (>= 3 records, < 120 characters, inditales.com) yields two candidates, "Travel Tips" (4) and "Meditation Hall" (3); both are
+   section headings with content after them, so they are listed under `rejected` in config/boilerplate.json and never applied.
+   `learn` keeps the rejected list. Applied learned lines on the snapshot: 0. The owner may move them back.
+   (e) "km." and "ft." are not abbreviations for the sentence splitter ("10 km." ends a sentence in this text).
+   (f) EVAL_REFERENCE_DATE: .env has no EVAL_REFERENCE_DATE (it holds only CONTACT_EMAIL and YOUTUBE_API_KEY, key names checked, no
+   values read), so scripts/process.py takes --reference-date; the runs used 2026-10-18 (the value in .env.example, D32, D39).
+   load_reference_date() reads only that key, so chunking does not need the Ollama settings.
+   (g) Consequence of D48 (5), recorded: the Ooty/Kodaikanal post is Kodaikanal's only blog record, so with the copy kept under Ooty
+   (earlier in registry order) Kodaikanal has no blog chunk and FAILS D23 at chunk level (passes at raw level). D23 dry run: 17 of 26
+   at chunk level vs 18 of 26 at raw level. The owner chose this rule; changing it (e.g. assigning that post to Kodaikanal) is a
+   one-line decision before the freeze.
+   (h) Borderline hold-out context, NOT dropped: Madurai Wikipedia "agricultural activity, which is fostered by the Periyar Dam"
+   (the Mullaperiyar dam forms Periyar Lake at Thekkady, but "Dam" is not in the O8 context list). Owner decision.
