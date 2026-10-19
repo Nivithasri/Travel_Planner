@@ -459,3 +459,12 @@ def test_apply_d33_execute_writes_identical_processed_and_manifests_copies(tmp_p
     a, b = (proc / "d33_excluded.json").read_bytes(), (man / "d33_excluded.json").read_bytes()
     assert a == b and b"\r" not in a and "excluded" in json.loads(a)
     assert fz.run(root, env, execute=False, apply_d33=False) == 0  # all preconditions pass
+
+
+def test_gitattributes_pin_lf_for_manifest_json_and_md():
+    # Without these, core.autocrlf=true would check out CRLF copies of data/manifests files,
+    # and the byte-identical check on the two d33_excluded.json copies would fail (D48 xviii).
+    lines = {ln.split("#")[0].strip()
+             for ln in (HOOKS_ROOT / ".gitattributes").read_text(encoding="utf-8").splitlines()}
+    assert "data/manifests/*.json text eol=lf" in lines
+    assert "data/manifests/*.md text eol=lf" in lines

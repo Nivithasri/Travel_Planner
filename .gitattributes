@@ -4,3 +4,5 @@
 .githooks/* text eol=lf
 *.sh text eol=lf
 *.py text eol=lf
+data/manifests/*.json text eol=lf
+data/manifests/*.md text eol=lf
