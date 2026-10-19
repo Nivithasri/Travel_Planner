@@ -72,6 +72,8 @@ def load_rules() -> dict:
 
 
 def run_batch(write: bool, reference_date: date | None = None) -> int:
+    if write and (PROCESSED / "FROZEN").exists():
+        sys.exit("data/processed/FROZEN exists: the corpus is frozen, --write refused")
     registry = Registry.load(CORE_REGISTRY)
     order = {e.name: i for i, e in enumerate(registry.entries)}
     holdout = HoldoutFilter.from_registry(registry)
@@ -120,8 +122,6 @@ def run_batch(write: bool, reference_date: date | None = None) -> int:
     if not write:
         print("\nDRY RUN: nothing written (use --write).")
         return 0
-    if (PROCESSED / "FROZEN").exists():
-        sys.exit("data/processed/FROZEN exists: the corpus is frozen, --write refused")
     files = {
         PROCESSED / "chunks.jsonl": jsonl(chunks),
         PROCESSED / "drops.jsonl": jsonl(drops),

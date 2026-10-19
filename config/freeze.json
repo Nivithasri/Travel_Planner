@@ -1,0 +1,6 @@
+{
+ "_doc": "Owner decisions read by scripts/freeze.py (D48). Set only by the project owner. reddit_resolved: true once Reddit is collected or its absence is accepted (D45). d33_mode: null (undecided) | \"sidecar\" (chunks.jsonl unchanged; data/processed/d33_excluded.json lists the places retrieval must exclude). \"exclude\" (rewrite chunks.jsonl) is not implemented.",
+ "reddit_resolved": false,
+ "reddit_note": "",
+ "d33_mode": null
+}

@@ -6,7 +6,7 @@ import os
 import sys
 
 RULES = [  # (path glob relative to repo root, marker file that activates the freeze)
-    ("data/processed/chunks*.jsonl", "data/processed/FROZEN"),
+    ("data/processed/*", "data/processed/FROZEN"),  # every file in data/processed (D48)
     ("eval/qrels*.json", "eval/QRELS_FROZEN"),
 ]
 

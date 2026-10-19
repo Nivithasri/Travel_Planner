@@ -149,8 +149,13 @@ def test_frozen_hook_blocks_only_when_marker_exists(tmp_path):
     assert r.returncode == 2 and "frozen" in r.stderr
     variant = chunks.with_name("chunks_enriched.jsonl")
     assert run_hook(FROZEN, write_payload(variant), tmp_path).returncode == 2
-    other = tmp_path / "data" / "processed" / "stats.md"
-    assert run_hook(FROZEN, write_payload(other), tmp_path).returncode == 0
+    for name in ("drops.jsonl", "attribution.json", "stats.md", "FROZEN"):  # all of data/processed
+        r = run_hook(FROZEN, write_payload(chunks.with_name(name)), tmp_path)
+        assert r.returncode == 2, name
+    edit = {"tool_name": "Edit", "tool_input": {"file_path": str(chunks)}}
+    assert run_hook(FROZEN, edit, tmp_path).returncode == 2
+    outside = tmp_path / "data" / "manifests" / "corpus_stats.md"
+    assert run_hook(FROZEN, write_payload(outside), tmp_path).returncode == 0
 
 
 def test_frozen_hook_qrels_marker(tmp_path):
@@ -293,3 +298,117 @@ def test_model_present_handles_latest_suffix():
     assert not smoke.model_present(["qwen2.5:7b"], "llama3.1:8b")
     assert not smoke.model_present(["bge-m3:567m"], "bge-m3")
     assert not smoke.model_present([], "x")
+
+
+# ==== freeze tooling (D48): temp directories only, the real data/processed/FROZEN is never created
+
+REAL_FROZEN = HOOKS_ROOT / "data" / "processed" / "FROZEN"
+
+
+def test_process_write_refuses_when_frozen_exists(tmp_path, monkeypatch):
+    import scripts.process as sp
+
+    (tmp_path / "FROZEN").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(sp, "PROCESSED", tmp_path)
+    with pytest.raises(SystemExit, match="frozen"):
+        sp.run_batch(True)
+    assert not REAL_FROZEN.exists()
+
+
+def _toy_tokenizer(d):
+    from tokenizers import Tokenizer, models, pre_tokenizers
+
+    d.mkdir()
+    tok = Tokenizer(models.WordLevel({"[UNK]": 0, "fort": 1}, unk_token="[UNK]"))
+    tok.pre_tokenizer = pre_tokenizers.Whitespace()
+    tok.save(str(d / "tokenizer.json"))
+    return d
+
+
+def _freeze_root(tmp_path, monkeypatch, counter_kind):
+    import hashlib
+
+    from src.common.schemas import PlaceRegistryEntry
+    from src.facts.facts import HoldoutFilter
+    from src.process.process import process_place, proxy_count
+
+    root = tmp_path / "root"
+    proc, man, cfg = root / "data" / "processed", root / "data" / "manifests", root / "config"
+    for d in (proc, man, cfg):
+        d.mkdir(parents=True)
+    tdir = _toy_tokenizer(tmp_path / "bge-m3")
+    monkeypatch.setenv("TOKENIZER_DIR", str(tdir))
+    monkeypatch.setenv("EVAL_REFERENCE_DATE", "2026-10-18")
+    env = tmp_path / "empty.env"
+    env.write_text("", encoding="utf-8")
+    e = PlaceRegistryEntry(name="Hampi", aliases=[], state="KA", region_cluster="r",
+                           popularity="popular", lat=15.3, lon=76.4)
+    body = " ".join(f"Sentence number {i} about the fort." for i in range(80))
+    rec = {"source": "blog", "url": "https://inditales.com/h/", "place": "Hampi", "body": body,
+           "title": "T", "publish_date": "2011-01-01", "lastmod": None, "license": "L", "extra": {}}
+    out, _ = process_place([rec], e, HoldoutFilter(), None, proxy_count)
+    files = {"chunks.jsonl": "".join(json.dumps(c, sort_keys=True) + "\n" for _, c in out),
+             "drops.jsonl": "", "attribution.json": "{}\n"}
+    for name, text in files.items():
+        (proc / name).write_text(text, encoding="utf-8", newline="\n")
+    digest = hashlib.sha256((tdir / "tokenizer.json").read_bytes()).hexdigest()[:12]
+    counter = "regex-proxy" if counter_kind == "proxy" else f"tokenizer.json sha256:{digest}"
+    (man / "processed_manifest.json").write_text(json.dumps({"counter": counter, "files": {
+        f"data/processed/{n}": {"sha256": hashlib.sha256(t.encode()).hexdigest()}
+        for n, t in files.items()}}), encoding="utf-8")
+    (man / "corpus_stats.json").write_text(json.dumps({"freshness": {
+        "reference_date": "2026-10-18",
+        "reference_date_source": "EVAL_REFERENCE_DATE in .env"}}), encoding="utf-8")
+    (cfg / "freeze.json").write_text(json.dumps({"reddit_resolved": True, "d33_mode": "sidecar"}),
+                                     encoding="utf-8")
+    (proc / "d33_excluded.json").write_text("{}", encoding="utf-8")
+    return root, env
+
+
+def test_freeze_refuses_the_proxy_counter(tmp_path, monkeypatch, capsys):
+    import scripts.freeze as fz
+
+    root, env = _freeze_root(tmp_path, monkeypatch, "proxy")
+    assert fz.run(root, env, execute=True, apply_d33=False) == 2
+    out = capsys.readouterr().out
+    assert "[FAIL] counter is the real bge-m3 tokenizer" in out and "proxy is refused" in out
+    assert out.count("[FAIL]") == 1  # everything else in the fixture passes
+    assert not (root / "data" / "processed" / "FROZEN").exists() and not REAL_FROZEN.exists()
+
+
+def test_freeze_dry_run_writes_nothing_and_execute_writes_the_marker(tmp_path, monkeypatch,
+                                                                      capsys):
+    import scripts.freeze as fz
+
+    root, env = _freeze_root(tmp_path, monkeypatch, "real")
+    frozen = root / "data" / "processed" / "FROZEN"
+    assert fz.run(root, env, execute=False, apply_d33=False) == 0 and not frozen.exists()
+    assert "[FAIL]" not in capsys.readouterr().out
+    assert fz.run(root, env, execute=True, apply_d33=False) == 0
+    doc = json.loads(frozen.read_text(encoding="utf-8"))
+    assert set(doc) == {"chunks_jsonl_sha256", "attribution_json_sha256", "chunk_count", "counter",
+                        "tokenizer_dir", "reference_date", "reference_date_source",
+                        "frozen_at_utc"}
+    assert doc["tokenizer_dir"] == "bge-m3" and doc["reference_date_source"].endswith(".env")
+    assert fz.run(root, env, execute=True, apply_d33=False) == 2  # already frozen
+    assert not REAL_FROZEN.exists()
+
+
+def test_freeze_refuses_flag_date_unresolved_reddit_and_d33_without_decision(tmp_path,
+                                                                            monkeypatch, capsys):
+    import scripts.freeze as fz
+
+    root, env = _freeze_root(tmp_path, monkeypatch, "real")
+    stats = root / "data" / "manifests" / "corpus_stats.json"
+    stats.write_text(json.dumps({"freshness": {"reference_date": "2026-10-18",
+                                               "reference_date_source": "--reference-date"}}),
+                     encoding="utf-8")
+    (root / "config" / "freeze.json").write_text(json.dumps({"reddit_resolved": False,
+                                                             "d33_mode": None}), encoding="utf-8")
+    assert fz.run(root, env, execute=True, apply_d33=False) == 2
+    out = capsys.readouterr().out
+    for name in ("reference date comes from .env", "Reddit recorded as resolved", "D33 applied"):
+        assert f"[FAIL] {name}" in out
+    assert fz.run(root, env, execute=True, apply_d33=True) == 2  # d33_mode null -> refused
+    assert "REFUSED" in capsys.readouterr().out
+    assert not (root / "data" / "processed" / "FROZEN").exists()
