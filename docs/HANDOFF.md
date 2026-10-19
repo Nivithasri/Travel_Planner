@@ -30,12 +30,12 @@ Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source
    date, date_kind, revised_date, state, place, source_type per id. Phase 3 may only fill context_note, place_type, season_tags, aspect,
    is_warning (EnrichedChunk, D10). `place` is already set by Phase 2; O5 asks Phase 3 to check LLM-extracted places against the
    registry through aliases, with rule-based fallback.
-2. `.env` has CONTACT_EMAIL, YOUTUBE_API_KEY, TOKENIZER_DIR, EVAL_REFERENCE_DATE only (key names checked, values never printed).
-   Phase 3 needs OLLAMA_BASE_URL, GENERATOR_MODEL, JUDGE_MODEL, EMBED_MODEL from the owner, and `scripts/smoke_ollama.py` has never
-   been run against a real server (D11, D16): run it first.
-3. D1/D2 run enrichment and embedding as resumable Kaggle notebooks (kaggle/README.md), which means UPLOADING chunks.jsonl. That is
-   the sharing question O12 left open (CC BY-SA Wikipedia/Wikivoyage, CC BY-NC-SA Sahapedia, inditales "no terms found; copyright
-   Anuradha Goyal" accepted for collection only). The owner must decide O12 before any upload. attribution.json has licences per url.
+2. `.env` now holds the Ollama keys (OLLAMA_BASE_URL, GENERATOR_MODEL, JUDGE_MODEL, EMBED_MODEL) as well as CONTACT_EMAIL,
+   YOUTUBE_API_KEY, TOKENIZER_DIR, EVAL_REFERENCE_DATE (key names only). `scripts/smoke_ollama.py` was run by the owner against the
+   Kaggle/ngrok Ollama on 2026-10-19: 6/6 PASS (generator qwen2.5:latest, judge llama3.1:8b, embed bge-m3:latest). Owner-reported;
+   the tunnel URL changes each session.
+3. O12 for PROCESSING is decided (D49): all chunks may go to the owner's PRIVATE Kaggle notebook/dataset; nothing enriched is shared
+   with the partner or made public until the owner resolves O12. Enrichment runs locally through the tunnel (D56); the notebook embeds.
 4. Read docs/papers notes if any exist (only an index README exists; none for BGE-M3 or Contextual Retrieval yet).
 5. Frozen-file hook: data/processed is read-only. Indexes go to index/ (gitignored). Embeddings must use the same model and
    tokenizer family; D2 asks for a vector-parity check on a few chunks.
@@ -58,8 +58,8 @@ Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source
   data/manifests/*.json and *.md (the two d33_excluded.json copies must stay byte-identical).
 
 ## OPEN OWNER ITEMS
-1. O12: what may be shared, pushed or uploaded (needed before Kaggle in Phase 3, and before Valincia receives chunks).
-2. Ollama keys in .env (Phase 3). Reddit credentials only if Reddit is ever added to the live layer (D48 xvi).
+1. O12 for SHARING: what may be shared with the partner, pushed or made public (processing on a private Kaggle is decided, D49).
+2. Before Phase 3 step 6: install bm25s, PyStemmer, sentence-transformers and download bge-m3 to a local folder set as EMBED_LOCAL_DIR in .env (the assistant never installs or downloads). Reddit credentials only if Reddit is ever added to the live layer (D48 xvi).
 3. Wikimedia Terms of Use section 7 wording: not in the repo (no fetched copy); needed for the report and app (Phase 8).
 4. Phase 1 items still open: terms quotes and the wiki robots gap (D36/D43), the pre-squash bundle location, D24 review, outreach
    emails unsent, O13 airport allowlist file (Phase 5), attribution in the report and app (Open-Meteo, OSM, Wikimedia).

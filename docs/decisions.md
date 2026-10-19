@@ -420,17 +420,17 @@ D48 (amendment 2026-10-19, owner review of the Phase 2 draft)
    (iii) O8 AMENDED: "Periyar" counts as a Thekkady mention also next to Dam (in addition to Lake, Tiger Reserve, National Park,
    Wildlife Sanctuary, Thekkady, Kumily), and "Mullaperiyar" is a hold-out name (the dam that forms Periyar Lake). "Periyar Dam",
    "Periyar Lake" and "Mullaperiyar Dam" drop; "Periyar Bus Stand", "Periyar river" and the social reformer are kept (tests). This
-   supersedes amendment (h): the Madurai "Periyar Dam" chunk is now dropped (31 text drops, 1,388 chunks).
+   supersedes amendment (h): the Madurai "Periyar Dam" chunk is now dropped (31 text drops, 1,388 chunks; proxy-counter run before the Borra Caves change, superseded by viii and xvii: the final proxy run had 1,387 chunks, the real-tokenizer corpus has 1,696).
    (iv) Reference date: EVAL_REFERENCE_DATE is read from .env when set; --reference-date overrides it; corpus_stats records the value
    and its source. The date is an input to the freshness statistic only; process_place() has no date input and chunks.jsonl is
    byte-identical with --reference-date 2026-10-18 and 2020-01-01 (sha256 ebfdbd51...). Owner action: set EVAL_REFERENCE_DATE=2026-10-18
    in .env (the value of D32/D39 and .env.example); .env was not edited.
    (v) check_corpus() (src/process/process.py) runs before every --write and must run again at the freeze: no source_type live, no
    hold-out mention (HoldoutFilter), unique ids, every chunk valid under BaseChunk.
-   (vi) The near-duplicate threshold 0.8 removes nothing on this corpus: the highest 5-word-shingle Jaccard over all 1,388 kept chunks
+   (vi) The near-duplicate threshold 0.8 removes nothing on this corpus: the highest 5-word-shingle Jaccard over all 1,388 kept chunks (proxy-counter run, superseded by xvii; on the frozen 1,696 chunks the same scan is `python scripts/phase2_evidence.py neardup`)
    is 0.2155 (Bengaluru vs Chennai Wikipedia). The rule is kept for new raw data; it is not evidence of a duplicate-free source.
    (vii) ACCEPTED DEVIATIONS (owner): the plan's 10,000-20,000 chunks are unreachable from this raw volume (1,388 chunks with the
-   proxy counter; 1.70 M raw characters over 97 records); source diversity is 3 source types (blog, reference, wikivoyage) with ONE
+   proxy counter, a run superseded by xvii: 1,696 chunks with the real tokenizer; 1.70 M raw characters over 97 records); source diversity is 3 source types (blog, reference, wikivoyage) with ONE
    blog host (inditales.com) and 0 official, 0 Reddit, 0 YouTube; 0 published chunks fall in the 18-month window 2025-04-18 to
    2026-10-18 (newest blog 2025-01-30). Each is accepted and stated in the report as measured. Status: accepted.
 D48 (amendment 2026-10-19, owner decision on the landmark scan; freeze tooling)
@@ -501,3 +501,50 @@ D48 (amendment 2026-10-19, freeze executed)
    tokenizer.json sha256:21106b6d7dab (full sha256 21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08, verified by the owner
    against Hugging Face), tokenizers 0.22.2, reference date 2026-10-18 from .env. Files in data/processed never change again (CLAUDE.md
    rule 2); the hook and process.py enforce it. Tagged phase-2-done (local). Status: accepted.
+D49 (2026-10-19) O12, PROCESSING ONLY (owner decision). All 1,696 chunks, and the enriched output derived from them, may be sent to the
+   owner's PRIVATE Kaggle notebook and PRIVATE Kaggle dataset. Nothing enriched or processed is shared with the partner or made public
+   until the owner resolves O12. The notebook and dataset must stay private. data/enriched/ and index/ stay gitignored; only hash
+   manifests (no text) are committed. smoke_ollama.py: the owner ran it against the Kaggle/ngrok Ollama on 2026-10-19, 6/6 PASS
+   (generator qwen2.5:latest, judge llama3.1:8b, embed bge-m3:latest); owner-reported, not re-run by the assistant. Status: accepted.
+D50 (2026-10-19) `mentioned_places` (owner decision; refines O5). `place` in an enriched chunk stays identical to the frozen chunk
+   (check_enriched_matches_frozen). EnrichedChunk gains an optional `mentioned_places: list[str]` (default []): the LLM may list other
+   places the chunk talks about; each value is resolved through the registry (name or alias) and kept only if it is a registry place and
+   NOT a hold-out; anything else is dropped and counted. A value that resolves to a hold-out is counted separately as a leak hit.
+   This is a docs/contracts.md and EnrichedChunk change and MUST be sent to Valincia. Plan.md says the LLM fills `place`; that wording
+   is superseded. Status: accepted.
+D51 (2026-10-19) Embeddings (owner decision; refines D2). Corpus embeddings: sentence-transformers bge-m3 on Kaggle GPU, saved as .npy plus
+   an ids file in enriched-file order. Query embeddings: the same library on local CPU, from a local model folder (.env EMBED_LOCAL_DIR,
+   downloaded by the owner; the assistant never downloads). The Ollama bge-m3 is used only to report cosine agreement on 50 chunks
+   (min and mean, no threshold claimed); a Kaggle-vs-local-CPU parity check on the same 50 chunks is also reported (D2). The notebook
+   records the sha256 of the chunks.jsonl it read and its library versions; `build_index.py --verify` must find that sha256 equal to the
+   local data/enriched/chunks.jsonl. The index manifest records versions of bm25s, PyStemmer, sentence-transformers and torch, and the
+   sha256 of the local bge-m3 weight files. Deviation from CLAUDE.md rule 4: corpus embeddings are produced outside
+   src/common/cache.py; the sha256-pinned .npy files are the artifact. Query embeddings go through DiskCache. Status: accepted.
+D52 (2026-10-19) Vector store: exact numpy cosine over L2-normalised float32 matrices (1,696 x 1,024). No Chroma, Qdrant or LanceDB. Reason:
+   1,696 vectors; exact and reproducible; plan.md allowed any store. Recorded as a deviation from the plan's stack table. Status: accepted.
+D53 (2026-10-19) Closed enums for enrichment. season_tags: a subset of {winter (Dec-Feb), summer (Mar-May), monsoon (Jun-Sep), post_monsoon
+   (Oct-Nov), all_year}; all_year excludes the others. Caveat: the Oct-Nov split ignores the Tamil Nadu north-east monsoon (Oct-Dec).
+   aspect: timing | closure | price | scenery | food | safety | history | other (one label per ~250-token chunk is lossy). is_warning:
+   strict bool. place_type is the SUBJECT OF THE CHUNK, not a property of `place`: hill_station, beach, temple, heritage, wildlife,
+   backwater, waterfall, city, region, other. `region` and `city` are valid for chunks that are not about one site (a Wikipedia
+   demographics chunk is "city" or "region"). This conflicts with the registry wording, where PlaceRegistryEntry.place_type is a
+   property of the place and is only used for "region" (D21); the two fields have different meanings and must not be joined on. Status: accepted.
+D54 (2026-10-19) Enrichment prompt and guards. Generator = GENERATOR_MODEL (qwen2.5:latest); the judge model is not used in Phase 3 and
+   generator != judge stays enforced (load_settings). temperature 0, fixed seed, num_ctx 4096, capped num_predict. Chunk text is UNTRUSTED
+   (O7): it is delimited, the system prompt says it is data, and nothing in it is followed. Every output is validated and scanned:
+   closed enums, note length, no URL, hold-out scan of context_note AND mentioned_places (HoldoutFilter.text_match plus an independent
+   regex), and a note-copy rule: a note is rejected when more than 60% of its 5-word shingles occur in the chunk text. Any failure falls back
+   to rule-based tags and the template note (D20) and is counted by reason. Transport failures are NOT fallbacks: the chunk stays
+   unprocessed so a resume retries it. Facts in a note must come from the chunk or registry fields. Status: accepted.
+D55 (2026-10-19) BM25: bm25s, lucene method, k1 1.5, b 0.75, English stopwords, Snowball English stemmer (PyStemmer). Two indexes with the same
+   parameters: contextual (context_note + newline + text) and plain (text only), so Phase 6 can measure the effect of enrichment on the sparse
+   side too; both hashed in the index manifest; scripts/query_index.py prints four tables (bm25_contextual, bm25_plain, dense_plain,
+   dense_contextual). Status: accepted.
+D56 (2026-10-19) Enrichment driver runs locally through the tunnel (owner confirmed) using src/common/llm.py and DiskCache, NOT inside a
+   Kaggle notebook. This amends D1: a dead Kaggle session or tunnel loses nothing because the cache and checkpoint are local, and there
+   is one code path. The notebook is used for embeddings only. Status: accepted.
+D57 (2026-10-19) Pilot and reports. The 200-chunk pilot is seeded and stratified by source_type and place, and force-includes: at least 10 of
+   the 55 chunks under 200 tokens, chunk 36acb56e137feb5a, 10 chunks from the Ooty/Kodaikanal post (travelogue-ooty-kodaikanal), and at
+   least 1 chunk per place; the selection order is recorded. The 20-chunk timing test is the first 20 of the same ordered selection so
+   the cache is reused. The pilot report gives LLM-vs-rule-based confusion tables for aspect and is_warning (labelled "not accuracy":
+   there are no gold labels), aspect and place_type distributions, and a flag if aspect "other" exceeds 50%. Status: accepted.

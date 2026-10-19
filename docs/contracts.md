@@ -13,10 +13,11 @@
 | revised_date | str or null | YYYY-MM-DD wiki revision date from the API; set iff date_kind is revised (D48) |
 | state | str | TN, KL, KA, AP, TS, PY (PY = Union Territory of Puducherry incl. Karaikal, Mahe, Yanam; D18) |
 | place | str | must match a place registry name |
-| place_type | str | e.g. hill_station, beach, temple, heritage, wildlife, city |
-| season_tags | list[str] | e.g. ["winter", "monsoon"] |
+| place_type | str | the chunk's SUBJECT (D53), closed enum: hill_station, beach, temple, heritage, wildlife, backwater, waterfall, city, region, other. Not a property of `place` |
+| season_tags | list[str] | closed enum subset (D53): winter (Dec-Feb), summer (Mar-May), monsoon (Jun-Sep), post_monsoon (Oct-Nov), all_year (exclusive) |
 | aspect | enum | timing, closure, price, scenery, food, safety, history, other |
-| is_warning | bool | |
+| is_warning | bool | strict bool |
+| mentioned_places | list[str] | OPTIONAL, EnrichedChunk only (D50): other registry places the chunk mentions; non-hold-out registry names only; default []. PROPOSED to Valincia, not binding until she acknowledges |
 
 ## Place registry entry
 name, aliases[list], state, region_cluster, popularity ("popular" | "hidden_gem"), lat, lon.
@@ -40,7 +41,7 @@ live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type
 - Cached: downloads, LLM calls (including expanded queries for eval), embeddings, fallback searches.
 
 ## Locations
-data/raw/<source>/, data/processed/chunks.jsonl, data/enriched/chunks.jsonl, index/{bm25,dense_plain,dense_ctx}/,
+data/raw/<source>/, data/processed/chunks.jsonl, data/enriched/chunks.jsonl, index/{bm25_contextual,bm25_plain}/, index/{dense_plain,dense_contextual}.npy + index/ids.json (D51, D52, D55),
 index/travel_matrix.json, index/place_cards.json, eval/, kaggle/.
 - data/processed/ is frozen as a whole once data/processed/FROZEN exists (D48 x): nothing in it is written again.
 - Phase 3 writes enriched chunks ONLY to data/enriched/chunks.jsonl (D48 xi), never to data/processed. The enriched file must have

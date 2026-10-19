@@ -1,11 +1,13 @@
 # Kaggle runbook (written by the user; notebook details are filled in during Phase 3)
 
+Phase 3 amendments (D49, D51, D56): enrichment runs LOCALLY through the tunnel (not in a notebook); the notebook only embeds. Dataset and notebook are PRIVATE (D49).
+
 ## A. Enrichment + embedding notebook (resumable)
-1. Upload data/processed/chunks.jsonl as a private Kaggle dataset.
+1. Upload data/enriched/chunks.jsonl (after enrichment) as a PRIVATE Kaggle dataset. Never data/processed (frozen, D48 xi).
 2. Notebook (GPU): start Ollama or use transformers; read chunks, process in batches, checkpoint every 200 chunks
    to /kaggle/working/checkpoints/, skip already-done chunk_ids on restart.
 3. Output: enriched chunks.jsonl + embeddings (plain and contextual) as .npy + id list. Save as a dataset version.
-4. Download, place in data/processed/ and index/, run integrity checks (counts, no empty notes, id alignment).
+4. Download the .npy and id files into index/ (never data/processed/); `build_index.py --verify` checks counts, id order and the chunks.jsonl sha256 the notebook recorded.
 
 ## B. Live Ollama via ngrok (for query-time LLM calls only)
 1. Start Ollama in a notebook, pull the generator and judge models.
