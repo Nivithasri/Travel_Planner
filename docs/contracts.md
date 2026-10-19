@@ -8,7 +8,9 @@
 | context_note | str | LLM-written "where this fits" note; "" before Phase 3 |
 | source_type | enum | reddit, blog, youtube, wikivoyage, official, reference (D22: Wikipedia, Sahapedia); `live` appears only in live results, never in the frozen corpus (D31, PROPOSED to Valincia, not binding until she acknowledges) |
 | url | str | |
-| date | str or null | YYYY-MM-DD; null if unknown (neutral freshness, never "old") |
+| date | str or null | YYYY-MM-DD; the page's PUBLISH date only, null otherwise (neutral freshness, never "old"; D48) |
+| date_kind | enum | published, revised, sitemap_lastmod, none (D48, O9). published iff date is set; freshness counts published only |
+| revised_date | str or null | YYYY-MM-DD wiki revision date from the API; set iff date_kind is revised (D48) |
 | state | str | TN, KL, KA, AP, TS, PY (PY = Union Territory of Puducherry incl. Karaikal, Mahe, Yanam; D18) |
 | place | str | must match a place registry name |
 | place_type | str | e.g. hill_station, beach, temple, heritage, wildlife, city |

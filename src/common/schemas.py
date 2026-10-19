@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # ==== config ======================================================================
 # Project settings, loaded from the environment / .env. Nothing is hardcoded here.
@@ -108,6 +108,14 @@ def _opt(name: str) -> str | None:
     return os.environ.get(name, "").strip() or None
 
 
+def load_tokenizer_dir(env_file: str | os.PathLike | None = None) -> Path | None:
+    """TOKENIZER_DIR (optional): a local folder holding the bge-m3 tokenizer.json (D48). Unset means
+    the regex token proxy is used. Never downloads anything."""
+    load_dotenv(env_file if env_file is not None else REPO_ROOT / ".env", override=False)
+    raw = _opt("TOKENIZER_DIR")
+    return Path(raw) if raw else None
+
+
 def load_collect_settings(env_file: str | os.PathLike | None = None) -> CollectSettings:
     """CONTACT_EMAIL is required: Wikimedia and polite crawling need a way to reach us. The other
     credentials are optional; a collector without its credentials is skipped, never faked."""
@@ -183,6 +191,15 @@ def _check_date(v: str | None) -> str | None:
     return v
 
 
+class DateKind(str, Enum):
+    """What the chunk's date evidence is (D48, O9). Freshness counts `published` only."""
+
+    published = "published"  # page's own publish date -> `date`
+    revised = "revised"  # wiki revision timestamp from the API -> `revised_date`, `date` null
+    sitemap_lastmod = "sitemap_lastmod"  # only a sitemap <lastmod>; not a content date, `date` null
+    none = "none"  # no date evidence
+
+
 class BaseChunk(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -191,7 +208,9 @@ class BaseChunk(BaseModel):
     context_note: str = ""  # contract: "" before Phase 3
     source_type: SourceType
     url: str = Field(min_length=1)
-    date: str | None  # required key, null if unknown (neutral freshness, D3)
+    date: str | None  # required key; publish date only, null otherwise (neutral freshness, D3, D48)
+    date_kind: DateKind  # D48
+    revised_date: str | None = None  # only when date_kind is revised (D48)
     state: State
     # Phase 3 fields: absent until enrichment, never filled with placeholder values
     place: str | None = None
@@ -200,7 +219,16 @@ class BaseChunk(BaseModel):
     aspect: Aspect | None = None
     is_warning: bool | None = Field(default=None, strict=True)  # "yes" must not coerce to True
 
-    _v_date = field_validator("date")(_check_date)
+    _v_date = field_validator("date", "revised_date")(_check_date)
+
+    @model_validator(mode="after")
+    def _date_invariants(self):
+        # D48: published <=> date set; revised_date only (and always) for revised
+        if (self.date_kind is DateKind.published) != (self.date is not None):
+            raise ValueError("date must be set exactly when date_kind is published")
+        if (self.date_kind is DateKind.revised) != (self.revised_date is not None):
+            raise ValueError("revised_date must be set exactly when date_kind is revised")
+        return self
 
 
 class EnrichedChunk(BaseChunk):

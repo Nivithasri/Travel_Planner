@@ -346,6 +346,8 @@ BASE = {
     "source_type": "blog",
     "url": "https://example.com/a",
     "date": "2025-03-01",
+    "date_kind": "published",
+    "revised_date": None,
     "state": "KA",
 }
 
@@ -394,13 +396,45 @@ def test_enriched_requires_everything():
 
 
 def test_date_null_ok_but_key_required_and_format_checked():
-    assert BaseChunk(**{**BASE, "date": None}).date is None
+    assert BaseChunk(**{**BASE, "date": None, "date_kind": "none"}).date is None
     no_date = {k: v for k, v in BASE.items() if k != "date"}
     with pytest.raises(ValidationError):
         BaseChunk(**no_date)
     for bad in ("2025-3-1", "01/03/2025", "2025-13-40", ""):
         with pytest.raises(ValidationError):
             BaseChunk(**{**BASE, "date": bad})
+
+
+def test_date_kind_invariants_d48():
+    ok = [
+        {"date": "2025-03-01", "date_kind": "published", "revised_date": None},
+        {"date": None, "date_kind": "revised", "revised_date": "2026-09-01"},
+        {"date": None, "date_kind": "sitemap_lastmod", "revised_date": None},
+        {"date": None, "date_kind": "none", "revised_date": None},
+    ]
+    for d in ok:
+        assert BaseChunk(**{**BASE, **d}).date_kind.value == d["date_kind"]
+    bad = [
+        {"date": None, "date_kind": "published", "revised_date": None},  # published needs a date
+        {"date": "2025-03-01", "date_kind": "revised", "revised_date": "2026-09-01"},  # no date
+        {"date": "2025-03-01", "date_kind": "none", "revised_date": None},
+        {"date": "2025-03-01", "date_kind": "sitemap_lastmod", "revised_date": None},
+        {"date": None, "date_kind": "revised", "revised_date": None},  # revised needs revised_date
+        {"date": None, "date_kind": "none", "revised_date": "2026-09-01"},
+        {"date": "2025-03-01", "date_kind": "published", "revised_date": "2026-09-01"},
+        {"date": None, "date_kind": "revised", "revised_date": "2026-9-1"},  # format
+        {"date": None, "date_kind": "lastmod", "revised_date": None},  # enum
+    ]
+    for d in bad:
+        with pytest.raises(ValidationError):
+            BaseChunk(**{**BASE, **d})
+    with pytest.raises(ValidationError):  # date_kind is required
+        BaseChunk(**{k: v for k, v in BASE.items() if k != "date_kind"})
+
+
+def test_live_is_not_a_corpus_source_type():
+    with pytest.raises(ValidationError):
+        BaseChunk(**{**BASE, "source_type": "live"})
 
 
 @pytest.mark.parametrize(
@@ -465,7 +499,7 @@ def test_is_warning_accepts_real_bools_and_json_booleans():
     assert BaseChunk(**BASE).is_warning is None
     raw = (
         '{"chunk_id":"c","text":"t","source_type":"blog","url":"u","date":null,'
-        '"state":"TN","is_warning":true}'
+        '"date_kind":"none","state":"TN","is_warning":true}'
     )
     assert BaseChunk.model_validate_json(raw).is_warning is True
 
