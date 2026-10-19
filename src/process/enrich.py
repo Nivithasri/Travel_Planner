@@ -845,3 +845,31 @@ def assemble_labelled(frozen: list[dict], results: dict[str, dict], titles: dict
         EnrichedChunk(**row)
         rows.append(row)
     return rows, prov
+
+
+# ==== statistics of the assembled file ===============================================
+
+def enriched_stats(rows: list[dict], prov: list[dict]) -> dict:
+    """Distributions of the assembled corpus, overall and for the model-written part only
+    (provenance source llm), plus the counts by provenance source and reason."""
+    src = {p["chunk_id"]: p for p in prov}
+    llm = [r for r in rows if src[r["chunk_id"]]["source"] == "llm"]
+
+    def dist(sel: list[dict], key: str) -> dict:
+        c = Counter(r[key] for r in sel)
+        return dict(c.most_common())
+
+    def seasons(sel: list[dict]) -> dict:
+        return dict(Counter(t for r in sel for t in r["season_tags"]).most_common())
+
+    return {
+        "rows": len(rows),
+        "by_source": dict(Counter(
+            p["source"] + (f":{p['reason']}" if p["source"] != "llm" else "") for p in prov)),
+        "all": {"aspect": dist(rows, "aspect"), "place_type": dist(rows, "place_type"),
+                "season_tags": seasons(rows),
+                "is_warning_true": sum(r["is_warning"] for r in rows)},
+        "llm_only": {"rows": len(llm), "aspect": dist(llm, "aspect"),
+                     "place_type": dist(llm, "place_type"), "season_tags": seasons(llm),
+                     "is_warning_true": sum(r["is_warning"] for r in llm)},
+    }

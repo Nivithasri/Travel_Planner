@@ -24,7 +24,7 @@ D23: 17 of 26 places pass at chunk level (18 at raw level; Kodaikanal fails at c
 Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source types, one blog host; 0 published chunks in the
 18-month window (freshness comes only from the live layer, D32); no Reddit, no official, no YouTube.
 
-## Phase 3 state (2026-10-20, IN PROGRESS; not tagged; STOPPED BEFORE --full)
+## Phase 3 state (2026-10-20, IN PROGRESS; not tagged; FULL RUN UNDER WAY since 2026-10-19 UTC)
 Route (D59, supersedes D56; amends D1, D49, D58): the Kaggle account is banned, so enrichment uses a hosted OpenAI-compatible API on its FREE tier (Groq): generator
 openai/gpt-oss-20b, judge openai/gpt-oss-120b (unused in Phase 3). Embeddings are computed LOCALLY on CPU with sentence-transformers bge-m3 (models/bge-m3-full, gitignored,
 weights hashed in models/bge-m3-full/WEIGHTS_MANIFEST.json). Prompt `enrich-v4` (D62 applied, D63, D64: reply cap 400 tokens). The 79-chunk pilot passed the gate (LOG
@@ -34,7 +34,7 @@ weights hashed in models/bge-m3-full/WEIGHTS_MANIFEST.json). Prompt `enrich-v4` 
    until then). (b) Delete the old Ollama GENERATOR_MODEL/JUDGE_MODEL lines in .env (each key appears twice; the last wins; the scripts warn). (c) You must have read the provider's
    data-use terms and free-plan limits (D49 does not cover a third-party API); blog chunks stay OFF (no --include-blog) until you decide. (d) Optional but valuable: fill
    data/enriched/gold_sample.csv (30 chunks; labels empty), then `python scripts/label_sample.py --score` (needs `python scripts/enrich.py --gold` first).
-2. EXACT FULL-RUN PLAN (not started; needs the owner's go-ahead).
+2. EXACT FULL-RUN PLAN (approved and started by the owner on 2026-10-19 UTC; progress log in the daily routine below).
    Command, repeated once per UTC day until it prints no INCOMPLETE:
        python scripts/enrich.py --full --eligible-only
    Scope: the 17 D33-eligible places without blog = 1,100 chunks, of which 54 are already done by the pilot (checkpoint_enrich-v4_openai-gpt-oss-20b.jsonl), so 1,046 remain.
@@ -52,13 +52,36 @@ weights hashed in models/bge-m3-full/WEIGHTS_MANIFEST.json). Prompt `enrich-v4` 
        python scripts/query_index.py "quiet beaches in Kerala in monsoon"
    The 313 chunks of the 9 excluded places and the 283 blog chunks get the rule-based fields and are labelled rule_only in provenance.jsonl (the schema is closed, so the label
    lives in the sidecar); Phase 6 must read it before trusting their aspect/season fields.
-   Do not run --full before the owner says so. Do not use --include-blog before the terms are confirmed.
+   Do not use --include-blog before the terms are confirmed.
 3. Comparability: the v1 pilot (200 chunks, qwen2.5 via Ollama, checkpoint_enrich-v1.jsonl) and the v3 pilot are history; nothing is comparable across models or prompts
    (scripts/compare_runs.py marks it). *.superseded.jsonl files hold recomputed records (D64) and are never read as results.
 4. Enriched chunks go to data/enriched/chunks.jsonl (gitignored), NEVER to data/processed (D48 xi); check_enriched_matches_frozen must pass. Phase 3 may fill context_note,
    place_type, season_tags, aspect, is_warning and the optional mentioned_places (D50, to be sent to Valincia). O12 still blocks sharing anything enriched with the partner.
 5. Never print or log the URL, the key or response headers: both clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
 6. Not started: the early sample file for Valincia (O12), the final HANDOFF rewrite and the phase-3-done tag.
+
+## Daily routine for the full enrichment run (Phase 3)
+1. The one command, from the repo root, any time after 00:00 UTC (05:30 India time): `python scripts/enrich.py --full --eligible-only`. It resumes by itself from
+   data/enriched/checkpoint_enrich-v4_openai-gpt-oss-20b.jsonl and the disk cache; running it twice does no harm. Never add --include-blog until the data-use terms are
+   confirmed. Never edit the checkpoint by hand; *.superseded.jsonl files are history, not results.
+2. It stops by itself when the day's token budget (85% of LLM_TPD, kept in data/enriched/quota_state.json by UTC date) is used up: exit code 5 and a line
+   "DAILY QUOTA USED UP ... Tokens used today N ... resets in about H h". That is the normal end of a day, not a failure. About 209 chunks a day (812 tokens each).
+3. How to read progress (no API call, safe any time): `python scripts/enrich.py --report --full --eligible-only`.
+   - "scope: N chunks to process" is the whole job (1,100); "in checkpoint: X of N" is done; N minus X is what remains.
+   - "fallback reasons {...}": ungrounded is expected at 2 to 3%; json_invalid, note_copy, note_leak, note_url, note_instruction should be 0 or a handful; anything above about 10% in
+     total, or any leak hit, means stop and tell the owner (a prompt change is a decision entry, never a quiet edit).
+   - "reconciliation: N chunks = a llm_ok (cache) + b llm_ok (network) + c fallback {...}" must add up exactly.
+   - "tokens: ... mean per chunk" should stay near 812; the PROJECTION lines are estimates, not measurements.
+   - The limiter numbers (tokens and requests today, http_429) are printed at the end of a run that finishes normally; on a quota stop read tokens used today in the message. http_429 should
+     be 0 (the client paces itself; a 429 means the limits in .env are wrong).
+4. Exit codes: 0 everything in scope is done; 1 some chunks are not done yet (re-run); 3 five failures in a row (read the scrubbed message, re-run once; if it repeats, stop and tell the owner);
+   4 key, model or configuration rejected (stop: do not retry, tell the owner); 5 daily quota used up (wait for the reset, then the same command); 130 Ctrl-C.
+5. When the report shows 1,100 of 1,100 done: `python scripts/enrich.py --assemble --eligible-only`, then `python scripts/build_index.py`, `python scripts/build_index.py --verify`,
+   `python scripts/query_index.py "<query>"`, `python scripts/enriched_stats.py`. Do not tag phase-3-done until the owner confirms.
+
+PROGRESS LOG (append one line per day; the numbers come from `python scripts/enrich.py --report --full --eligible-only`):
+   - Day 1, 2026-10-19 UTC (started 22:46 UTC after the pilots had spent 135,985 tokens): stopped by the budget (exit 5) at 168,898 tokens and 209 requests; 39 new chunks;
+     93 of 1,100 in scope done, 1,007 remain; 89 model-written + 4 fallback (all `ungrounded`); leak hits 0; 828 tokens a chunk. Resume at or after 00:00 UTC 2026-10-20 (05:30 India).
 
 ## What exists (code)
 - `src/process/process.py` (clean, chunk, hold-out, dedupe, attribution, stats, `check_corpus`, `check_enriched_matches_frozen`;

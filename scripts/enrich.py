@@ -353,7 +353,8 @@ def main(argv: list[str] | None = None) -> int:
         reset = ("unknown" if exc.reset_in_s is None
                  else f"in about {exc.reset_in_s / 3600:.1f} h ({exc.reset_in_s:.0f} s)")
         print(f"DAILY QUOTA USED UP: {exc.reason}. Tokens used today {snap['tokens_today']}, "
-              f"requests {snap['requests_today']}; resets {reset}. Nothing was lost: {resume}.")
+              f"requests {snap['requests_today']}; HTTP 429 this run {snap['http_429']}; "
+              f"resets {reset}. Nothing was lost: {resume}.")
         return EXIT_QUOTA
     except (ModelNotFoundError, AuthError) as exc:
         print(f"STOPPED, nothing was processed or lost: {exc}")

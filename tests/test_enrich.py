@@ -876,3 +876,24 @@ def test_superseded_checkpoint_files_are_history_not_results(tmp_path):
         p.write_text("", encoding="utf-8")
     assert enrich.checkpoint_files(tmp_path) == [live]
     assert enrich.checkpoint_files(tmp_path, "enrich-v1") == [other]
+
+
+def test_enriched_stats_split_the_model_written_rows_from_the_rest():
+    rows = [
+        {"chunk_id": "a", "aspect": "food", "place_type": "city", "season_tags": ["winter"],
+         "is_warning": False},
+        {"chunk_id": "b", "aspect": "other", "place_type": "other", "season_tags": ["all_year"],
+         "is_warning": True},
+        {"chunk_id": "c", "aspect": "other", "place_type": "region",
+         "season_tags": ["summer", "monsoon"], "is_warning": False},
+    ]
+    prov = [{"chunk_id": "a", "source": "llm", "reason": None},
+            {"chunk_id": "b", "source": "fallback", "reason": "ungrounded"},
+            {"chunk_id": "c", "source": "rule_only", "reason": "blog_not_sent"}]
+    st = enrich.enriched_stats(rows, prov)
+    assert st["rows"] == 3 and st["by_source"] == {
+        "llm": 1, "fallback:ungrounded": 1, "rule_only:blog_not_sent": 1}
+    assert st["all"]["aspect"] == {"other": 2, "food": 1} and st["all"]["is_warning_true"] == 1
+    assert st["all"]["season_tags"]["winter"] == 1 and st["all"]["season_tags"]["monsoon"] == 1
+    assert st["llm_only"] == {"rows": 1, "aspect": {"food": 1}, "place_type": {"city": 1},
+                              "season_tags": {"winter": 1}, "is_warning_true": 0}
