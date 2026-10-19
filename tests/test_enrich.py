@@ -180,6 +180,13 @@ def test_mentioned_places_are_resolved_filtered_and_counted():
     assert dropped == {"holdout": 2, "unknown": 1, "self": 1, "duplicate": 1}
 
 
+def test_mentioned_place_with_an_unregistered_hold_out_spelling_counts_as_a_leak():
+    """Not resolvable through the registry: only the leak scan can classify these as hold-outs."""
+    names = ["Thekkadee", "Kochi and Thekkady"]
+    kept, dropped = clean_mentioned(names, "Munnar", REGISTRY, HOLDOUT)
+    assert kept == [] and dropped == {"holdout": 2}
+
+
 def test_llm_output_mentioning_thekkady_is_dropped_and_the_rest_kept(tmp_path):
     reply = {**GOOD, "mentioned_places": ["Thekkady", "Kochi", "Periyar Reserve Town"]}
     (fields, prov), _ = run(tmp_path, reply)
@@ -400,3 +407,190 @@ def test_real_enriched_file_matches_the_frozen_corpus():
     check_enriched_matches_frozen(enriched, frozen)
     for row in enriched:
         EnrichedChunk(**row)
+
+
+# ---- resumable batch (D56) ---------------------------------------------------------
+
+def make_chunks(n):
+    return {f"c{i}": {**CHUNK, "chunk_id": f"c{i}", "text": CHUNK["text"] + f" Extra {i}."}
+            for i in range(n)}
+
+
+def ok_process(chunk):
+    return dict(GOOD), {"source": "llm", "reason": None, "dropped": {}, "rule_aspect": "other",
+                        "rule_is_warning": False, "prompt_version": PROMPT_VERSION}
+
+
+def test_run_batch_writes_one_checkpoint_line_per_chunk_and_resumes(tmp_path):
+    ck = tmp_path / "ck.jsonl"
+    chunks = make_chunks(5)
+    order = list(chunks)
+    seen = []
+
+    def process(chunk):
+        seen.append(chunk["chunk_id"])
+        if len(seen) == 3:
+            raise KeyboardInterrupt  # Ctrl-C / killed session in the middle of the run
+        return ok_process(chunk)
+
+    with pytest.raises(KeyboardInterrupt):
+        enrich.run_batch(order, chunks, process, ck, MODEL, log=lambda m: None)
+    assert [r["chunk_id"] for r in enrich.read_jsonl(ck)] == ["c0", "c1"]  # in-flight chunk lost
+    seen.clear()
+
+    def healthy(chunk):
+        seen.append(chunk["chunk_id"])
+        return ok_process(chunk)
+
+    stats = enrich.run_batch(order, chunks, healthy, ck, MODEL, log=lambda m: None)
+    assert seen == ["c2", "c3", "c4"] and stats == {"skipped_done": 2, "processed": 3, "failed": 0}
+    rec = next(iter(enrich.read_jsonl(ck)))
+    assert rec["prov"]["model"] == MODEL and rec["prov"]["network_calls"] == 0
+    # a third run does nothing at all
+    stats = enrich.run_batch(order, chunks, lambda c: pytest.fail("must not be called"), ck, MODEL)
+    assert stats["skipped_done"] == 5 and stats["processed"] == 0
+
+
+def test_run_batch_stops_after_consecutive_transport_failures_and_keeps_progress(tmp_path):
+    ck = tmp_path / "ck.jsonl"
+    chunks = make_chunks(10)
+    calls = []
+
+    def process(chunk):
+        calls.append(chunk["chunk_id"])
+        if int(chunk["chunk_id"][1:]) >= 2:
+            raise LLMError("tunnel down")
+        return ok_process(chunk)
+
+    with pytest.raises(enrich.StopRun):
+        enrich.run_batch(list(chunks), chunks, process, ck, MODEL, max_consecutive_failures=5,
+                         log=lambda m: None)
+    assert calls == ["c0", "c1", "c2", "c3", "c4", "c5", "c6"]  # stops at the 5th failure in a row
+    assert [r["chunk_id"] for r in enrich.read_jsonl(ck)] == ["c0", "c1"]  # failures not recorded
+
+
+def test_a_success_resets_the_failure_streak(tmp_path):
+    chunks = make_chunks(8)
+
+    def process(chunk):
+        if int(chunk["chunk_id"][1:]) % 2:  # every other chunk fails
+            raise LLMError("flaky")
+        return ok_process(chunk)
+
+    stats = enrich.run_batch(list(chunks), chunks, process, tmp_path / "ck.jsonl", MODEL,
+                             max_consecutive_failures=2, log=lambda m: None)
+    assert stats["processed"] == 4 and stats["failed"] == 4
+
+
+def test_missing_model_stops_at_once(tmp_path):
+    chunks = make_chunks(3)
+
+    def process(chunk):
+        raise enrich.ModelNotFoundError("model not pulled")
+
+    with pytest.raises(enrich.ModelNotFoundError):
+        enrich.run_batch(list(chunks), chunks, process, tmp_path / "ck.jsonl", MODEL,
+                         log=lambda m: None)
+
+
+def test_checkpoint_from_another_model_or_prompt_is_refused(tmp_path):
+    ck = tmp_path / "ck.jsonl"
+    chunks = make_chunks(2)
+    enrich.run_batch(list(chunks), chunks, ok_process, ck, MODEL)
+    with pytest.raises(enrich.CheckpointMismatch):
+        enrich.run_batch(list(chunks), chunks, ok_process, ck, "another-model")
+    with pytest.raises(enrich.CheckpointMismatch):
+        enrich.load_checkpoint(ck, "another-model")
+
+
+def test_killed_run_resumes_with_no_repeated_network_call(tmp_path):
+    """End to end with the real client: kill during chunk 4, resume, count the POSTs."""
+    ck, chunks = tmp_path / "ck.jsonl", make_chunks(6)
+    posts = {"n": 0, "die_at": 4}
+
+    def post(url, json=None, headers=None, timeout=None):
+        posts["n"] += 1
+        if posts["n"] == posts["die_at"]:
+            raise KeyboardInterrupt
+        return Resp(_json.dumps(GOOD))
+
+    c = client(tmp_path, post)
+
+    def process(chunk):
+        return enrich_chunk(c, MODEL, chunk, TITLE, REGISTRY, HOLDOUT)
+
+    with pytest.raises(KeyboardInterrupt):
+        enrich.run_batch(list(chunks), chunks, process, ck, MODEL, calls=lambda: posts["n"])
+    assert posts["n"] == 4 and len(list(enrich.read_jsonl(ck))) == 3
+    posts["die_at"] = None
+    enrich.run_batch(list(chunks), chunks, process, ck, MODEL, calls=lambda: posts["n"])
+    recs = list(enrich.read_jsonl(ck))
+    assert len(recs) == 6 and posts["n"] == 4 + 3  # 3 left to do; the dead call is redone once
+    assert sum(r["prov"]["network_calls"] for r in recs) == 6  # every chunk paid exactly one call
+    sm = enrich.summarize(recs)
+    assert sm["reconciliation"]["with_network_calls"] == 6 and sm["reconciliation"]["posts"] == 6
+
+
+# ---- report -----------------------------------------------------------------------
+
+def rec(source="llm", reason=None, aspect="scenery", rule_aspect="scenery", warn=False,
+        rule_warn=False, calls=1, secs=2.0, dropped=None):
+    return {"chunk_id": "x", "fields": {"aspect": aspect, "place_type": "city",
+                                        "is_warning": warn},
+            "prov": {"source": source, "reason": reason, "rule_aspect": rule_aspect,
+                     "rule_is_warning": rule_warn, "network_calls": calls, "seconds": secs,
+                     "dropped": dropped or {}}}
+
+
+def test_summarize_reconciles_calls_cache_and_fallbacks():
+    records = [rec(), rec(calls=0, secs=0.0), rec(aspect="other", rule_aspect="price"),
+               rec(source="fallback", reason="note_leak", calls=2),
+               rec(source="fallback", reason="json_invalid", calls=3, aspect="other"),
+               rec(source="fallback", reason="prompt_too_long", calls=0, aspect="other"),
+               rec(dropped={"holdout": 1, "unknown": 2})]
+    sm = enrich.summarize(records)
+    r = sm["reconciliation"]
+    assert sm["chunks"] == 7 and sm["llm"] == 4 and sm["fallback"] == 3
+    assert r == {"chunks": 7, "with_network_calls": 5, "served_from_cache": 1,
+                 "no_call_prompt_too_long": 1, "posts": 1 + 0 + 1 + 2 + 3 + 0 + 1}
+    assert r["with_network_calls"] + r["served_from_cache"] + r["no_call_prompt_too_long"] == 7
+    assert sm["leak_hits_note"] == 1 and sm["mentioned_dropped"] == {"holdout": 1, "unknown": 2}
+    assert sm["fallback_reasons"] == {"note_leak": 1, "json_invalid": 1, "prompt_too_long": 1}
+    assert sm["json_valid_rate"] == pytest.approx(6 / 7)
+    assert sm["seconds_per_network_chunk"] == pytest.approx(2.0)
+    labels, table = sm["aspect_confusion"]
+    assert table[labels.index("other")][labels.index("price")] == 1  # LLM other vs rule price
+    assert sm["llm_vs_rule_aspect_agreement"] == pytest.approx(3 / 4)
+
+
+def test_report_text_labels_the_tables_not_accuracy_and_flags_many_other():
+    many_other = [rec(aspect="other") for _ in range(6)] + [rec() for _ in range(4)]
+    text = enrich.format_report(enrich.summarize(many_other))
+    assert "NOT accuracy" in text and "FLAG: aspect 'other' is 60.0%" in text
+    assert "FLAG" not in enrich.format_report(enrich.summarize([rec(), rec(), rec(aspect="other")]))
+
+
+# ---- embed() ----------------------------------------------------------------------
+
+def test_embed_is_cached_and_validated(tmp_path):
+    calls = []
+
+    def post(url, json=None, headers=None, timeout=None):
+        calls.append((url, json))
+        r = Resp("x")
+        r._body = {"embeddings": [[0.1, 0.2, 0.3] for _ in json["input"]]}
+        return r
+
+    c = client(tmp_path, post)
+    a = c.embed(["one", "two"], "bge-m3:latest")
+    b = c.embed(["one", "two"], "bge-m3:latest")
+    assert a == b and len(a) == 2 and len(calls) == 1
+    assert calls[0][0].endswith("/api/embed") and calls[0][1]["model"] == "bge-m3:latest"
+
+    def short(url, json=None, headers=None, timeout=None):
+        r = Resp("x")
+        r._body = {"embeddings": [[0.1]]}  # one vector for two texts
+        return r
+
+    with pytest.raises(LLMError):
+        client(tmp_path / "other", short).embed(["one", "two"], "bge-m3:latest")

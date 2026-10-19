@@ -548,3 +548,9 @@ D57 (2026-10-19) Pilot and reports. The 200-chunk pilot is seeded and stratified
    least 1 chunk per place; the selection order is recorded. The 20-chunk timing test is the first 20 of the same ordered selection so
    the cache is reused. The pilot report gives LLM-vs-rule-based confusion tables for aspect and is_warning (labelled "not accuracy":
    there are no gold labels), aspect and place_type distributions, and a flag if aspect "other" exceeds 50%. Status: accepted.
+D57 (amendment 2026-10-19, measured on the real corpus) The forced chunk 36acb56e137feb5a is NOT in the frozen corpus: it is the Kanniyakumari
+   Wikipedia chunk that named Thanjavur and Kumily and was dropped at the hold-out step (data/processed/drops.jsonl, level chunk, term Thanjavur).
+   It cannot be enriched; scripts/enrich.py records it as `forced_missing` in data/enriched/pilot_selection.json and the pilot continues
+   without it. The Ooty/Kodaikanal post (travelogue-ooty-kodaikanal) has only 6 chunks in the corpus, so the pilot takes all 6, not 10.
+   The pilot (seed 42, 200 chunks): blog 33, reference 82, wikivoyage 85; 26 of 26 places; 15 chunks under 200 tokens (10 forced + 5 by
+   chance). Awaiting the owner's instruction whether to substitute other chunks near the dropped one (nothing was substituted). Status: accepted.

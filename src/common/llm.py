@@ -28,6 +28,7 @@ T = TypeVar("T", bound=BaseModel)
 
 CHAT_PATH = "/api/chat"
 TAGS_PATH = "/api/tags"
+EMBED_PATH = "/api/embed"
 DEFAULT_TIMEOUT = (10.0, 600.0)  # (connect, read); capped per attempt by the remaining budget
 
 
@@ -218,6 +219,42 @@ class OllamaClient:
             return [m["name"] for m in models if isinstance(m, dict) and "name" in m]
 
         return self._with_budget(attempt)
+
+    def embed(self, texts: list[str], model: str) -> list[list[float]]:
+        """Embeddings from the server (POST /api/embed), one vector per text. Cached on
+        (model, path, texts). Used only to check agreement with the sentence-transformers vectors
+        (D51); corpus and query embeddings come from sentence-transformers."""
+        inputs = {"input": list(texts), "path": EMBED_PATH}
+
+        def fetch() -> list[list[float]]:
+            def attempt(timeout: tuple[float, float]) -> list[list[float]]:
+                body = self._call(
+                    lambda: self._post(
+                        self.base_url + EMBED_PATH,
+                        json={"model": model, "input": list(texts)},
+                        headers=self._headers(),
+                        timeout=timeout,
+                    ),
+                    f"embedding model {model!r}",
+                )
+                vecs = body.get("embeddings") if isinstance(body, dict) else None
+                ok = (
+                    isinstance(vecs, list)
+                    and len(vecs) == len(texts)
+                    and all(
+                        isinstance(v, list)
+                        and v
+                        and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in v)
+                        for v in vecs
+                    )
+                )
+                if not ok:
+                    raise _BadBody("body has no valid 'embeddings' list of the same length")
+                return vecs
+
+            return self._with_budget(attempt)
+
+        return self.cache.get_or_compute("llm_embed", model, inputs, fetch)
 
     def chat(
         self,

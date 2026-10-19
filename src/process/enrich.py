@@ -11,12 +11,15 @@ from __future__ import annotations
 import hashlib
 import random
 import re
+import time
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from pathlib import Path
 
 from pydantic import BaseModel, field_validator
 
-from src.common.llm import JSONValidationError, OllamaClient
+from src.common.cache import append_jsonl, read_jsonl
+from src.common.llm import JSONValidationError, LLMError, ModelNotFoundError, OllamaClient
 from src.common.schemas import (
     Aspect,
     EnrichedChunk,
@@ -398,3 +401,164 @@ def select_pilot(chunks: list[dict], n: int, seed: int, *, short_ids: Iterable[s
                     take(pool[p].pop(0), f"fill_{t}")
                     picked += 1
     return [(cid, why[cid]) for cid in sorted(why, key=lambda cid: _key(seed, cid))]
+
+
+# ==== resumable batch ================================================================
+
+class StopRun(RuntimeError):
+    """Too many consecutive transport failures: stop now, resume later (nothing is lost)."""
+
+
+class CheckpointMismatch(RuntimeError):
+    pass
+
+
+def load_checkpoint(path: Path, model: str) -> dict[str, dict]:
+    """chunk_id -> {"chunk_id", "fields", "prov"}. Refuses records written with another model or
+    prompt version: results of different prompts must not be mixed in one corpus."""
+    done: dict[str, dict] = {}
+    if not Path(path).exists():
+        return done
+    for rec in read_jsonl(path):
+        prov = rec["prov"]
+        if prov.get("model") != model or prov.get("prompt_version") != PROMPT_VERSION:
+            raise CheckpointMismatch(
+                f"{path} holds a record from model {prov.get('model')!r} / prompt "
+                f"{prov.get('prompt_version')!r}; this run is {model!r} / {PROMPT_VERSION!r}. "
+                "Move the file away or restore the matching settings.")
+        done[rec["chunk_id"]] = rec
+    return done
+
+
+def run_batch(order: list[str], chunks: dict[str, dict],
+              process: Callable[[dict], tuple[dict, dict]], checkpoint: Path, model: str, *,
+              max_consecutive_failures: int = 5, calls: Callable[[], int] = lambda: 0,
+              clock: Callable[[], float] = time.monotonic,
+              log: Callable[[str], None] = print) -> dict:
+    """Process `order` skipping what the checkpoint already holds; append one line per finished
+    chunk (fsynced), so a crash or Ctrl-C loses at most the chunk in flight. A transport failure
+    leaves the chunk undone and counts towards `max_consecutive_failures` (then StopRun); a missing
+    model stops at once. `calls()` returns the running count of network POSTs, so each record
+    carries how many calls its chunk really made (0 = served from the disk cache)."""
+    done = load_checkpoint(checkpoint, model)
+    stats = {"skipped_done": 0, "processed": 0, "failed": 0}
+    streak = 0
+    for cid in order:
+        if cid in done:
+            stats["skipped_done"] += 1
+            continue
+        n0, t0 = calls(), clock()
+        try:
+            fields, prov = process(chunks[cid])
+        except ModelNotFoundError:
+            raise
+        except LLMError as exc:
+            streak += 1
+            stats["failed"] += 1
+            log(f"FAILED {cid}: {type(exc).__name__}: {str(exc)[:160]} "
+                f"({streak}/{max_consecutive_failures} in a row)")
+            if streak >= max_consecutive_failures:
+                raise StopRun(f"{streak} consecutive failures after {stats['processed']} chunks "
+                              "processed in this run; re-run the same command to resume") from exc
+            continue
+        streak = 0
+        prov = {**prov, "model": model, "network_calls": calls() - n0,
+                "seconds": round(clock() - t0, 3)}
+        append_jsonl(checkpoint, [{"chunk_id": cid, "fields": fields, "prov": prov}])
+        stats["processed"] += 1
+    return stats
+
+
+# ==== report =========================================================================
+
+def confusion(pairs: Iterable[tuple[str, str]], labels: list[str]) -> list[list[int]]:
+    """Counts[row=first element (LLM)][col=second element (rules)] over `labels`."""
+    idx = {lab: i for i, lab in enumerate(labels)}
+    table = [[0] * len(labels) for _ in labels]
+    for a, b in pairs:
+        table[idx[a]][idx[b]] += 1
+    return table
+
+
+def summarize(records: list[dict]) -> dict:
+    """Numbers for the timing test and the pilot report, from checkpoint records only."""
+    provs = [r["prov"] for r in records]
+    fields = [r["fields"] for r in records]
+    n = len(records)
+    reasons = Counter(p["reason"] for p in provs if p["source"] == "fallback")
+    llm = [r for r in records if r["prov"]["source"] == "llm"]
+    no_call = sum(1 for p in provs if p["reason"] == "prompt_too_long")
+    net = [p for p in provs if p["network_calls"] > 0]
+    dropped: Counter = Counter()
+    for p in provs:
+        dropped.update(p["dropped"])
+    aspects = Counter(f["aspect"] for f in fields)
+    secs = [p["seconds"] for p in net]
+    labels = sorted(a.value for a in Aspect)
+    return {
+        "chunks": n,
+        "llm": len(llm), "fallback": n - len(llm), "fallback_reasons": dict(reasons),
+        "json_valid_rate": (1 - reasons.get("json_invalid", 0) / n) if n else None,
+        "fallback_rate": (n - len(llm)) / n if n else None,
+        "leak_hits_note": reasons.get("note_leak", 0),
+        "mentioned_dropped": dict(dropped),
+        "reconciliation": {
+            "chunks": n, "with_network_calls": len(net),
+            "served_from_cache": n - len(net) - no_call, "no_call_prompt_too_long": no_call,
+            "posts": sum(p["network_calls"] for p in provs)},
+        "seconds_per_network_chunk": (sum(secs) / len(secs)) if secs else None,
+        "aspect_distribution": dict(aspects),
+        "aspect_other_share": aspects.get("other", 0) / n if n else None,
+        "place_type_distribution": dict(Counter(f["place_type"] for f in fields)),
+        "aspect_confusion": (labels, confusion(
+            [(r["fields"]["aspect"], r["prov"]["rule_aspect"]) for r in llm], labels)),
+        "is_warning_confusion": confusion(
+            [(str(r["fields"]["is_warning"]).lower(), str(r["prov"]["rule_is_warning"]).lower())
+             for r in llm], ["false", "true"]),
+        "llm_vs_rule_aspect_agreement": (
+            sum(r["fields"]["aspect"] == r["prov"]["rule_aspect"] for r in llm) / len(llm)
+            if llm else None),
+        "llm_vs_rule_is_warning_agreement": (
+            sum(r["fields"]["is_warning"] == r["prov"]["rule_is_warning"] for r in llm) / len(llm)
+            if llm else None),
+    }
+
+
+def format_report(sm: dict) -> str:
+    def pct(x):
+        return "n/a" if x is None else f"{100 * x:.1f}%"
+
+    def table(rows: list[list[int]], labels: list[str], corner: str) -> list[str]:
+        w = max(len(x) for x in [*labels, corner]) + 1
+        head = corner.ljust(w) + "".join(lab[:8].rjust(9) for lab in labels)
+        return [head] + [lab.ljust(w) + "".join(str(v).rjust(9) for v in row)
+                         for lab, row in zip(labels, rows, strict=True)]
+
+    r = sm["reconciliation"]
+    secs = sm["seconds_per_network_chunk"]
+    lines = [
+        f"chunks processed: {sm['chunks']}  (llm {sm['llm']}, fallback {sm['fallback']})",
+        f"fallback rate {pct(sm['fallback_rate'])}; JSON-valid rate {pct(sm['json_valid_rate'])}; "
+        f"fallback reasons {sm['fallback_reasons']}",
+        f"leak hits in notes: {sm['leak_hits_note']}; mentioned_places dropped: "
+        f"{sm['mentioned_dropped']}",
+        f"reconciliation: {r['chunks']} chunks = {r['with_network_calls']} with network calls + "
+        f"{r['served_from_cache']} served from the disk cache + {r['no_call_prompt_too_long']} "
+        f"without a call (prompt too long); POSTs made {r['posts']} (>= chunks with calls: JSON "
+        "repair turns add calls)",
+        "seconds per chunk (chunks that made a call): "
+        + ("n/a" if secs is None else f"{secs:.2f}"),
+        f"aspect distribution: {sm['aspect_distribution']}",
+        f"place_type distribution: {sm['place_type_distribution']}",
+    ]
+    if sm["aspect_other_share"] is not None and sm["aspect_other_share"] > 0.5:
+        lines.append(f"FLAG: aspect 'other' is {pct(sm['aspect_other_share'])} of chunks (> 50%)")
+    labels, rows = sm["aspect_confusion"]
+    lines += ["", "aspect, LLM (rows) vs rule-based (columns), LLM-source chunks only. "
+              "NOT accuracy: neither side is a gold label.",
+              *table(rows, labels, "llm|rule"),
+              f"agreement {pct(sm['llm_vs_rule_aspect_agreement'])}", "",
+              "is_warning, LLM (rows) vs rule-based (columns). NOT accuracy.",
+              *table(sm["is_warning_confusion"], ["false", "true"], "llm|rule"),
+              f"agreement {pct(sm['llm_vs_rule_is_warning_agreement'])}"]
+    return "\n".join(lines)
