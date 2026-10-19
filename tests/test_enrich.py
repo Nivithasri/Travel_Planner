@@ -866,3 +866,13 @@ def test_supersede_moves_only_the_named_records_and_keeps_them(tmp_path):
     stats = enrich.run_batch(list(chunks), chunks, healthy, ck, MODEL, log=lambda m: None)
     assert seen == ["c1", "c3"] and stats["processed"] == 2  # exactly those are recomputed
     assert enrich.supersede_records(tmp_path / "missing.jsonl", ["c1"]) == 0
+
+
+def test_superseded_checkpoint_files_are_history_not_results(tmp_path):
+    live = tmp_path / f"checkpoint_{PROMPT_VERSION}_model-a.jsonl"
+    old = tmp_path / f"checkpoint_{PROMPT_VERSION}_model-a.superseded.jsonl"
+    other = tmp_path / "checkpoint_enrich-v1_model-a.jsonl"
+    for p in (live, old, other):
+        p.write_text("", encoding="utf-8")
+    assert enrich.checkpoint_files(tmp_path) == [live]
+    assert enrich.checkpoint_files(tmp_path, "enrich-v1") == [other]

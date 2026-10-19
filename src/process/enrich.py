@@ -531,6 +531,13 @@ def load_checkpoint(path: Path, model: str) -> dict[str, dict]:
     return done
 
 
+def checkpoint_files(directory: Path, version: str = PROMPT_VERSION) -> list[Path]:
+    """The live checkpoint files of a prompt version. The *.superseded.jsonl files (records that
+    were recomputed, D64) are history, never data: they must not be read as results."""
+    return sorted(p for p in Path(directory).glob(f"checkpoint_{version}_*.jsonl")
+                  if not p.name.endswith(".superseded.jsonl"))
+
+
 def supersede_records(checkpoint: Path, ids: Iterable[str]) -> int:
     """Move the records of `ids` out of the checkpoint into `<name>.superseded.jsonl` (append-only,
     nothing is deleted) so the next run recomputes exactly those chunks. Returns how many moved."""

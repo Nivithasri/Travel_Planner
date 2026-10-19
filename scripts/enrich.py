@@ -59,6 +59,7 @@ from src.process.enrich import (  # noqa: E402
     StopRun,
     assemble_labelled,
     candidate_pool,
+    checkpoint_files,
     enrich_chunk,
     format_projection,
     format_report,
@@ -205,7 +206,7 @@ def assemble_partial(args, frozen, recs, holdout) -> int:
 
 
 def assemble(args, frozen, excluded, titles, registry, holdout) -> int:
-    ckpts = sorted(ENRICHED.glob(f"checkpoint_{PROMPT_VERSION}_*.jsonl"))
+    ckpts = checkpoint_files(ENRICHED)
     if len(ckpts) != 1:
         print(f"expected exactly one checkpoint for {PROMPT_VERSION}, found {len(ckpts)}")
         return 1
@@ -293,7 +294,7 @@ def main(argv: list[str] | None = None) -> int:
           f"eligible_only={args.eligible_only} include_blog={args.include_blog}")
 
     if args.report:
-        found = sorted(ENRICHED.glob(f"checkpoint_{PROMPT_VERSION}_*.jsonl"))
+        found = checkpoint_files(ENRICHED)
         have = {r["chunk_id"]: r for p in found for r in read_jsonl(p)}
         got = [have[i] for i in ids if i in have]
         print(f"checkpoint files for {PROMPT_VERSION}: {len(found)}; in checkpoint: {len(got)} "

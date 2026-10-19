@@ -24,40 +24,41 @@ D23: 17 of 26 places pass at chunk level (18 at raw level; Kodaikanal fails at c
 Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source types, one blog host; 0 published chunks in the
 18-month window (freshness comes only from the live layer, D32); no Reddit, no official, no YouTube.
 
-## Phase 3 state (2026-10-20, IN PROGRESS; not tagged)
-Route changed (D59, supersedes D56; amends D1, D49, D58): the Kaggle account is BANNED, so there is no Kaggle notebook, no Kaggle dataset and
-no ngrok Ollama (kaggle/README.md is obsolete). Enrichment uses a hosted OpenAI-compatible API on its FREE tier (Groq): generator
-openai/gpt-oss-20b, judge openai/gpt-oss-120b (judge unused in Phase 3). Embeddings (plain and contextual) are computed LOCALLY on CPU with
-sentence-transformers bge-m3 for the 1,696 chunks and for queries; the Ollama embed-agreement check and the Kaggle parity check are dropped
-(deviations in D59). No API call has been made with the new client: it was written and tested offline with a fake transport and clock.
-1. OWNER ACTIONS before the first call. (a) READ AND CONFIRM THE PROVIDER'S DATA-USE TERMS (retention, training on inputs) and the FREE-PLAN
-   LIMITS from its dashboard; nothing in the repo verifies either (no network in the implementation session). D49 covered only the private
-   Kaggle; it does not cover a third-party API. The first call sends reference and wikivoyage chunk text (CC BY-SA); blog chunks (inditales.com,
-   a copyrighted personal blog) are sent only with --include-blog. (b) Fix .env: the URL key must be LLM_API_BASE_URL (LLM_API_URL is accepted
-   as an alias); LLM_API_KEY, GENERATOR_MODEL, JUDGE_MODEL, LLM_RPM, LLM_TPM, LLM_RPD, LLM_TPD must all be set (any unset = the scripts refuse
-   to run); GENERATOR_MODEL and JUDGE_MODEL appear TWICE in the current .env (names only checked; the last one wins; the scripts warn): delete
-   the old Ollama pair. (c) Later, for indexing: pip install bm25s PyStemmer sentence-transformers, download bge-m3 to a folder and set
-   EMBED_LOCAL_DIR in .env (the assistant never installs or downloads).
-2. Run order (each step stops on any problem): `python scripts/smoke_llm.py`; then `python scripts/enrich.py --pilot` (79 chunks: 60 seeded + the
-   gold chunks that are not blog, 19 new; blog off; prints tokens per chunk and a PROJECTION of days for all 1,696 chunks and for the
-   eligible-only subsets). `--pilot --eligible-only` would send 71 chunks but only 12 of the 30 gold chunks are usable then (the gold sample
-   was drawn from the whole corpus: 10 are blog and 8 are in excluded places). Only after the owner approves: `python scripts/enrich.py --full --eligible-only`, repeated each day until it prints no INCOMPLETE
-   (exit 5 = the daily quota is used up, resets at the next UTC day; exit 3 = five failures in a row; exit 4 = key/model/config rejected), then
-   `python scripts/enrich.py --assemble --eligible-only` (writes data/enriched/chunks.jsonl, provenance.jsonl and the manifest; unprocessed
-   chunks of the 9 excluded places and the blog chunks get the rule-based fields, labelled rule_only in provenance.jsonl).
-3. The owner's gold labels: data/enriched/gold_sample.csv (30 chunks, text only, labels empty). Fill aspect_gold and is_warning_gold, then
-   `python scripts/label_sample.py --score` (needs LLM labels for those chunks: run `python scripts/enrich.py --gold`; with blog off 20 of the
-   30 are sent).
-4. Comparability: the v1 pilot (200 chunks, qwen2.5 via Ollama, data/enriched/checkpoint_enrich-v1.jsonl) is NOT comparable with the new model;
-   any v1-vs-v3 comparison is confounded (scripts/compare_runs.py prints that). Prompt versions: v1 and v2 were Ollama-era; v2 never ran; the
-   current prompt is enrich-v3 (shrunk: 1,071 characters, D60).
-5. Enriched chunks go to `data/enriched/chunks.jsonl` (gitignored), NEVER to data/processed (D48 xi); `check_enriched_matches_frozen` must pass.
-   Phase 3 may only fill context_note, place_type, season_tags, aspect, is_warning, plus the optional mentioned_places (D50, to be sent to
-   Valincia). `place` stays as frozen. O12 still blocks sharing anything enriched with the partner.
-6. Never print or log the URL, the key or response headers: OllamaClient/OpenAICompatClient scrub every error and debug record (tests).
-   data/enriched/debug_raw.jsonl is UNTRUSTED model output, scrubbed of keys and URLs, gitignored.
-7. Frozen-file hook: data/processed is read-only. Indexes go to index/ (gitignored). The freeze tests assert the real FROZEN is unchanged.
-   Not started: BM25 (contextual and plain, D55), the dense indexes, scripts/query_index.py, the index manifest, the early sample for Valincia.
+## Phase 3 state (2026-10-20, IN PROGRESS; not tagged; STOPPED BEFORE --full)
+Route (D59, supersedes D56; amends D1, D49, D58): the Kaggle account is banned, so enrichment uses a hosted OpenAI-compatible API on its FREE tier (Groq): generator
+openai/gpt-oss-20b, judge openai/gpt-oss-120b (unused in Phase 3). Embeddings are computed LOCALLY on CPU with sentence-transformers bge-m3 (models/bge-m3-full, gitignored,
+weights hashed in models/bge-m3-full/WEIGHTS_MANIFEST.json). Prompt `enrich-v4` (D62 applied, D63, D64: reply cap 400 tokens). The 79-chunk pilot passed the gate (LOG
+2026-10-20): 2 of 79 notes fell back as ungrounded, 0 leaks, JSON valid, the three earlier problem notes (Badami, Hampi, Auroville) fixed. The index code is committed and was dry-run on a SCRATCH file
+(data/enriched/scratch/, pilot checkpoint only): it works end to end. NOTHING real is built: data/enriched/chunks.jsonl and index/ do not exist.
+1. OWNER ACTIONS. (a) Add `EMBED_LOCAL_DIR=models/bge-m3-full` to .env: the key is NOT there yet (key names checked; scripts/build_index.py and query_index.py take --model-dir
+   until then). (b) Delete the old Ollama GENERATOR_MODEL/JUDGE_MODEL lines in .env (each key appears twice; the last wins; the scripts warn). (c) You must have read the provider's
+   data-use terms and free-plan limits (D49 does not cover a third-party API); blog chunks stay OFF (no --include-blog) until you decide. (d) Optional but valuable: fill
+   data/enriched/gold_sample.csv (30 chunks; labels empty), then `python scripts/label_sample.py --score` (needs `python scripts/enrich.py --gold` first).
+2. EXACT FULL-RUN PLAN (not started; needs the owner's go-ahead).
+   Command, repeated once per UTC day until it prints no INCOMPLETE:
+       python scripts/enrich.py --full --eligible-only
+   Scope: the 17 D33-eligible places without blog = 1,100 chunks, of which 54 are already done by the pilot (checkpoint_enrich-v4_openai-gpt-oss-20b.jsonl), so 1,046 remain.
+   Budget: the client keeps 85% of LLM_TPD per UTC day (170,000 tokens at the limits in .env) and 80% of RPM/TPM/RPD; it stores the day's spend in data/enriched/quota_state.json.
+   Cost measured on the v4 pilot: 812 tokens and 1.00 calls per chunk, so about 209 chunks a day, about 27 minutes of wall time a day (the TPM pacing, ~7.7 s a chunk).
+   PROJECTION (not a measurement): 1,046 x 812 = 849,000 tokens = about 5 days of budget; the day of the start counts only what is left of it (135,985 of 170,000 were spent by
+   the pilots on 2026-10-19 UTC, so about 41 chunks fit before the 00:00 UTC reset, which is 05:30 India time), so expect 5 to 6 calendar days.
+   A day ends with exit code 5 and the message "DAILY QUOTA USED UP ... Tokens used today N ... resets in about H h ... re-run the same command to resume". Other exit codes: 3
+   five failures in a row (re-run the same command), 4 key/model/config rejected (stop and read the message), 130 Ctrl-C. Nothing is lost on any stop: every chunk is checkpointed
+   (data/enriched/checkpoint_enrich-v4_openai-gpt-oss-20b.jsonl) and every reply cached (.cache).
+   After the last day (the command prints no INCOMPLETE):
+       python scripts/enrich.py --assemble --eligible-only      # data/enriched/chunks.jsonl + provenance.jsonl + data/manifests/enriched_manifest.json
+       python scripts/build_index.py                            # real BM25 x2 + dense x2 on CPU, about 81 minutes (0.69 chunks/s measured); resumable every 200 rows
+       python scripts/build_index.py --verify
+       python scripts/query_index.py "quiet beaches in Kerala in monsoon"
+   The 313 chunks of the 9 excluded places and the 283 blog chunks get the rule-based fields and are labelled rule_only in provenance.jsonl (the schema is closed, so the label
+   lives in the sidecar); Phase 6 must read it before trusting their aspect/season fields.
+   Do not run --full before the owner says so. Do not use --include-blog before the terms are confirmed.
+3. Comparability: the v1 pilot (200 chunks, qwen2.5 via Ollama, checkpoint_enrich-v1.jsonl) and the v3 pilot are history; nothing is comparable across models or prompts
+   (scripts/compare_runs.py marks it). *.superseded.jsonl files hold recomputed records (D64) and are never read as results.
+4. Enriched chunks go to data/enriched/chunks.jsonl (gitignored), NEVER to data/processed (D48 xi); check_enriched_matches_frozen must pass. Phase 3 may fill context_note,
+   place_type, season_tags, aspect, is_warning and the optional mentioned_places (D50, to be sent to Valincia). O12 still blocks sharing anything enriched with the partner.
+5. Never print or log the URL, the key or response headers: both clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
+6. Not started: the early sample file for Valincia (O12), the final HANDOFF rewrite and the phase-3-done tag.
 
 ## What exists (code)
 - `src/process/process.py` (clean, chunk, hold-out, dedupe, attribution, stats, `check_corpus`, `check_enriched_matches_frozen`;
@@ -71,7 +72,9 @@ sentence-transformers bge-m3 for the 1,696 chunks and for queries; the Ollama em
   and labelled assembly, report and projection), `src/process/label.py` + `scripts/label_sample.py` (gold sheet and scoring), `scripts/enrich.py`,
   `scripts/smoke_llm.py`, `scripts/compare_runs.py`, `scripts/mutation_checks.py` (14 mutations), `OpenAICompatClient`/`RateLimiter`/`scrub_text` in
   `src/common/llm.py`, `load_llm_settings` in `src/common/schemas.py`.
-- Tests: 588 passed, 1 skipped (tests/test_process.py, test_enrich.py, test_llm_api.py, test_label_sample.py, test_hooks_scripts.py, ...).
+- Index code: `src/retrieval/build_index.py` (BM25 contextual/plain with bm25s, dense plain/contextual with local sentence-transformers, resumable, manifest, verify), `src/retrieval/search.py`
+  (exact numpy cosine, ties by chunk_id), `scripts/build_index.py`, `scripts/query_index.py` (four ranked tables).
+- Tests: 656 passed, 1 skipped (tests/test_process.py, test_enrich.py, test_llm_api.py, test_index.py, test_label_sample.py, test_hooks_scripts.py, ...); `scripts/mutation_checks.py` runs 16 mutations.
 
 ## How to run
 - `pip install -e .[dev]`; Python 3.10.11 (D9); `python -m pytest -q`, `python -m ruff check .` (not on PATH).

@@ -35,8 +35,9 @@ Tick only after verification commands were run (see LOG.md).
 ## Phase 3: Enrichment and indexing (IN PROGRESS, 2026-10-20; route changed by D59: hosted API, local CPU embeddings, no Kaggle)
 - [x] Enrichment code, validation, leak/copy scans, rule fallback, resumable batch, pilot selection, gold sheet (tests: 588 passed; 14 mutations caught)
 - [x] Hosted OpenAI-compatible client with client-side rate limiter, usage accounting and scrubbing (offline tests only; no API call made yet)
-- [ ] smoke_llm.py run by the owner; 60+30 pilot run with the token projection; owner approval; --full (spans days); --assemble
-- [ ] BM25 (contextual and plain), dense indexes (plain, contextual) with local sentence-transformers, query_index.py, index manifest
+- [x] smoke_llm.py 3/3 (owner); pilot enrich-v4 (79 chunks) passed its gate; index code committed and dry-run on a scratch file (BM25 x2, dense x2, query_index.py, build_index.py --verify)
+- [ ] --full --eligible-only (about 5 to 6 UTC days of free-tier budget; owner approval needed); --assemble
+- [ ] real BM25 + dense build (about 81 min CPU), verify, query_index.py on the real index, index manifest committed
 - [ ] Early sample for Valincia (blocked by O12); HANDOFF rewrite and tag phase-3-done
 - [ ] Done when: a script takes a query and returns ranked chunks from each index.
 

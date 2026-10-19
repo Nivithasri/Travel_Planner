@@ -23,7 +23,7 @@ IR project (agentic RAG). Spec: @docs/plan.md  Contracts: @docs/contracts.md  De
 2. After corpus freeze (`data/processed/FROZEN` exists) never modify data/processed/chunks*.jsonl.
 3. Tune on dev queries only; report test queries only. Never inspect test qrels while tuning.
 4. Every LLM call, download, embedding and fallback search goes through src/common/cache.py (disk cache).
-5. LLM access only via src/common/llm.py using OLLAMA_BASE_URL from .env. Never hardcode URLs/models.
+5. LLM access only via src/common/llm.py. The endpoint and key come from .env only (OLLAMA_BASE_URL for the legacy Ollama client; LLM_API_BASE_URL and LLM_API_KEY for the hosted API, D59). Never hardcode URLs, keys or models.
 6. Generator and judge models must differ (see config).
 7. Never fabricate data, results or metrics. If something can't run, say so. Report real command output.
 8. Scope: South India only (TN, KL, KA, AP, TS, and the Union Territory of Puducherry as PY, D18).
