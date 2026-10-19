@@ -409,3 +409,27 @@ D48 (amendment 2026-10-19, rules added while building; owner review requested)
    one-line decision before the freeze.
    (h) Borderline hold-out context, NOT dropped: Madurai Wikipedia "agricultural activity, which is fostered by the Periyar Dam"
    (the Mullaperiyar dam forms Periyar Lake at Thekkady, but "Dam" is not in the O8 context list). Owner decision.
+D48 (amendment 2026-10-19, owner review of the Phase 2 draft)
+   (i) Kodaikanal: the first-place-in-registry-order rule (D48 5) STAYS. The inditales post "travelogue-ooty-kodaikanal" covers
+   BOTH Ooty and Kodaikanal; it is kept under Ooty only, so Kodaikanal is a chunk-level D23 fail (17 of 26 pass at chunk level,
+   18 at raw level). Supersedes the open question in amendment (g).
+   (ii) How Thekkadi and Brihadeeswara were found: a case-insensitive stem regex over the bodies of the 97 raw records,
+   \w*(brihad|tanj|thanj|araku|thekk|kumil|chikm|chikk|chickm)\w*, listed every matching word with its count; each word was read in
+   context; "Thekkadi" (Munnar Wikivoyage, "Munnar Thekkadi route") and "Brihadeeswara" (Mahabalipuram blog footer) are hold-out
+   spellings outside the D39 list. Accepted by the owner, subject to the independent scan (scripts/phase2_evidence.py holdout).
+   (iii) O8 AMENDED: "Periyar" counts as a Thekkady mention also next to Dam (in addition to Lake, Tiger Reserve, National Park,
+   Wildlife Sanctuary, Thekkady, Kumily), and "Mullaperiyar" is a hold-out name (the dam that forms Periyar Lake). "Periyar Dam",
+   "Periyar Lake" and "Mullaperiyar Dam" drop; "Periyar Bus Stand", "Periyar river" and the social reformer are kept (tests). This
+   supersedes amendment (h): the Madurai "Periyar Dam" chunk is now dropped (31 text drops, 1,388 chunks).
+   (iv) Reference date: EVAL_REFERENCE_DATE is read from .env when set; --reference-date overrides it; corpus_stats records the value
+   and its source. The date is an input to the freshness statistic only; process_place() has no date input and chunks.jsonl is
+   byte-identical with --reference-date 2026-10-18 and 2020-01-01 (sha256 ebfdbd51...). Owner action: set EVAL_REFERENCE_DATE=2026-10-18
+   in .env (the value of D32/D39 and .env.example); .env was not edited.
+   (v) check_corpus() (src/process/process.py) runs before every --write and must run again at the freeze: no source_type live, no
+   hold-out mention (HoldoutFilter), unique ids, every chunk valid under BaseChunk.
+   (vi) The near-duplicate threshold 0.8 removes nothing on this corpus: the highest 5-word-shingle Jaccard over all 1,388 kept chunks
+   is 0.2155 (Bengaluru vs Chennai Wikipedia). The rule is kept for new raw data; it is not evidence of a duplicate-free source.
+   (vii) ACCEPTED DEVIATIONS (owner): the plan's 10,000-20,000 chunks are unreachable from this raw volume (1,388 chunks with the
+   proxy counter; 1.70 M raw characters over 97 records); source diversity is 3 source types (blog, reference, wikivoyage) with ONE
+   blog host (inditales.com) and 0 official, 0 Reddit, 0 YouTube; 0 published chunks fall in the 18-month window 2025-04-18 to
+   2026-10-18 (newest blog 2025-01-30). Each is accepted and stated in the report as measured. Status: accepted.

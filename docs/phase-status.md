@@ -20,11 +20,11 @@ Tick only after verification commands were run (see LOG.md).
 - Open owner items are listed in docs/HANDOFF.md (terms quotes, wiki robots gap, O12, Reddit credentials). Pushed: 8ed3f86 "Finalize Phase 1" with tag phase-1-done; D47 simplification commit on top
 
 ## Phase 2: Cleaning and chunking (built 2026-10-19; STOPPED BEFORE FREEZE; no phase-2-done tag)
-- Verified (commands in LOG.md, 2026-10-19 Phase 2 entries): pytest 415 passed, ruff clean, two `--write` runs byte-identical, 5 mutations + Phase 1 hold-out mutation caught, request log unchanged (443)
+- Verified (commands in LOG.md, 2026-10-19 Phase 2 entries): pytest 424 passed, ruff clean, two `--write` runs byte-identical, 6 mutations (a-f) + Phase 1 hold-out mutation caught, request log unchanged (443)
 - [x] Boilerplate removal (fixed rules + reviewed rule file config/boilerplate.json), exact and near-duplicate removal (D48)
 - [x] South India scope: every record's place checked against the registry (collectable, not hold-out)
 - [x] Dates normalized; date_kind published | revised | sitemap_lastmod | none with BaseChunk invariants (D48, O9)
-- [x] Chunks 200-300 tokens (hard max incl. overlap), source_type/url/date/state/place; deterministic ids (1,389 chunks, proxy counter)
+- [x] Chunks 200-300 tokens (hard max incl. overlap), source_type/url/date/state/place; deterministic ids (1,388 chunks, proxy counter)
 - [x] Hold-out drop (url/title record level, text chunk level), counted per hold-out and source; output scan 0 hits
 - [x] Corpus statistics: data/manifests/corpus_stats.{md,json}; sha256 manifest data/manifests/processed_manifest.json
 - [x] D23/D33 dry run: 17 of 26 pass at chunk level (18 at raw level; Kodaikanal, D48 amendment g); nothing removed

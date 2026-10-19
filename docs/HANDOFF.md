@@ -8,16 +8,17 @@ that one tag; `git ls-remote --tags origin` shows 61f1355). Push only when asked
 Next: the owner decides the open Phase 2 items below, then runs the freeze procedure. Do not start Phase 3.
 
 ## Verified at the end of this session (commands and outputs in LOG.md, 2026-10-19 Phase 2 entries)
-`python -m pytest -q` 415 passed; `python -m ruff check .` clean; `python scripts/process.py --reference-date 2026-10-18 --write`
-run twice -> identical sha256 for every output (chunks.jsonl 74d8d571...); request log 443 lines before and after (no network);
-5 Phase 2 mutations and the Phase 1 hold-out mutation (13 failures) caught, `git diff` empty after each restore.
+`python -m pytest -q` 424 passed; `python -m ruff check .` clean; `python scripts/process.py --reference-date 2026-10-18 --write`
+run twice -> identical sha256 for every output (chunks.jsonl ebfdbd51...); request log 443 lines before and after (no network);
+6 Phase 2 mutations (a-f) and the Phase 1 hold-out mutation (13 failures) caught, `git diff --stat` empty after each restore.
+Every review figure is reproducible with `python scripts/phase2_evidence.py all` (read-only).
 
 ## What exists
 - Code: `src/process/process.py` (clean, chunk, hold-out, dedupe, attribution, stats; `process_place()` is pure and is reused by
   the live path), `scripts/process.py` (`learn` | dry run | `--write` | `--live <slug>`, `--reference-date`).
   `HoldoutFilter.text_match` in src/facts/facts.py. Schema: `date_kind`, `revised_date` (D48). Tests: tests/test_process.py (36).
 - Rule file: `config/boilerplate.json` (inditales.com: 0 applied lines, 2 rejected by review: "Travel Tips", "Meditation Hall").
-- Outputs (gitignored, NOT frozen): `data/processed/chunks.jsonl` (1,389), `drops.jsonl` (31: 30 hold-out chunks, 1 exact
+- Outputs (gitignored, NOT frozen): `data/processed/chunks.jsonl` (1,388), `drops.jsonl` (32: 31 hold-out chunks, 1 exact
   duplicate), `attribution.json` (96 urls: title, source, licence, revid, lastmod). Live: `data/live/processed/yercaud.jsonl` (18).
 - Committed: `data/manifests/corpus_stats.{md,json}` (per source, state, place, year, date_kind, tokens, drops, D23 dry run,
   comparison with the 1,943 estimate) and `data/manifests/processed_manifest.json` (sha256, bytes, lines; no content).
@@ -28,30 +29,38 @@ run twice -> identical sha256 for every output (chunks.jsonl 74d8d571...); reque
 - `pip install -e .[dev]`; Python 3.10.11 (D9); `python -m pytest -q`, `python -m ruff check .` (not on PATH).
 - `git config core.hooksPath .githooks` in any fresh clone. No AI attribution anywhere (CLAUDE.md).
 - `.env` MISMATCH: it holds only CONTACT_EMAIL and YOUTUBE_API_KEY (key names checked, values never read). The previous HANDOFF said
-  it also held OLLAMA_BASE_URL, GENERATOR_MODEL, JUDGE_MODEL, EMBED_MODEL and EVAL_REFERENCE_DATE: it does not. Phase 2 therefore
-  takes `--reference-date 2026-10-18`; Phase 3 (Ollama) needs the owner to add the Ollama keys. `.env` was not modified.
+  it also held OLLAMA_BASE_URL, GENERATOR_MODEL, JUDGE_MODEL, EMBED_MODEL and EVAL_REFERENCE_DATE: it does not. OWNER: add
+  `EVAL_REFERENCE_DATE=2026-10-18`; until then pass `--reference-date 2026-10-18` (it overrides .env when both are set; the stats
+  record the value and its source). Phase 3 (Ollama) also needs the Ollama keys. `.env` was not modified.
 - Optional `TOKENIZER_DIR` (local folder with the bge-m3 tokenizer.json; never downloaded). Unset = regex proxy counter.
 
-## Phase 2 numbers (proxy counter; will change with the real tokenizer)
-1,389 chunks (estimate 1,943, range 1,619-2,429; -554, mainly because the proxy counts 5.04 characters per token vs the estimate's 4;
-cleaning removed 3.2% of characters). blog 242, reference 558, wikivoyage 589. date_kind: published 242, revised 1,104,
-sitemap_lastmod 43; freshness share 0 (no published date in 2025-04-18..2026-10-18). Hold-out drops: Araku Valley 8, Thanjavur 8,
-Thekkady 14, Chikmagalur 0; record-level (url/title) 0. D23 dry run: 17 of 26 at chunk level, 18 at raw level.
+## Phase 2 numbers (regex proxy counter; recompute with the real tokenizer)
+1,388 chunks (estimate 1,943, range 1,619-2,429). Measured: 5.036 characters per proxy token vs the estimate's 4; cleaning removed
+3.2% of characters. Whether bge-m3 gives more chunks is a HYPOTHESIS, not measured. Hold-out drops (all chunk level): Araku Valley 8,
+Thanjavur 8, Thekkady 15, Chikmagalur 0; record-level (url/title) 0. D23 dry run: 17 of 26 at chunk level (Kodaikanal fails at
+chunk level only), 18 at raw level; if D33 were applied: 17 places, 1,144 chunks, 0 hidden_gem places. Near-dup threshold removes
+nothing (max Jaccard 0.2155). Accepted deviations (D48 vii): 10k-20k chunks unreachable; 3 source types, one blog host; 0
+published chunks in the 18-month window.
 
 ## OPEN OWNER ITEMS (Phase 2)
-1. Kodaikanal (D48 amendment g): the agreed exact-dedupe rule keeps the Ooty/Kodaikanal post under Ooty, so Kodaikanal has no blog
-   chunk and fails D23 at chunk level (17 vs 18 pass). Keep, or assign that post to Kodaikanal before the freeze.
-2. Review the build-time rules (D48 amendments): inline-link joins, image-credit lines, mid-post "Read more" handling, the two
-   rejected learned lines, "km."/"ft." not abbreviations, added hold-out spellings Thekkadi and Brihadeeswara.
-3. "Periyar Dam" in a Madurai chunk (D48 amendment h) is kept; "Dam" is not in the O8 context list. Drop or keep?
-4. `.env` keys (above). Reddit credentials (D45). O12 sharing (below).
+DECIDED in the review round: Kodaikanal stays a chunk-level D23 fail (D48 i); Thekkadi/Brihadeeswara accepted (D48 ii); Periyar Dam
+dropped and O8 amended (D48 iii); reference date from .env (D48 iv).
+1. Review the build-time cleaning rules (D48 amendment a-e): evidence in `python scripts/phase2_evidence.py rejoin credits`.
+2. Landmark scan (owner list, UNVERIFIED): "Borra Caves" appears once (Visakhapatnam Wikipedia chunk 500b7e3d23575ed7); Borra
+   Caves are in the Araku hills. Reported only, nothing dropped: decide whether landmark names join the hold-out list.
+3. `.env` keys (above). Reddit credentials (D45). O12 sharing (below). Wikimedia Terms of Use section 7 wording: not in the repo
+   (no fetched copy); needed for the report and app attribution (Phase 8).
 Phase 1 items still open: terms quotes and the wiki robots gap (D36/D43), O12, the pre-squash bundle location, D24 review, outreach
 emails unsent, O13 airport allowlist file (Phase 5), attribution in the report and app (Open-Meteo, OSM, Wikimedia).
 
 ## FREEZE PROCEDURE (not executed; run only on the owner's explicit go-ahead)
 Preconditions: (a) Reddit resolved (credentials arrived and the collector ran, or absence accepted; D45); if new raw data arrives,
-rerun `learn`, review its lines, and redo the dry run. (b) The real bge-m3 tokenizer available locally: set TOKENIZER_DIR; a freeze
-with the regex proxy is not allowed (D48 2). (c) Owner decisions on items 1-3 above.
+rerun `learn`, review its lines, and redo the dry run. (b) TOKENIZER: the real bge-m3 tokenizer.json available locally and
+TOKENIZER_DIR set in .env; processed_manifest.json `counter` must read "tokenizer.json sha256:..."; a freeze with the regex proxy
+is not allowed (D48 2). All chunk counts above are then recomputed. (c) REFERENCE DATE: EVAL_REFERENCE_DATE=2026-10-18 set in
+.env, and corpus_stats `reference_date_source` must read "EVAL_REFERENCE_DATE in .env" (no --reference-date override at the freeze).
+(d) D33: applied ONCE at chunk level (step 2), with the excluded list and the hidden_gem consequence (0 left, D44) in LOG.md.
+(e) Owner decisions on the open items above. (f) check_corpus() passes on the final file (it runs inside --write).
 Steps: 1. `python scripts/process.py --reference-date <EVAL_REFERENCE_DATE> --write` twice; both runs must give the same sha256 in
 data/manifests/processed_manifest.json, whose `counter` must name tokenizer.json. 2. Apply D33 ONCE: exclude the places that fail
 D23 at chunk level from chunks.jsonl (record the list and reasons in LOG.md; raw data and registry entries are kept; the planner must
