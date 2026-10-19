@@ -1,0 +1,1181 @@
+{
+ "retrieved_at": "2026-10-18T13:19:02+00:00",
+ "user_agent_product": "TravelPlannerResearch/0.1",
+ "domains": {
+  "www.keralatourism.org": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 16,
+    "star_disallow_sample": [
+     "/Administration/",
+     "/wts/",
+     "/administration/",
+     "/admin/",
+     "/inc/",
+     "/thekkady-boat-mishap.php"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.keralatourism.org/terms-and-conditions",
+     "label": "guessed path",
+     "status": "error: HTTP 500 for https://www.keralatourism.org/terms-and-conditions"
+    },
+    {
+     "url": "https://www.keralatourism.org/terms-of-use",
+     "label": "guessed path",
+     "status": 200,
+     "chars": 1281,
+     "key_sentences": []
+    },
+    {
+     "url": "https://www.keralatourism.org/disclaimer",
+     "label": "guessed path",
+     "status": 200,
+     "chars": 1281,
+     "key_sentences": []
+    },
+    {
+     "url": "https://www.keralatourism.org/privacy-policy",
+     "label": "guessed path",
+     "status": 200,
+     "chars": 8645,
+     "key_sentences": [
+      "While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.tamilnadutourism.tn.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 0,
+    "star_disallow_sample": [],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.tamilnadutourism.tn.gov.in/terms-of-use",
+     "label": "Terms of Use",
+     "status": 200,
+     "chars": 8371,
+     "key_sentences": [
+      "The site materials specified above do not include the design or layout of the Department of Tourism, Government of Tamil Nadu web site or any other Department of Tourism, Government of Tamil Nadu owned, operated, licensed or controlled site.",
+      "Elements of Department of Tourism, Government of Tamil Nadu web sites may be protected by trademark, copyright, patent and other laws, and may not be copied or imitated in whole or in part, except under the terms of the End-User License Agreement.",
+      "Department of Tourism, Government of Tamil Nadu is a trademark of Department of Tourism, Government of Tamil Nadu- trademark may be used as a hyper-link without obtaining prior permission from Department of Tourism, Government of Tamil Nadu.",
+      "Copyright | Terms of Use | Cookie Policy | Contact Us"
+     ]
+    },
+    {
+     "url": "https://www.tamilnadutourism.tn.gov.in/copyright",
+     "label": "Copyright",
+     "status": 200,
+     "chars": 2637,
+     "key_sentences": [
+      "Copyright | Terms of Use | Cookie Policy | Contact Us"
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.karnatakatourism.org": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 0,
+    "star_disallow_sample": [],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://karnatakatourism.org/sitemap.xml"
+    ],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.karnatakatourism.org/en/terms-conditions/",
+     "label": "Terms & Conditions",
+     "status": 200,
+     "chars": 2069,
+     "key_sentences": [
+      "Intellectual Property Rights All content (text, images, videos, logos, etc.) is the property of Karnataka Tourism Department or licensed third parties.",
+      "Unauthorized use or reproduction of any materials is prohibited."
+     ]
+    },
+    {
+     "url": "https://www.karnatakatourism.org/en/disclaimer/",
+     "label": "Disclaimer",
+     "status": 200,
+     "chars": 1727,
+     "key_sentences": []
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "telanganatourism.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": "error: transport error for https://telanganatourism.gov.in/robots.txt: HTTPSConnectionPool(host='telanganatourism.gov.in', port=443): Max retries exce",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "tourism.telangana.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": "error: transport error for https://tourism.telangana.gov.in/robots.txt: HTTPSConnectionPool(host='tourism.telangana.gov.in', port=443): Max retries ex",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "aptourism.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 404,
+   "robots_note": "no robots.txt (404 or an HTML page): no rules",
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://aptourism.gov.in/terms-and-conditions/",
+     "label": "Terms & Conditions",
+     "status": 200,
+     "chars": 3647,
+     "key_sentences": [
+      "APTA, cannot authorise the use of copyrighted materials contained in linked websites."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "tourism.ap.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": "error: transport error for https://tourism.ap.gov.in/robots.txt: HTTPSConnectionPool(host='tourism.ap.gov.in', port=443): Max retries exceeded with ur",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "tourism.py.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": "error: transport error for https://tourism.py.gov.in/robots.txt: HTTPSConnectionPool(host='tourism.py.gov.in', port=443): Max retries exceeded with ur",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "http://pondytourism.in": {
+   "group": "official",
+   "scheme": "http",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": false,
+     "/sitemap.xml": false,
+     "/search?q=munnar": false,
+     "/destinations/": false,
+     "/blog/": false
+    },
+    "star_disallow_count": 1,
+    "star_disallow_sample": [
+     "/"
+    ],
+    "star_blanket_disallow": true,
+    "crawl_delay_star": null,
+    "sitemaps": [],
+    "fully_blocked_agents": [
+     "*"
+    ]
+   },
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "www.incredibleindia.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 1,
+    "star_disallow_sample": [
+     "/content/dam/incredible-india-content-hub/"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.incredibleindia.gov.in/sitemap.xml"
+    ],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.incredibleindia.gov.in/en/terms-of-use",
+     "label": "Terms of Use",
+     "status": 200,
+     "chars": 25060,
+     "key_sentences": [
+      "Ministry of Tourism cannot authorise the use of copyrighted materials contained in linked websites.",
+      "Intellectual Property Rights You acknowledge that the Content on the Platform(s) is subject to copyright, trade mark and possibly other intellectual property rights.",
+      "Unless you are expressly authorized by us, or otherwise by law, you must not do any of the following yourself, or permit or authorise any other person to: sell, reproduce, publish, distribute, communicate to the public (e.g.",
+      "by making available online or electronically transmitting) modify, display, perform in public, prepare derivative works based on or make an adaptation of, repost or otherwise use any of the Content (or any readily identifiable portion of the Content) in any way without our prior written consent; or otherwise infringe the intellectual property rights of any person in using the Platform(s) or any Content.",
+      "Nothing you do on or in relation to the Platform(s) will transfer any intellectual property rights to you or license to you any intellectual property rights unless this is expressly stated.",
+      "You agree that Ministry of Tourism, Government of India owns the copyright and trade marks in the marketing logo Incredible India\", the domain name(s) INCREDIBLEINDIA.GOV.IN, INCREDIBLEINDIA.ORG, tourism.gov.in, the advertising tag line(s) appearing in Ministry of Tourism, Government of India advertisements on the Platform(s) and the corporate logo \"Incredible India\" (the Ministry of Tourism Trade Marks).",
+      "You agree not to use any of the Ministry of Tourism, Government of India Trademarks without our prior written consent.",
+      "You agree that you will not misuse any downloadable Content included on the Platform(s), including but not limited to, reproducing, adapting, communicating the Content to the public, including the Content on another website or making misleading or false representations about the Content, unless expressly authorised by Ministry of Tourism, Government of India.",
+      "You can revoke this licence at any time by contacting us in writing at dg-tourism@nic.in and informing us that you no longer want us to use your photo.",
+      "--> Reset your password Set the new password for your account so you can login and access all the features I'm not a Robot --> Registration successful Thank you for signing up Password changed!"
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "tourism.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": "error: HTTP 403 for https://tourism.gov.in/robots.txt",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "whc.unesco.org": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 36,
+    "star_disallow_sample": [
+     "/web/whc/archive/out/",
+     "/web/whc/conf201/",
+     "/web/whc/fr/archive/out",
+     "/web/whc/nwhc/",
+     "/web/whc/nwhc.fr/",
+     "/*id_search_state=*"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [],
+    "fully_blocked_agents": [
+     "AI2Bot",
+     "Amazonbot",
+     "Applebot-Extended",
+     "Bytespider",
+     "CCBot",
+     "ClaudeBot",
+     "FacebookBot",
+     "GPTBot",
+     "Meta-ExternalAgent",
+     "cohere-training-data-crawler",
+     "omgili",
+     "omgilibot"
+    ]
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://whc.unesco.org/en/disclaimer/",
+     "label": "About this Website",
+     "status": 200,
+     "chars": 7232,
+     "key_sentences": [
+      "World Heritage Convention Resources About this Website Terms / Policies Print Share on social media Facebook Twitter UNESCO social media Facebook Youtube Twitter RSS World Heritage Terms / Policies Syndication Terms of Use By accessing the UNESCO Sites and/or using any UNESCO content, you acknowledge that you have fully read, understood, and agree to be bound by the following Terms of use.",
+      "The elements it displays may not be copied or retransmitted by any means without explicit authorisation from the World Heritage Centre or the copyright holders.",
+      "The non exclusive cession of rights does not impinge upon intellectual property rights (rights of the photographer / director of the video or copyright owner if different) and that when the images are distributed by UNESCO a credit to the photographer / director of the video is always given, if clearly provided in the form.",
+      "non © UNESCO Not property of UNESCO, property of third parties, copyright holders, who authorize the UNESCO World Heritage Centre to display and distribute them.",
+      "Any use of photographs requires a separate request for authorization from copyright holders ."
+     ]
+    },
+    {
+     "url": "https://www.unesco.org/en/terms-use",
+     "label": "linked from UNESCO",
+     "status": 200,
+     "chars": 25585,
+     "key_sentences": [
+      "Copyright, ownership and database rights 5.",
+      "Definitions In the UNESCO General Terms and Conditions of Use of UNESCO Websites and Online Services (the \"UNESCO Terms of Use\"), the following definitions apply: \"AI Feature\" means any Artificial Intelligence System made available to Users on a Site, including conversational assistants, automated translation, search and recommendation, whether operated by UNESCO or by a third party on its behalf.",
+      "\"Automated System\" means any robot, crawler, spider, scraper, bot, script, application programming interface (API) client or other automated means used to access, read, copy or extract Materials.",
+      "\"Permitted Quotation\" means the excerption or quotation of Materials by individuals, including academics, journalists, students or representatives of Member States, for non-commercial purposes such as comment, news reporting, teaching, scholarship or research, as further set out in Section 5.",
+      "\"Text and Data Mining\" or \"TDM\" means any automated analytical technique applied to Materials to analyse them and generate information, including patterns, trends and correlations.",
+      "\"User\" means any person or entity, and any Automated System acting on their behalf, that accesses or uses a Site.",
+      "\"Web Scraping\" means the automated extraction, harvesting or copying of Materials from a Site.",
+      "Acceptance By accessing or using any Site or the Materials accessible through it, whether directly or through an Automated System, the User acknowledges they have read, understood, and agreed to be bound by the UNESCO Terms of Use, together with any specific terms applicable to that Site or Materials accessible through it, and any other applicable UNESCO authorization.",
+      "Any access to or use of a Site or Material accessible through it by any person or Automated System that is contrary to the UNESCO Terms of Use, any applicable Site-specific terms or any applicable authorization is unauthorized and prohibited.",
+      "In the event of any inconsistency between these Terms and any Site-specific terms, these Terms shall prevail, unless the Site-specific terms, an applicable license or a specific authorization issued by UNESCO expressly provides otherwise in respect of the relevant Site, Material or use."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "periyartigerreserve.org": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 14,
+    "star_disallow_sample": [
+     "/Login",
+     "/SignUp",
+     "/ForgotPassword",
+     "/Profile",
+     "/EditProfile",
+     "/Cart"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": "1",
+    "sitemaps": [
+     "https://periyartigerreserve.org/sitemap.xml"
+    ],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://periyartigerreserve.org/terms-and-conditions",
+     "label": "guessed path",
+     "status": 200,
+     "chars": 527,
+     "key_sentences": []
+    },
+    {
+     "url": "https://periyartigerreserve.org/Disclaimer",
+     "label": "guessed path",
+     "status": 200,
+     "chars": 527,
+     "key_sentences": []
+    },
+    {
+     "url": "https://periyartigerreserve.org/privacy-policy",
+     "label": "guessed path",
+     "status": 200,
+     "chars": 527,
+     "key_sentences": []
+    }
+   ],
+   "soft_404_suspected": true
+  },
+  "asi.nic.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots_note": "no robots.txt (404 or an HTML page): no rules",
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://asi.nic.in/pages/Term-&-Conditions/",
+     "label": "Terms & Conditions |",
+     "status": 200,
+     "chars": 4910,
+     "key_sentences": [
+      "Material featured on this website may be reproduced free of charge after taking proper permission by sending a mail to us.",
+      "However, the material has to be reproduced accurately and not to be used in a derogatory manner or in a misleading context.",
+      "Wherever the material is being published or issued to others, the source must be prominently acknowledged.",
+      "However, the permission to reproduce this material shall not extend to any material which is identified as being copyright of a third party.",
+      "Authorization to reproduce such material must be obtained from the departments/copyright holders concerned.",
+      "This website does not automatically capture any specific personal information from you, (like name, phone number or e-mail address), that allows us to identify you individually.",
+      "Links to Departments website by other websites: We do not object to linking directly to the information that is hosted on this website and no prior permission is required for the same.",
+      "Terms & Conditions | Privacy Policy | Copyright Policy | Hyperlinking Policy | Accessibility Statement नियम और शर्तें | गोपनीयता नीति | कॉपीराइट नीति | हाइपरलिंक नीति | अभिगम्यता वक्तव्य Copyright © 2025 Archaeological Survey of India Government of India कॉपीराइट © 2025 भारतीय पुरातत्व सर्वेक्षण भारत सरकार --> × Search"
+     ]
+    },
+    {
+     "url": "https://asi.nic.in/pages/Copyright-Policy/",
+     "label": "Copyright Policy |",
+     "status": 200,
+     "chars": 830,
+     "key_sentences": [
+      "Archaeological Survey of India menu Home About Us History Organisation ASI Logo Archive Image Gallery Video Gallery Home Copyright Policy Home Copyright Policy Copyright Policy This contents of this website may not be reproduced partially or fully, without due permission from Archaeological Survey of India, Govt.",
+      "If referred to as a part of another publication, the source must be appropriately acknowledged.",
+      "Terms & Conditions | Privacy Policy | Copyright Policy | Hyperlinking Policy | Accessibility Statement नियम और शर्तें | गोपनीयता नीति | कॉपीराइट नीति | हाइपरलिंक नीति | अभिगम्यता वक्तव्य Copyright © 2025 Archaeological Survey of India Government of India कॉपीराइट © 2025 भारतीय पुरातत्व सर्वेक्षण भारत सरकार --> × Search"
+     ]
+    },
+    {
+     "url": "https://asi.nic.in/pages/Hyperlinking-Policy/",
+     "label": "Hyperlinking Policy |",
+     "status": 200,
+     "chars": 1476,
+     "key_sentences": [
+      "Archaeological Survey of India menu Home About Us History Organisation ASI Logo Archive Image Gallery Video Gallery Home Hyperlinking Policys Home Hyperlinking Policy Hyperlinking Policy At many places in this website, you shall find links to other websites/portals.",
+      "of India website by other websites/portals Prior permission is required before hyperlinks are directed from any website/portal to this site.",
+      "Permission for the same, stating the nature of the content on the pages from where the link has to be given and the exact language of the Hyperlink should be obtained by sending a request at Archaeological Survey of India, Govt.",
+      "of India Terms & Conditions | Privacy Policy | Copyright Policy | Hyperlinking Policy | Accessibility Statement नियम और शर्तें | गोपनीयता नीति | कॉपीराइट नीति | हाइपरलिंक नीति | अभिगम्यता वक्तव्य Copyright © 2025 Archaeological Survey of India Government of India कॉपीराइट © 2025 भारतीय पुरातत्व सर्वेक्षण भारत सरकार --> × Search"
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "tirumala.org": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 0,
+    "star_disallow_sample": [],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "hrce.tn.gov.in": {
+   "group": "official",
+   "scheme": "https",
+   "robots_status": 404,
+   "robots_note": "no robots.txt (404 or an HTML page): no rules",
+   "home_status": 200,
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "sahapedia.org": {
+   "group": "reference_or_blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 34,
+    "star_disallow_sample": [
+     "/core/",
+     "/profiles/",
+     "/README.md",
+     "/composer/Metapackage/README.txt",
+     "/composer/Plugin/ProjectMessage/README.md",
+     "/composer/Plugin/Scaffold/README.md"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://sahapedia.org/terms-use",
+     "label": "Terms of use",
+     "status": 200,
+     "chars": 22307,
+     "key_sentences": [
+      "A “Regulator account” will not be able to delete its account without prior written permission from Sahapedia’s authorized representative in this regard.",
+      "Users may submit, upload and post inter alia audio, text, photos, pictures, graphics, comments, and other content, data or information (“Content”) under a CC-BY-NC-SA 4.0 licence.",
+      "User Content will be stored by Sahapedia and may be shared and distributed by Sahapedia, as well as other Users of the Platform, under a CC-BY-NC-SA 4.0 licence.",
+      "Sahapedia has complete editorial discretion over the Content that it creates, shares and distributes, and may make changes, edits, transformations, amendments, modifications, deletions and all other things as permitted by the terms of the CC-BY-NC-SA 4.0 licence.",
+      "Sahapedia will, as far as possible, seek to share and distribute images and video-related content in a reasonably low-resolution format, or with watermarks, so as to protect the commercial viability of such Content.",
+      "Any use of copyright protected material within your Content may infringe someone else’s rights, and as such, is strictly prohibited.",
+      "LICENSING - CREATIVE COMMONS Unless otherwise stated, we will be adopting the Creative Commons approach to licensing of intellectual property.",
+      "Unless otherwise stated, we grant you the right to use this Website and the Platform for personal uses only, and in strict accordance with the terms of the CC-BY-NC-SA 4.0 licence only.",
+      "We are committed to acquiring content from our Users through their membership accounts only through a CC-BY-NC-SA 4.0 licence.",
+      "We are committed to acquiring content from institutions, artists, experts and other persons only through a CC-BY-NC-SA 4.0 licence."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.inditales.com": {
+   "group": "reference_or_blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 0,
+    "star_disallow_sample": [],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://inditales.com/sitemap_index.xml"
+    ],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.inditales.com/privacy-policy/",
+     "label": "guessed path",
+     "status": 200,
+     "chars": 5136,
+     "key_sentences": [
+      "Facebook Instagram Linkedin Mail Pinterest X Youtube © Copyright 2004-2021 | Anuradha Goyal"
+     ]
+    },
+    {
+     "url": "https://www.inditales.com/terms-and-conditions/",
+     "label": "guessed path",
+     "status": 404,
+     "chars": 2901,
+     "key_sentences": [
+      "Facebook Instagram Linkedin Mail Pinterest X Youtube © Copyright 2004-2021 | Anuradha Goyal"
+     ]
+    },
+    {
+     "url": "https://www.inditales.com/disclaimer/",
+     "label": "guessed path",
+     "status": 404,
+     "chars": 2901,
+     "key_sentences": [
+      "Facebook Instagram Linkedin Mail Pinterest X Youtube © Copyright 2004-2021 | Anuradha Goyal"
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "wikitravel.org": {
+   "group": "reference_or_blog",
+   "scheme": "https",
+   "robots_status": "error: HTTP 403 for https://wikitravel.org/robots.txt",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "www.tripoto.com": {
+   "group": "commercial",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 16,
+    "star_disallow_sample": [
+     "/common_auth/",
+     "/generic_auth/",
+     "/trips/createNew",
+     "/amp/login",
+     "/photos/",
+     "/ApiSearchResults/"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.tripoto.com/sitemap-index.xml"
+    ],
+    "fully_blocked_agents": [
+     "AI2Bot",
+     "Applebot-Extended",
+     "BLEXBot",
+     "Bytespider",
+     "CCBot",
+     "ClaudeBot",
+     "Diffbot",
+     "GPTBot",
+     "Google-Extended",
+     "ImagesiftBot",
+     "MJ12bot",
+     "PanguBot",
+     "Timpibot",
+     "anthropic-ai",
+     "cohere-ai",
+     "cohere-training-data-crawler",
+     "img2dataset",
+     "meta-externalagent",
+     "omgili",
+     "omgilibot"
+    ]
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.tripoto.com/terms",
+     "label": "Terms",
+     "status": 200,
+     "chars": 37129,
+     "key_sentences": [
+      "The Website grants you a limited sub-license to access and make personal use of the content therein and not to download (other than page caching) or modify it, or any portion of it, except with express written consent of the Company.",
+      "This license does not include any resale or commercial use of this Website or its contents; any collection and use of any product listings, descriptions, or prices; any derivative use of this Website or its contents; any downloading or copying of account information for the benefit of another third party; or any use of data mining, robots, or similar data gathering and extraction tools.",
+      "This Website or any portion of it may not be reproduced, duplicated, copied, sold, resold, visited, or otherwise exploited for any commercial purpose without express written consent of the Company.",
+      "The User agrees, acknowledges and confirms that before making any transaction, the User shall check the service description, service conditions and price carefully.",
+      "You agree, acknowledge and recognize that the contract of sale/ transaction with the supplier/service provider is governed exclusively by laws of India and is subject to the exclusive jurisdiction of the courts in New Delhi to the exclusion of all other courts.",
+      "By accessing, viewing, or using this Website, you acknowledge, declare, confirm and represent & warrant to Company that you have read and understood the Terms and accept them as an agreement as a binding legal contract equivalent of a duly signed contract binding on you.",
+      "You acknowledge that you only have a limited right merely to use the Website and that you have no right to modify any part of the Website or reproduce, copy, distribute, sold, resold or access the same for commercial purposes illegally.",
+      "You shall use the Website, and any voucher/coupons/credit points/other benefits obtained through it, for personal, non-commercial use only and shall not re-sell the same to any other person.",
+      "Company and its licensees’ may publicly display advertisements and other information adjacent to or included with Your Content.",
+      "Such disclosure, submission or offer of any Comments shall constitute an assignment to the Company of all rights, titles and interests in all copyrights and other intellectual properties in the Comments."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.holidify.com": {
+   "group": "commercial",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 7,
+    "star_disallow_sample": [
+     "/mobile/",
+     "/custom-package/",
+     "/profile/",
+     "/images/cmsuploads/gallery/",
+     "/rest/content/getWeather*",
+     "/*/NaN"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.holidify.com/terms-of-service",
+     "label": "guessed path",
+     "status": 404,
+     "chars": 2000,
+     "key_sentences": [
+      "OR Login with Google Sign up with Email × Share this page Whatsapp Messenger Copy Link Email Facebook Twitter"
+     ]
+    },
+    {
+     "url": "https://www.holidify.com/terms",
+     "label": "guessed path",
+     "status": 404,
+     "chars": 2000,
+     "key_sentences": [
+      "OR Login with Google Sign up with Email × Share this page Whatsapp Messenger Copy Link Email Facebook Twitter"
+     ]
+    },
+    {
+     "url": "https://www.holidify.com/terms-and-conditions",
+     "label": "guessed path",
+     "status": 404,
+     "chars": 2000,
+     "key_sentences": [
+      "OR Login with Google Sign up with Email × Share this page Whatsapp Messenger Copy Link Email Facebook Twitter"
+     ]
+    },
+    {
+     "url": "https://www.holidify.com/privacy-policy",
+     "label": "guessed path",
+     "status": 404,
+     "chars": 2000,
+     "key_sentences": [
+      "OR Login with Google Sign up with Email × Share this page Whatsapp Messenger Copy Link Email Facebook Twitter"
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.thrillophilia.com": {
+   "group": "commercial",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 13,
+    "star_disallow_sample": [
+     "/admin/",
+     "/localities/",
+     "/landing_pages/",
+     "/support/ticket-details/",
+     "/job_openings/*/apply",
+     "/blog/wp-admin/"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.thrillophilia.com/sitemap.xml.gz"
+    ],
+    "fully_blocked_agents": [
+     "Alexibot",
+     "BackDoorBot/1.0",
+     "Balihoo",
+     "BlowFish/1.0",
+     "BotALot",
+     "BotRightHere",
+     "BuiltBotTough",
+     "Bullseye/1.0",
+     "BunnySlippers",
+     "CheeseBot",
+     "CherryPicker",
+     "Copernic",
+     "CopyRightCheck",
+     "Crescent",
+     "EmailCollector",
+     "EmailSiphon",
+     "EmailWolf",
+     "ExtractorPro",
+     "Foobot",
+     "HTTrack",
+     "Harvest/1.5",
+     "InfoNaviRobot",
+     "JennyBot",
+     "LNSpiderguy",
+     "LexiBot",
+     "LinkWalker",
+     "LinkextractorPro",
+     "MIIxpc",
+     "MIIxpc/4.2",
+     "Mata Hari",
+     "Microsoft URL Control - 6.00.8169",
+     "Mister PiX",
+     "NetAnts",
+     "NetMechanic",
+     "Offline Explorer",
+     "Openbot",
+     "Openfind",
+     "ProPowerBot/2.14",
+     "ProWebWalker",
+     "Python-urllib",
+     "QueryN Metasearch",
+     "RMA",
+     "RepoMonkey",
+     "SiteSnagger",
+     "SpankBot",
+     "Spinn3r",
+     "Szukacz/1.4",
+     "Tailrank",
+     "Teleport",
+     "TeleportPro",
+     "Telesoft",
+     "The Intraformant",
+     "TheNomad",
+     "TightTwatBot",
+     "True_Robot",
+     "True_Robot/1.0",
+     "URL_Spider_Pro",
+     "URLy Warning",
+     "VCI",
+     "WWW-Collector-E",
+     "Web Image Collector",
+     "WebAuto",
+     "WebBandit",
+     "WebCopier",
+     "WebEnhancer",
+     "WebSauger",
+     "WebStripper",
+     "WebZip",
+     "WebZip/4.0",
+     "Website Quester",
+     "Wget",
+     "Wget/1.5.3",
+     "Wget/1.6",
+     "Xenus",
+     "Zeus",
+     "asterias",
+     "b2w/0.1",
+     "cosmos",
+     "hloader",
+     "httplib",
+     "humanlinks",
+     "larbin",
+     "libWeb/clsHTTP",
+     "lwp-trivial",
+     "lwp-trivial/1.34",
+     "moget",
+     "moget/2.1",
+     "psbot",
+     "spanner",
+     "suzuran",
+     "toCrawl/UrlDispatcher",
+     "turingos"
+    ]
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.thrillophilia.com/terms-and-conditions",
+     "label": "Terms & Conditions",
+     "status": 200,
+     "chars": 20162,
+     "key_sentences": [
+      "By submitting reviews or photos (\"User Content\"), You grant Thrillophilia an irrevocable, royalty-free license to use, display, or repurpose it for marketing and operational purposes.",
+      "The User acknowledges that multiple agencies may be involved in this process, and each agency's data policy will apply.",
+      "Thrillophilia is not accountable for the data handling practices of these third-party agencies User data may be disclosed to law enforcement agencies or regulatory bodies for lawful investigations or legal obligations without requiring prior consent from the User.",
+      "Thrillophilia will not sell, rent, or disclose User data for commercial gains beyond the scope of providing its services.",
+      "Classified as \"transactional\" and not \"unsolicited commercial communication\" as per the Telecom Regulatory Authority of India (TRAI) guidelines.",
+      "INTELLECTUAL PROPERTY All logos, trademarks, text, design elements, and software on the Platform are the property of Thrillophilia or licensed to it.",
+      "You may not reproduce or distribute them without express permission.",
+      "ACKNOWLEDGMENT By (1) creating an account on Thrillophilia, (2) making any Booking (Part A or Part B), or (3) using the Platform, you acknowledge you have read, understood, and agree to these Terms and Conditions in full, including all disclaimers, liabilities, cancellations, modifications, visa/flight/hotel policies, and no-cash deposit rules."
+     ]
+    },
+    {
+     "url": "https://www.thrillophilia.com/copyright-policies",
+     "label": "Copyright Policies",
+     "status": 200,
+     "chars": 9526,
+     "key_sentences": [
+      "Ownership of Thrillophilia Content All content displayed on Thrillophilia’s website, applications, and associated platforms is protected under applicable copyright and intellectual property laws.",
+      "No visitor or third party may copy, reproduce, distribute, modify, republish, upload, transmit, perform, or create derivative works from any content without prior written consent from Thrillophilia.",
+      "Content may be downloaded only where explicitly permitted, solely for personal, non-commercial use, and only if all copyright notices remain intact.",
+      "Content must not be copied, adapted, scraped, spun, or derived from other websites, OTAs, marketplaces, brochures, social media, or any digital or physical source.",
+      "The following are not permitted unless explicitly licensed for commercial resale and sublicensing: stock images, Creative Commons material, AI-generated media, or third-party licensed content.",
+      "2.4 License Granted to Thrillophilia By supplying content, you grant Thrillophilia a perpetual, worldwide, royalty-free, irrevocable license to use, modify, adapt, and display the content for: Tour listings Marketing and advertising PR and brand communication Internal and external promotional use No attribution is required.",
+      "Copyright Violations & Liability If a copyright violation is reported by a claimant, identified internally by Thrillophilia, or discovered during audit, then: The infringing content will be removed immediately Associated tours may be modified or withdrawn The partner may be permanently removed from Thrillophilia’s network All legal liability for supplied content rests solely with the partner, not Thrillophilia.",
+      "Copyright Claims & Takedown Process 6.1 For Copyright Claimants To report infringement, please provide: Exact URL(s) of the content Identification of the infringing material Proof of copyright ownership, including registration (if applicable), or detailed evidence of authorship and ownership Incomplete or unverifiable claims will not be acted upon.",
+      "Enforcement Rights Thrillophilia reserves the right to remove or modify any content at any time, watermark content to prevent misuse, and take final and binding decisions on all copyright matters."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.lonelyplanet.com": {
+   "group": "commercial",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 45,
+    "star_disallow_sample": [
+     "/404",
+     "/500",
+     "/gateway/",
+     "/thorntree/*",
+     "/members/*",
+     "/assets/"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.lonelyplanet.com/sitemap-index.xml",
+     "https://www.lonelyplanet.com/sitemaps/articles/sitemap.xml",
+     "https://www.lonelyplanet.com/sitemaps/articles/directories/sitemap.xml",
+     "https://www.lonelyplanet.com/sitemaps/destinations/sitemap.xml"
+    ],
+    "fully_blocked_agents": [
+     "008",
+     "GPTBot",
+     "voltron"
+    ]
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.lonelyplanet.com/legal/website-terms",
+     "label": "Terms and Conditions",
+     "status": 200,
+     "chars": 91201,
+     "key_sentences": [
+      "No commercial use of Sites is permitted.",
+      "You may use the Sites for personal, non-commercial purposes only.",
+      "For the avoidance of doubt, you are specifically prohibited hereunder from performing any âtext and data miningâ (TDM) activities as those activities are described under Art.",
+      "4 of the EU Directive on Copyright in the Digital Single Market.",
+      "Notwithstanding the foregoing, we allow public search engine operators to use web crawlers to copy materials from our Services.",
+      "Unless expressly allowed in this Agreement, you must not: Collect or harvest any personally identifiable information, including account names, from our Services or Content; Use any communication systems provided by our Services (such as forums or email) for commercial or solicitation purposes; nor Solicit users of our Services for commercial purposes without our prior written consent.",
+      "Lonely Planet trademarks and copyright All content on the Sites is owned by Lonely Planet Global Inc.",
+      "(us) or licensed to us by our registered users and other licensees.",
+      "You may not copy, store, scrape or use any part of our site without permission.",
+      "You license us the non-exclusive, perpetual, irrevocable, royalty-free, worldwide rights to reproduce, communicate, edit, store, adapt or otherwise use any content you upload to the site, including any feedback that you submit through the site, via third party applications available through the site, on the site and in our other products (your content)."
+     ]
+    },
+    {
+     "url": "https://www.lonelyplanet.com/legal",
+     "label": "Privacy Policy",
+     "status": 200,
+     "chars": 35016,
+     "key_sentences": [
+      "No part of this site may be reproduced without our written permission."
+     ]
+    },
+    {
+     "url": "https://www.lonelyplanet.com/legal/privacy-policy",
+     "label": "Privacy Policy",
+     "status": 200,
+     "chars": 34820,
+     "key_sentences": [
+      "No part of this site may be reproduced without our written permission."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.tripadvisor.in": {
+   "group": "commercial",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 621,
+    "star_disallow_sample": [
+     "/5349",
+     "/AccommodationTips",
+     "/AccountMerge",
+     "/Achievements",
+     "/ActionRecord",
+     "/AddForumUser"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.tripadvisor.in/sitemap/2/en_IN/sitemap_en_IN_index.xml",
+     "https://www.tripadvisor.in/sitemap/2/en_IN/sitemap_en_IN_location_photo_direct_link_index.xml",
+     "https://www.tripadvisor.in/sitemap/2/en_IN/sitemap_en_IN_show_user_reviews_index.xml",
+     "https://www.tripadvisor.in/sitemap/att/en_IN/sitemap_en_IN_attractions_index.xml"
+    ],
+    "fully_blocked_agents": [
+     "Amazonbot",
+     "Applebot-Extended",
+     "Bytespider",
+     "CCBot",
+     "ClaudeBot",
+     "Cohere-ai",
+     "GPTBot",
+     "Google-CloudVertexBot",
+     "Google-Extended",
+     "Img2dataset",
+     "PanguBot",
+     "PetalBot",
+     "SentiBot",
+     "YouBot",
+     "magpie-crawler",
+     "meta-externalagent"
+    ]
+   },
+   "home_status": "error: HTTP 403 for https://www.tripadvisor.in/",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "www.thehindu.com": {
+   "group": "commercial",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 96,
+    "star_disallow_sample": [
+     "/cgi-bin/",
+     "/cdn-cgi/*",
+     "/config/",
+     "*/analysis-logger/*",
+     "/todays-paper/*article*.ece*",
+     "/migration_catalog/"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.thehindu.com/sitemap/googlenews/all/all.xml",
+     "https://www.thehindu.com/sitemap/update/all.xml",
+     "https://www.thehindu.com/sitemap/update/section.xml",
+     "https://www.thehindu.com/feeder/default.rss"
+    ],
+    "fully_blocked_agents": [
+     "Amazonbot",
+     "Anthropic-ai",
+     "Bytespider",
+     "CCBot",
+     "ChatGPT-User",
+     "Claude-Web",
+     "ClaudeBot",
+     "FacebookBot",
+     "GPTBot",
+     "Meta-ExternalAgent",
+     "OAI-SearchBot",
+     "PerplexityBot",
+     "YouBot",
+     "ia_archiver"
+    ]
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.thehindu.com/opinion/op-ed/us-midterms-donald-trumps-test-indias-stakes/article71593689.ece",
+     "label": "U.S. midterms — Donald Trump’s test, India’s stakes",
+     "status": 200,
+     "chars": 13424,
+     "key_sentences": []
+    },
+    {
+     "url": "https://www.thehindu.com/readers-editor-terms/",
+     "label": "Readers Editor-Terms of Reference",
+     "status": 200,
+     "chars": 11136,
+     "key_sentences": [
+      "The Hindu wishes to acknowledge that it has been inspired to do this by the exemplary practice and experience of The Guardian , U.K., over the past decade in a crucial area of newspaper performance."
+     ]
+    },
+    {
+     "url": "https://www.thehindu.com/news/national/cec-gyanesh-kumar-protests-oct-18-live-updates-cjp/article71598964.ece",
+     "label": "The CJP has warned of legal action against those allegedly r",
+     "status": 200,
+     "chars": 20939,
+     "key_sentences": []
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.nativeplanet.com": {
+   "group": "commercial",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 11,
+    "star_disallow_sample": [
+     "/hotel.php*",
+     "/view-map.php*",
+     "/temp/",
+     "/amphtml/temp/",
+     "/scripts/",
+     "/*?utm=*"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.nativeplanet.com/sitemap-latest.xml",
+     "https://www.nativeplanet.com/sitemap_index.xml"
+    ],
+    "fully_blocked_agents": [
+     "AI2Bot",
+     "Amazonbot",
+     "Applebot-Extended",
+     "Bytespider",
+     "CCBot",
+     "ClaudeBot",
+     "DeepSeekBot",
+     "Diffbot",
+     "GPTBot",
+     "Google-Extended",
+     "ICC-Crawler",
+     "ImagesiftBot",
+     "PetalBot",
+     "TikTokSpider",
+     "anthropic-ai",
+     "cohere-ai",
+     "cohere-training-data-crawler",
+     "img2dataset",
+     "meta-externalagent",
+     "omgili"
+    ]
+   },
+   "home_status": 200,
+   "terms_pages": [
+    {
+     "url": "https://www.nativeplanet.com/terms-of-use",
+     "label": "guessed path",
+     "status": 410,
+     "chars": 360,
+     "key_sentences": []
+    },
+    {
+     "url": "https://www.nativeplanet.com/terms-and-conditions",
+     "label": "guessed path",
+     "status": 410,
+     "chars": 360,
+     "key_sentences": []
+    },
+    {
+     "url": "https://www.nativeplanet.com/privacy-policy",
+     "label": "guessed path",
+     "status": 410,
+     "chars": 360,
+     "key_sentences": []
+    }
+   ],
+   "soft_404_suspected": false
+  }
+ }
+}

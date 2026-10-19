@@ -1,0 +1,530 @@
+{
+ "passing": 18,
+ "counted": 26,
+ "records_by_source": {
+  "wikivoyage": 25,
+  "wikipedia": 26,
+  "blog": 43,
+  "sahapedia": 3
+ },
+ "notes": {
+  "reddit": "skipped: no REDDIT_CLIENT_ID/REDDIT_CLIENT_SECRET in .env (access requested, approval pending)",
+  "web": "notes: sahapedia.org: no sitemap URL names Hyderabad",
+  "youtube": "skipped: withdrawn (D27)",
+  "wikivoyage": "skipped: no wikivoyage article for Warangal"
+ },
+ "places": [
+  {
+   "place": "Hyderabad",
+   "state": "TS",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 8
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Bengaluru",
+   "state": "KA",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 8
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Chennai",
+   "state": "TN",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Pondicherry",
+   "state": "PY",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Visakhapatnam",
+   "state": "AP",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 2
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Kochi",
+   "state": "KL",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "sahapedia": 2,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Auroville",
+   "state": "PY",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  },
+  {
+   "place": "Mysuru",
+   "state": "KA",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Ooty",
+   "state": "TN",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 2
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Madurai",
+   "state": "TN",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Tirupati",
+   "state": "AP",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Hampi",
+   "state": "KA",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 2
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Kanniyakumari",
+   "state": "TN",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Rameswaram",
+   "state": "TN",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  },
+  {
+   "place": "Srisailam",
+   "state": "AP",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  },
+  {
+   "place": "Thanjavur",
+   "state": "TN",
+   "holdout": true,
+   "records_by_raw_source": {},
+   "types": [],
+   "passes": false,
+   "reason": "hold-out: not collected by design"
+  },
+  {
+   "place": "Kodaikanal",
+   "state": "TN",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Kodagu",
+   "state": "KA",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 5
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Munnar",
+   "state": "KL",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  },
+  {
+   "place": "Mahabalipuram",
+   "state": "TN",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 1
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Wayanad",
+   "state": "KL",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "sahapedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  },
+  {
+   "place": "Alappuzha",
+   "state": "KL",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  },
+  {
+   "place": "Badami",
+   "state": "KA",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 3
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Gokarna",
+   "state": "KA",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1,
+    "blog": 2
+   },
+   "types": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Thekkady",
+   "state": "KL",
+   "holdout": true,
+   "records_by_raw_source": {},
+   "types": [],
+   "passes": false,
+   "reason": "hold-out: not collected by design"
+  },
+  {
+   "place": "Warangal",
+   "state": "TS",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikipedia": 1,
+    "blog": 2
+   },
+   "types": [
+    "blog",
+    "reference"
+   ],
+   "passes": true,
+   "reason": ""
+  },
+  {
+   "place": "Chikmagalur",
+   "state": "KA",
+   "holdout": true,
+   "records_by_raw_source": {},
+   "types": [],
+   "passes": false,
+   "reason": "hold-out: not collected by design"
+  },
+  {
+   "place": "Araku Valley",
+   "state": "AP",
+   "holdout": true,
+   "records_by_raw_source": {},
+   "types": [],
+   "passes": false,
+   "reason": "hold-out: not collected by design"
+  },
+  {
+   "place": "Varkala",
+   "state": "KL",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  },
+  {
+   "place": "Bhadrachalam",
+   "state": "TS",
+   "holdout": false,
+   "records_by_raw_source": {
+    "wikivoyage": 1,
+    "wikipedia": 1
+   },
+   "types": [
+    "reference",
+    "wikivoyage"
+   ],
+   "passes": false,
+   "reason": "only reference-wiki sources (wikivoyage/reference)"
+  }
+ ],
+ "raw_stats": {
+  "wikivoyage": {
+   "records": 25,
+   "bytes": 701920,
+   "places": 25,
+   "body_chars": 682986
+  },
+  "wikipedia": {
+   "records": 26,
+   "bytes": 688794,
+   "places": 26,
+   "body_chars": 672580
+  },
+  "sahapedia": {
+   "records": 3,
+   "bytes": 64117,
+   "places": 2,
+   "body_chars": 61941
+  },
+  "reddit": {
+   "records": 0,
+   "bytes": 0,
+   "places": 0,
+   "body_chars": 0
+  },
+  "youtube": {
+   "records": 0,
+   "bytes": 0,
+   "places": 0,
+   "body_chars": 0
+  },
+  "blog": {
+   "records": 43,
+   "bytes": 310087,
+   "places": 18,
+   "body_chars": 283123
+  },
+  "official": {
+   "records": 0,
+   "bytes": 0,
+   "places": 0,
+   "body_chars": 0
+  }
+ },
+ "transcripts": {
+  "ok": 0,
+  "none": 0,
+  "disabled": 0,
+  "blocked": 0
+ }
+}

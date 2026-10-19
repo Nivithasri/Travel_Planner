@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Hooks and scripts must keep LF endings or sh/python shebangs break on Windows checkouts
+.githooks/* text eol=lf
+*.sh text eol=lf
+*.py text eol=lf

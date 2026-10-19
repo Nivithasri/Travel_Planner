@@ -1,0 +1,214 @@
+{
+  "_comment": "Fixed domain allowlist for the web collector (D17). A domain not listed here is never fetched. ask_first domains need written permission or an accepted-risk entry (with date and evidence) before moving to web_allowlist.",
+  "web_allowlist": [
+    {
+      "domain": "sahapedia.org",
+      "source_type": "reference",
+      "license": "CC BY-NC-SA 4.0",
+      "basis": "robots allows; terms state CC-BY-NC-SA 4.0 for content",
+      "evidence": "data/manifests/source_evidence.json (retrieved 2026-10-18): robots.txt HTTP 200, 34 Disallow rules (CMS paths only), no crawler blocked; terms https://sahapedia.org/terms-use",
+      "approved_by_owner": "2026-10-18",
+      "min_delay_s": 1.0,
+      "max_pages_per_place": 15,
+      "raw_source": "sahapedia"
+    },
+    {
+      "domain": "aptourism.gov.in",
+      "source_type": "official",
+      "license": "terms silent",
+      "basis": "robots allows, no restriction found in terms",
+      "evidence": "data/manifests/source_evidence.json (retrieved 2026-10-18): robots.txt HTTP 404 (no rules); terms https://aptourism.gov.in/terms-and-conditions/ contain only a disclaimer",
+      "approved_by_owner": "2026-10-18",
+      "min_delay_s": 1.0,
+      "max_pages_per_place": 15,
+      "raw_source": "official",
+      "states": [
+        "AP"
+      ]
+    },
+    {
+      "domain": "www.keralatourism.org",
+      "source_type": "official",
+      "raw_source": "official",
+      "license": "no terms found",
+      "states": [
+        "KL"
+      ],
+      "basis": "robots allows, no terms found, user accepted risk on 2026-10-18",
+      "evidence": "data/manifests/source_evidence.json (retrieved 2026-10-18): robots.txt HTTP 200, 16 Disallow rules (/Administration/, /wts/, /admin/, /inc/, ...), no crawler blocked, no sitemap line; /robots.txt and /sitemap.xml allowed; /terms-of-use and /disclaimer return the same Page-not-found shell. Crawled paths: sitemap files (/sitemap.xml, /wp-sitemap.xml, robots Sitemap: lines) and the place pages those list; robots.txt is re-checked by the client for every URL and a disallowed URL is not fetched.",
+      "accepted_by_owner": "2026-10-18",
+      "min_delay_s": 2.0,
+      "max_pages_per_place": 8
+    },
+    {
+      "domain": "www.inditales.com",
+      "source_type": "blog",
+      "raw_source": "blog",
+      "license": "no terms found; copyright Anuradha Goyal (personal blog)",
+      "basis": "robots allows, no terms found, user accepted risk on 2026-10-18",
+      "evidence": "data/manifests/source_evidence.json (retrieved 2026-10-18): robots.txt HTTP 200, no Disallow rule, no crawler blocked, Sitemap: https://inditales.com/sitemap_index.xml. Crawled paths: sitemap files (/sitemap.xml, /wp-sitemap.xml, robots Sitemap: lines) and the place pages those list; robots.txt is re-checked by the client for every URL and a disallowed URL is not fetched.",
+      "accepted_by_owner": "2026-10-18",
+      "min_delay_s": 2.0,
+      "max_pages_per_place": 8
+    },
+    {
+      "domain": "tirumala.org",
+      "source_type": "official",
+      "raw_source": "official",
+      "license": "no terms found",
+      "places": [
+        "Tirupati"
+      ],
+      "basis": "robots allows, no terms found, user accepted risk on 2026-10-18",
+      "evidence": "data/manifests/source_evidence.json (retrieved 2026-10-18): robots.txt HTTP 200, one Disallow rule (/Documents/), no crawler blocked, no sitemap line; /sitemap.xml allowed. Crawled paths: sitemap files (/sitemap.xml, /wp-sitemap.xml, robots Sitemap: lines) and the place pages those list; robots.txt is re-checked by the client for every URL and a disallowed URL is not fetched.",
+      "accepted_by_owner": "2026-10-18",
+      "min_delay_s": 2.0,
+      "max_pages_per_place": 8
+    },
+    {
+      "domain": "hrce.tn.gov.in",
+      "source_type": "official",
+      "raw_source": "official",
+      "license": "no terms found",
+      "states": [
+        "TN"
+      ],
+      "basis": "robots allows, no terms found, user accepted risk on 2026-10-18",
+      "evidence": "data/manifests/source_evidence.json (retrieved 2026-10-18): robots.txt HTTP 404 (no rules apply); no terms page found. Crawled paths: sitemap files (/sitemap.xml, /wp-sitemap.xml, robots Sitemap: lines) and the place pages those list; robots.txt is re-checked by the client for every URL and a disallowed URL is not fetched.",
+      "accepted_by_owner": "2026-10-18",
+      "min_delay_s": 2.0,
+      "max_pages_per_place": 8
+    }
+  ],
+  "ask_first": [
+    "www.tamilnadutourism.tn.gov.in",
+    "www.karnatakatourism.org",
+    "asi.nic.in",
+    "www.incredibleindia.gov.in"
+  ],
+  "unreachable_not_retested": [
+    "telanganatourism.gov.in",
+    "tourism.telangana.gov.in",
+    "tourism.ap.gov.in",
+    "tourism.py.gov.in",
+    "tourism.gov.in",
+    "wikitravel.org"
+  ],
+  "run_limits": {
+    "max_requests_per_run": 250,
+    "_comment": "Hard cap on NETWORK requests of one run (cache hits and TLS/DNS connection failures are not counted). Reaching it aborts the run (exit 4). scripts/collect_core.py --max-requests can only lower it; raising it is a reviewed config change."
+  },
+  "unreachable_reason": "recorded 2026-10-18 in the evidence round (connection/TLS failure or HTTP 403 on robots.txt); not retested, never contacted",
+  "youtube_transcripts": false,
+  "youtube_transcripts_comment": "D27: dropped. robots.txt disallows /youtubei/ and /api/, which youtube-transcript-api needs. The collector refuses to run (0 requests) while this is false.",
+  "policy_fetch": {
+    "_comment": "D29: documentation pages fetched ONLY by scripts/fetch_policy_pages.py, one request per page, logged. Not a source of corpus text and not part of web_allowlist.",
+    "hosts": [
+      "developers.google.com"
+    ],
+    "pages": [
+      "https://developers.google.com/youtube/terms/developer-policies",
+      "https://developers.google.com/youtube/terms/api-services-terms-of-service",
+      "https://developers.google.com/youtube/v3/determine_quota_cost"
+    ]
+  },
+  "api_hosts": {
+    "_comment": "D36/D37/D43: documented API endpoints that may skip the robots check (robots_exempt). Only these hosts and path prefixes are contacted (src/common/allowlist.py enforces it for every client built by make_http); a host may have several entries (one per path prefix). Terms evidence in docs/facts-layer.md. A 403, 406 or 429 stops the run.",
+    "hosts": [
+      {
+        "host": "www.wikidata.org",
+        "purpose": "entity data (Special:EntityData)",
+        "path_prefix": "/wiki/Special:EntityData/",
+        "robots_exempt": true,
+        "terms_url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+        "licence": "CC0",
+        "min_delay_s": 1.0,
+        "max_requests_per_run": 30,
+        "decision": "D37"
+      },
+      {
+        "host": "overpass-api.de",
+        "purpose": "OSM airports: one south-bbox query (D40)",
+        "path_prefix": "/api/interpreter",
+        "robots_exempt": true,
+        "terms_url": "https://wiki.openstreetmap.org/wiki/Overpass_API",
+        "licence": "ODbL 1.0 (attribution: OpenStreetMap)",
+        "min_delay_s": 30.0,
+        "max_requests_per_run": 30,
+        "decision": "D37"
+      },
+      {
+        "host": "archive-api.open-meteo.com",
+        "purpose": "ERA5 daily archive (one place per request)",
+        "path_prefix": "/v1/archive",
+        "robots_exempt": true,
+        "terms_url": "https://open-meteo.com/en/terms",
+        "licence": "CC-BY 4.0, non-commercial free tier (owner-resolved)",
+        "min_delay_s": 2.0,
+        "read_timeout_s": 60,
+        "max_requests_per_run": 30,
+        "decision": "D37"
+      },
+      {
+        "host": "en.wikipedia.org",
+        "purpose": "MediaWiki API: one plain-text extract per place (collector)",
+        "path_prefix": "/w/api.php",
+        "robots_exempt": true,
+        "terms_url": "https://www.mediawiki.org/wiki/API:Etiquette",
+        "licence": "CC BY-SA (Wikipedia; see page history for authors)",
+        "min_delay_s": 1.0,
+        "max_requests_per_run": 30,
+        "decision": "D43",
+        "terms_status": "as returned by the search tool in the review chat, 2026-10-19; owner to verify. Wikimedia Access policy: \"The API requires an HTTP User-Agent header for all requests.\" API:Etiquette: \"no hard limit on read requests, be considerate\"."
+      },
+      {
+        "host": "en.wikivoyage.org",
+        "purpose": "MediaWiki API: one plain-text extract per place (collector, list pages)",
+        "path_prefix": "/w/api.php",
+        "robots_exempt": true,
+        "terms_url": "https://www.mediawiki.org/wiki/API:Etiquette",
+        "licence": "CC BY-SA (Wikivoyage; see page history for authors)",
+        "min_delay_s": 1.0,
+        "max_requests_per_run": 30,
+        "decision": "D43",
+        "terms_status": "as returned by the search tool in the review chat, 2026-10-19; owner to verify. Wikimedia Access policy: \"The API requires an HTTP User-Agent header for all requests.\" API:Etiquette: \"no hard limit on read requests, be considerate\"."
+      },
+      {
+        "host": "www.wikidata.org",
+        "purpose": "Wikidata Action API (place resolver)",
+        "path_prefix": "/w/api.php",
+        "robots_exempt": true,
+        "terms_url": "https://www.mediawiki.org/wiki/API:Etiquette",
+        "licence": "CC0",
+        "min_delay_s": 1.0,
+        "max_requests_per_run": 30,
+        "decision": "D43",
+        "terms_status": "as returned by the search tool in the review chat, 2026-10-19; owner to verify. Wikimedia Access policy: \"The API requires an HTTP User-Agent header for all requests.\" API:Etiquette: \"no hard limit on read requests, be considerate\"."
+      },
+      {
+        "host": "query.wikidata.org",
+        "purpose": "Wikidata Query Service SPARQL (place resolver: administrative chain)",
+        "path_prefix": "/sparql",
+        "robots_exempt": true,
+        "terms_url": "UNVERIFIED",
+        "licence": "UNVERIFIED",
+        "min_delay_s": 1.0,
+        "max_requests_per_run": 30,
+        "decision": "D43",
+        "terms_status": "UNVERIFIED (owner will paste a quote)"
+      },
+      {
+        "host": "wikimedia.org",
+        "purpose": "Wikimedia pageviews REST API (place resolver: 12-month popularity signal)",
+        "path_prefix": "/api/rest_v1/metrics/pageviews/per-article/",
+        "robots_exempt": true,
+        "terms_url": "UNVERIFIED",
+        "licence": "UNVERIFIED",
+        "min_delay_s": 1.0,
+        "max_requests_per_run": 30,
+        "decision": "D43",
+        "terms_status": "UNVERIFIED (owner will paste a quote)"
+      }
+    ]
+  }
+}

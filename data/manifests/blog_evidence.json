@@ -1,0 +1,339 @@
+{
+ "retrieved_at": "2026-10-18T14:01:20+00:00",
+ "user_agent_product": "TravelPlannerResearch/0.1",
+ "domains": {
+  "ianslife.in": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": "error: transport error for https://ianslife.in/robots.txt: HTTPSConnectionPool(host='ianslife.in', port=443): Max retries exceeded with url: /robots.t",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "www.travelindiasmart.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 1,
+    "star_disallow_sample": [
+     "/admin"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://www.travelindiasmart.com/sitemap.xml"
+    ],
+    "fully_blocked_agents": [
+     "Amazonbot",
+     "Applebot-Extended",
+     "AwarioRssBot",
+     "AwarioSmartBot",
+     "Baiduspider",
+     "BorderxBot",
+     "Bytespider",
+     "CCBot",
+     "CitibotSiteCrawler",
+     "Claude-Web",
+     "ClaudeBot",
+     "Cotoyogi",
+     "Diffbot",
+     "FishBot",
+     "GPTBot",
+     "Google-CloudVertexBot",
+     "Google-Extended",
+     "GoogleOther",
+     "ICC-Crawler",
+     "KimiBot",
+     "MistralAI-Training",
+     "NavuBot",
+     "PetalBot",
+     "QualifiedBot",
+     "SemrushBot-SWA",
+     "WARDBot",
+     "anthropic-ai",
+     "atlassian-bot",
+     "cohere-ai",
+     "magpie-crawler",
+     "meta-externalagent",
+     "omgili"
+    ]
+   },
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "lakshmisharath.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 0,
+    "star_disallow_sample": [],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": "20",
+    "sitemaps": [],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "www.global-gallivanting.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 0,
+    "star_disallow_sample": [],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": "20",
+    "sitemaps": [
+     "https://www.global-gallivanting.com/sitemap_index.xml"
+    ],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [
+    {
+     "url": "https://www.global-gallivanting.com/terms-and-conditions/",
+     "label": "Terms and Conditions",
+     "status": 200,
+     "chars": 8158,
+     "key_sentences": [
+      "Use of the Website The Website and its content are provided for personal, non-commercial use.",
+      "You may not reproduce, distribute, or republish any content from the Website without our prior written permission.",
+      "Digital products are for personal use only and may not be shared, resold, or redistributed.",
+      "Global Gallivanting and Anna Phipps reserve the copyright for all content and images on this website unless otherwise stated.",
+      "You may not republish without written consent."
+     ]
+    },
+    {
+     "url": "https://www.global-gallivanting.com/",
+     "label": "Legal",
+     "status": 200,
+     "chars": 4766,
+     "key_sentences": [
+      "Global Gallivanting and Anna Phipps reserve the copyright for all content and images on this website unless otherwise stated.",
+      "You may not republish without written consent."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "bhushavali.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 404,
+   "robots_note": "no robots.txt (404 or an HTML page): no rules",
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "www.indiasomeday.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 4,
+    "star_disallow_sample": [
+     "/wp-admin/",
+     "/wp-login.php",
+     "/wp-includes/",
+     "/wp-content/plugins/"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://indiasomeday.com/sitemap_index.xml"
+    ],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [
+    {
+     "url": "https://indiasomeday.com/en/terms-and-condition/",
+     "label": "Terms of Use",
+     "status": 200,
+     "chars": 12192,
+     "key_sentences": [
+      "By accessing the Website, you acknowledge to have read, understood and you consent to be governed and bound by these Terms of Use and the Privacy Policy [insert hyperlink] (“Privacy Policy”) and this constitutes a binding and enforceable agreement between you and the Company.",
+      "No part of this Website can be reproduced, copied, stored or transmitted in any form or by any means without the prior written consent of the Company.",
+      "Further, you acknowledge and agree that the Company (or Company’s licensors) own all intellectual property rights, title and interest in and to the Content.",
+      "If you are not the intended recipient you are hereby notified that any disclosure, copying, distribution or taking any action in reliance on the contents of the email information and attachment is strictly prohibited and may be unlawful.",
+      "This indemnification includes, without limitation, liability relating to copyright infringement, defamation, invasion of privacy, trademark infringement and breach of this Terms of Use."
+     ]
+    },
+    {
+     "url": "https://indiasomeday.com/en/payment-terms-cancellation-and-refund-policy/",
+     "label": "Payment Policy",
+     "status": 200,
+     "chars": 9056,
+     "key_sentences": [
+      "You agree, acknowledge and accept that the taxes paid by you including the goods and services tax and other applicable tax are non-refundable and you shall not have any right to claim refund of such taxes.",
+      "You agree, acknowledge and accept that the consultation fee is non-refundable and you shall not have any right to claim refund of the consultation fee paid to us."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.millispotter.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 2,
+    "star_disallow_sample": [
+     "/wp-json/",
+     "/?rest_route="
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://millispotter.com/sitemap.xml",
+     "https://millispotter.com/news-sitemap.xml",
+     "https://millispotter.com/sitemap_index.xml"
+    ],
+    "fully_blocked_agents": [
+     "AdsBot",
+     "CCBot",
+     "GPTBot",
+     "Google-Extended"
+    ]
+   },
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [
+    {
+     "url": "https://millispotter.com/terms/",
+     "label": "Terms and Conditions",
+     "status": 200,
+     "chars": 61305,
+     "key_sentences": [
+      "Where you submit your booking request online, any electronic acknowledgment of its receipt is not a confirmation of the booking.",
+      "c) A contract between us will come into existence when we process your credit/debit card payment or deposit your cheque/cash for your deposit or initial payment into our account, at which time we will either issue a deposit receipt letter, acknowledging the acceptance of your booking or in the case that all arrangements can be confirmed at that time, we will issue a confirmation invoice.",
+      "Acceptance of risk (by you) You acknowledge that the nature of travel is adventurous and that as such some holidays may involve a significant amount of inherent personal risk.",
+      "c) If you fail to utilise the outbound portion of your flight ticket the inbound portion will automatically be cancelled.",
+      "The fact a delay may entitle you to cancel your flight does not automatically entitle you to cancel any other arrangements even where those arrangements have been made in conjunction with your flight.",
+      "Consumer protection We hold an Air Travel Organiser’s Licence issued by the Civil Aviation Authority (ATOL number T7596).",
+      "If for whatever reason you do not use your outbound flight, the inbound sector will automatically be cancelled.",
+      "This process is automated and standard airline procedure.",
+      "Therefore flights cannot be automatically held for all members of a ski booking unless their full details have been supplied."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  },
+  "www.travelogues-of-india.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": "error: transport error for https://www.travelogues-of-india.com/robots.txt: HTTPSConnectionPool(host='www.travelogues-of-india.com', port=443): Max re",
+   "home_status": "robots-disallowed",
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "wanderingfeet.in": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 200,
+   "robots": {
+    "allowed_for_our_user_agent": {
+     "/": true,
+     "/sitemap.xml": true,
+     "/search?q=munnar": true,
+     "/destinations/": true,
+     "/blog/": true
+    },
+    "star_disallow_count": 10,
+    "star_disallow_sample": [
+     "/wp-admin/",
+     "/wp-login.php",
+     "/wp-signup.php",
+     "/press-this.php",
+     "/remote-login.php",
+     "/activate/"
+    ],
+    "star_blanket_disallow": false,
+    "crawl_delay_star": null,
+    "sitemaps": [
+     "https://wanderingfeet.in/sitemap.xml",
+     "https://wanderingfeet.in/news-sitemap.xml"
+    ],
+    "fully_blocked_agents": []
+   },
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [],
+   "soft_404_suspected": false
+  },
+  "www.theblogchatter.com": {
+   "group": "blog",
+   "scheme": "https",
+   "robots_status": 404,
+   "robots_note": "no robots.txt (404 or an HTML page): no rules",
+   "home_status": 200,
+   "cc_mentions": [],
+   "terms_pages": [
+    {
+     "url": "https://www.theblogchatter.com/terms-and-condition",
+     "label": "Terms and conditions",
+     "status": 200,
+     "chars": 33640,
+     "key_sentences": [
+      "The Content and the Marks are provided on the Site “AS IS” for your information and personal use only.",
+      "Except as expressly provided in these Terms of Use, no part of the Site and no Content or Marks may be copied, reproduced, aggregated, republished, uploaded, posted, publicly displayed, encoded, translated, transmitted, distributed, sold, licensed, or otherwise exploited for any commercial purpose whatsoever, without our express prior written permission.",
+      "Provided that you are eligible to use the Site, you are granted a limited license to access and use the Site and to download or print a copy of any portion of the Content to which you have properly gained access solely for your personal, non-commercial use.",
+      "The Site may not be used in connection with any commercial endeavors except those that are specifically endorsed or approved by us.",
+      "Circumvent, disable, or otherwise interfere with security-related features of the Site, including features that prevent or restrict the use or copying of any Content or enforce limitations on the use of the Site and/or the Content contained therein.",
+      "Engage in any automated use of the system, such as using scripts to send comments or messages, or using any data mining, robots, or similar data gathering and extraction tools.",
+      "Copy or adapt the Site’s software, including but not limited to Flash, PHP, HTML, JavaScript, or other code.",
+      "Make any unauthorized use of the Site, including collecting usernames and/or email addresses of users by electronic or other means for the purpose of sending unsolicited email, or creating user accounts by automated means or under false pretenses.",
+      "Use the Site as part of any effort to compete with us or otherwise use the Site and/or the Content for any revenue-generating endeavor or commercial enterprise.",
+      "When you create or make available any Contributions, you thereby represent and warrant that: The creation, distribution, transmission, public display, or performance, and the accessing, downloading, or copying of your Contributions do not and will not infringe the proprietary rights, including but not limited to the copyright, patent, trademark, trade secret, or moral rights of any third party."
+     ]
+    }
+   ],
+   "soft_404_suspected": false
+  }
+ }
+}

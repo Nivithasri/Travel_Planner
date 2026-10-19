@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+data/raw/*
+!data/raw/.gitkeep
+index/*
+!index/.gitkeep
+.cache/
+*.egg-info/
+.claude/settings.local.json
+data/live/
+data/processed/*
+!data/processed/.gitkeep

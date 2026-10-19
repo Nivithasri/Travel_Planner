@@ -1,0 +1,8 @@
+#!/bin/sh
+# Strips any AI attribution lines from commit messages, whatever tool wrote them.
+f="$1"
+grep -viE '^(co-authored-by:.*(claude|anthropic)|claude-session:.*|.*generated with .*claude|.*claude\.ai/code.*|.*noreply@anthropic\.com.*)$' "$f" > "$f.tmp"
+# remove trailing blank lines
+sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$f.tmp" > "$f"
+rm -f "$f.tmp"
+exit 0

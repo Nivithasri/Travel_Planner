@@ -1,0 +1,16 @@
+{
+  "includeCoAuthoredBy": false,
+  "attribution": { "commit": "", "pr": "" },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{ "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/guard_frozen.py\"" }] },
+      { "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hooks/guard_attribution.py\"" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{ "type": "command", "command": "python -m ruff check --quiet . 1>&2 || exit 2" }] }
+    ]
+  }
+}
