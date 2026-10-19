@@ -594,3 +594,74 @@ def test_embed_is_cached_and_validated(tmp_path):
 
     with pytest.raises(LLMError):
         client(tmp_path / "other", short).embed(["one", "two"], "bge-m3:latest")
+
+
+# ---- prompt v2 and debug records (D58) -----------------------------------------------
+
+def test_prompt_v2_defines_aspects_strictly_and_asks_for_other_when_unsure():
+    assert PROMPT_VERSION == "enrich-v2"
+    system = build_messages(CHUNK, TITLE)[0]["content"]
+    for phrase in ("closure only if the excerpt states that something is closed, shut, banned or "
+                   "under restoration", "safety only if it warns of a danger, a scam or a risk",
+                   "timing only if it gives opening hours, a schedule or the best time",
+                   "price only if it gives costs", 'When unsure choose "other"',
+                   "explicit warning", "travel anecdote or tour narrative is region or other",
+                   "Use city only when the excerpt describes the city or town itself"):
+        assert phrase in system, phrase
+
+
+def test_debug_records_keep_raw_replies_errors_and_unfiltered_mentioned_places(tmp_path):
+    records = []
+    long_note = "x" * 3000
+    bad = {"context_note": long_note, "aspect": "weather"}  # invalid enum -> repair turn
+    replies = iter([bad, {**GOOD, "mentioned_places": ["Thekkady", "Kochi", "Atlantis"]}])
+    post = FakePost(lambda payload: next(replies))
+    (fields, prov) = enrich_chunk(client(tmp_path, post), MODEL, CHUNK, TITLE, REGISTRY, HOLDOUT,
+                                  debug=records.append)
+    attempts = [r for r in records if r["kind"] == "attempt"]
+    final = [r for r in records if r["kind"] == "final"]
+    assert [a["attempt"] for a in attempts] == [1, 2] and len(final) == 1
+    assert len(attempts[0]["raw"]) == 2000 and attempts[0]["raw_truncated"] is True
+    assert attempts[0]["validation_error"] and attempts[1]["validation_error"] is None
+    assert final[0]["mentioned_places_raw"] == ["Thekkady", "Kochi", "Atlantis"]  # before filtering
+    assert fields["mentioned_places"] == ["Kochi"]
+    assert prov["dropped"] == {"holdout": 1, "unknown": 1}
+    assert all(r["untrusted_llm_output"] is True and r["chunk_id"] == "c0"
+               and r["prompt_version"] == PROMPT_VERSION for r in records)
+
+
+def test_debug_final_record_for_fallback_and_no_attempt_on_a_cache_hit(tmp_path):
+    records = []
+    post = FakePost("not json")
+    c = client(tmp_path, post)
+    _, prov = enrich_chunk(c, MODEL, CHUNK, TITLE, REGISTRY, HOLDOUT, debug=records.append)
+    assert prov["reason"] == "json_invalid"
+    assert [r["kind"] for r in records] == ["attempt", "attempt", "final"]
+    assert records[-1]["reason"] == "json_invalid" and records[-1]["attempts"] == 2
+    assert records[0]["raw"] == "not json"
+    # a valid chunk, then the same chunk again from the cache: the second makes no attempt record
+    good_client = client(tmp_path / "ok", FakePost(GOOD))
+    enrich_chunk(good_client, MODEL, CHUNK, TITLE, REGISTRY, HOLDOUT)
+    again = []
+    enrich_chunk(good_client, MODEL, CHUNK, TITLE, REGISTRY, HOLDOUT, debug=again.append)
+    assert [r["kind"] for r in again] == ["final"] and again[0]["attempts"] == 0
+
+
+def test_a_new_prompt_version_does_not_reuse_the_old_cache_entry(tmp_path, monkeypatch):
+    post = FakePost(GOOD)
+    c = client(tmp_path, post)
+    enrich_chunk(c, MODEL, CHUNK, TITLE, REGISTRY, HOLDOUT)
+    assert len(post.calls) == 1
+    monkeypatch.setattr(enrich, "SYSTEM_PROMPT", enrich.SYSTEM_PROMPT + "\n- (changed)")
+    enrich_chunk(c, MODEL, CHUNK, TITLE, REGISTRY, HOLDOUT)
+    assert len(post.calls) == 2  # different messages -> different cache key; the old entry stays
+
+
+def test_checkpoints_of_other_prompt_versions_are_never_mixed(tmp_path):
+    ck = tmp_path / "ck.jsonl"
+    old = ok_process(CHUNK)
+    enrich.append_jsonl(ck, [{"chunk_id": "c0", "fields": old[0],
+                              "prov": {**old[1], "model": MODEL, "prompt_version": "enrich-v1",
+                                       "network_calls": 1, "seconds": 1.0}}])
+    with pytest.raises(enrich.CheckpointMismatch):
+        enrich.load_checkpoint(ck, MODEL)

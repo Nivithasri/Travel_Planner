@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import requests  # noqa: E402
 
 from src.collect.run import CORE_REGISTRY  # noqa: E402
-from src.common.cache import atomic_write_text, read_jsonl  # noqa: E402
+from src.common.cache import append_jsonl, atomic_write_text, read_jsonl  # noqa: E402
 from src.common.llm import OllamaClient  # noqa: E402
 from src.common.schemas import REPO_ROOT, load_settings, load_tokenizer_dir  # noqa: E402
 from src.facts.facts import HoldoutFilter  # noqa: E402
@@ -47,7 +47,8 @@ from src.process.process import check_enriched_matches_frozen, load_counter  # n
 
 PROCESSED = REPO_ROOT / "data" / "processed"
 ENRICHED = REPO_ROOT / "data" / "enriched"
-CHECKPOINT = ENRICHED / "checkpoint.jsonl"
+CHECKPOINT = ENRICHED / f"checkpoint_{PROMPT_VERSION}.jsonl"  # one file per prompt version
+DEBUG_RAW = ENRICHED / "debug_raw.jsonl"  # UNTRUSTED model output, gitignored
 SELECTION = ENRICHED / "pilot_selection.json"
 OUT = ENRICHED / "chunks.jsonl"
 MANIFEST = REPO_ROOT / "data" / "manifests" / "enriched_manifest.json"
@@ -181,7 +182,8 @@ def main(argv: list[str] | None = None) -> int:
           f"scope {len(ids)} chunks")
 
     def process(chunk: dict):
-        return enrich_chunk(client, model, chunk, titles[chunk["url"]], registry, holdout)
+        return enrich_chunk(client, model, chunk, titles[chunk["url"]], registry, holdout,
+                            debug=lambda rec: append_jsonl(DEBUG_RAW, [rec]))
 
     ENRICHED.mkdir(parents=True, exist_ok=True)
     try:

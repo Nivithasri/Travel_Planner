@@ -30,7 +30,7 @@ from src.common.schemas import (
 from src.facts.facts import HoldoutFilter
 from src.places.places import Registry
 
-PROMPT_VERSION = "enrich-v1"
+PROMPT_VERSION = "enrich-v2"
 ENRICH_OPTIONS = {"num_ctx": 4096, "num_predict": 300}  # part of the LLM cache key
 NOTE_MIN_CHARS, NOTE_MAX_CHARS = 20, 300
 COPY_SHINGLE, COPY_MAX_SHARE = 5, 0.60  # D54: reject when > 60% of note 5-grams occur in the chunk
@@ -73,14 +73,24 @@ the excerpt or in the metadata line. Reply with ONE JSON object with exactly the
   excerpt is about, what topic it covers and what kind of source it comes from. Do not copy
   sentences from it.
 - "place_type": what the excerpt is ABOUT, one of: hill_station, beach, temple, heritage, wildlife,
-  backwater, waterfall, city, region, other. Use city or region when it is not about one site.
+  backwater, waterfall, city, region, other. A travel anecdote or tour narrative is region or other.
+  Use city only when the excerpt describes the city or town itself (its layout, population,
+  institutions, districts). Use temple, beach and the like only when the excerpt is mainly about
+  that kind of site.
 - "season_tags": list of the seasons the excerpt is relevant to, from: winter (Dec-Feb),
   summer (Mar-May), monsoon (Jun-Sep), post_monsoon (Oct-Nov). Use ["all_year"] alone when it names
   no season or applies all year.
-- "aspect": the main kind of information, one of: timing, closure, price, scenery, food, safety,
-  history, other.
-- "is_warning": true only if the excerpt warns travellers about a risk, closure, scam or
-  restriction.
+- "aspect": the main kind of information, one of the following, applied strictly:
+  closure only if the excerpt states that something is closed, shut, banned or under restoration;
+  safety only if it warns of a danger, a scam or a risk to the traveller;
+  timing only if it gives opening hours, a schedule or the best time to go;
+  price only if it gives costs, fees or fares;
+  food if it is mainly about eating or dishes; scenery if it is mainly about views, nature or
+  landscape; history if it is mainly about history, architecture, culture or origins;
+  other for anything else (hotel lists, contact lists, anecdotes, demographics).
+  When unsure choose "other".
+- "is_warning": true only if the excerpt itself gives an explicit warning to travellers (a danger,
+  scam, closure or restriction to avoid); false otherwise.
 - "mentioned_places": other towns or sights named in the excerpt, as written; [] if none."""
 
 
@@ -303,31 +313,61 @@ def _fields_from(out: EnrichmentOut, mentioned: list[str], note: str) -> dict:
     }
 
 
+DEBUG_RAW_CHARS = 2000
+
+
 def enrich_chunk(client: OllamaClient, model: str, chunk: dict, title: str, registry: Registry,
-                 holdout: HoldoutFilter) -> tuple[dict, dict]:
+                 holdout: HoldoutFilter,
+                 debug: Callable[[dict], None] | None = None) -> tuple[dict, dict]:
     """(fields, provenance). `fields` holds the six ENRICHED_FIELDS and always validates.
 
     Provenance: source llm|fallback, reason (None for llm), dropped mentioned-place counts, and the
     rule-based aspect/is_warning for the agreement tables. LLMError other than invalid JSON
-    propagates (transport failure: never a fallback)."""
+    propagates (transport failure: never a fallback).
+
+    `debug(record)` receives one "attempt" record per network attempt (raw reply cut to 2,000
+    characters, validation error, mentioned_places as parsed) and one "final" record per chunk
+    (outcome, mentioned_places before filtering). The raw text is UNTRUSTED model output: it is
+    for reading by a person, never fed back into a prompt or a pipeline."""
     entry = registry.get(chunk["place"])
     rule = rule_based(chunk, title, entry.place_type if entry else None)
     prov: dict = {"prompt_version": PROMPT_VERSION, "rule_aspect": rule["aspect"],
                   "rule_is_warning": rule["is_warning"], "dropped": {}}
+    base = {"chunk_id": chunk["chunk_id"], "prompt_version": PROMPT_VERSION,
+            "untrusted_llm_output": True}
+    attempts = 0
+
+    def finish(fields: dict, p: dict, raw_mentioned) -> tuple[dict, dict]:
+        if debug:
+            debug({**base, "kind": "final", "attempts": attempts, "source": p["source"],
+                   "reason": p["reason"], "mentioned_places_raw": raw_mentioned})
+        return fields, p
+
+    def on_attempt(n: int, raw: str, error: str | None) -> None:
+        nonlocal attempts
+        attempts = n
+        if debug:
+            debug({**base, "kind": "attempt", "attempt": n, "raw": raw[:DEBUG_RAW_CHARS],
+                   "raw_truncated": len(raw) > DEBUG_RAW_CHARS,
+                   "validation_error": error[:1000] if error else None})
+
     messages = build_messages(chunk, title)
     if not prompt_fits(messages):
-        return rule, {**prov, "source": "fallback", "reason": "prompt_too_long"}
+        return finish(rule, {**prov, "source": "fallback", "reason": "prompt_too_long"}, None)
     try:
-        out = client.chat_json(messages, model, EnrichmentOut, options=ENRICH_OPTIONS)
+        out = client.chat_json(messages, model, EnrichmentOut, options=ENRICH_OPTIONS,
+                               on_attempt=on_attempt)
     except JSONValidationError:
-        return rule, {**prov, "source": "fallback", "reason": "json_invalid"}
+        return finish(rule, {**prov, "source": "fallback", "reason": "json_invalid"}, None)
     note = " ".join(out.context_note.split())
     problem = note_problem(note, chunk["text"], holdout)
     if problem:
-        return rule, {**prov, "source": "fallback", "reason": problem}
+        return finish(rule, {**prov, "source": "fallback", "reason": problem},
+                      list(out.mentioned_places))
     mentioned, dropped = clean_mentioned(out.mentioned_places, chunk["place"], registry, holdout)
-    return _fields_from(out, mentioned, note), {**prov, "source": "llm", "reason": None,
-                                                "dropped": dict(dropped)}
+    return finish(_fields_from(out, mentioned, note),
+                  {**prov, "source": "llm", "reason": None, "dropped": dict(dropped)},
+                  list(out.mentioned_places))
 
 
 # ==== assemble =======================================================================

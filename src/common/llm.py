@@ -282,9 +282,12 @@ class OllamaClient:
         schema: type[T],
         *,
         options: dict | None = None,
+        on_attempt: Callable[[int, str, str | None], None] | None = None,
     ) -> T:
         """JSON mode with validation. Only validated output is cached; invalid output triggers a
-        repair turn (up to max_json_attempts total) and is then discarded."""
+        repair turn (up to max_json_attempts total) and is then discarded. `on_attempt(n, raw,
+        error)` is called for every network attempt (n from 1; error None when valid) so a caller
+        can keep the raw reply for debugging; a cache hit makes no attempt and no call."""
         payload = self._payload(model, messages, options, "json")
         inputs = {
             "messages": messages,
@@ -301,12 +304,14 @@ class OllamaClient:
 
         convo = list(messages)
         last_error = ""
-        for _ in range(self.max_json_attempts):
+        for attempt in range(1, self.max_json_attempts + 1):
             raw = self._request({**payload, "messages": convo})
             try:
                 parsed = schema.model_validate_json(raw)
             except ValidationError as exc:
                 last_error = str(exc)
+                if on_attempt:
+                    on_attempt(attempt, raw, last_error)
                 convo = convo + [
                     {"role": "assistant", "content": raw},
                     {
@@ -316,6 +321,8 @@ class OllamaClient:
                     },
                 ]
                 continue
+            if on_attempt:
+                on_attempt(attempt, raw, None)
             self.cache.set("llm_json", model, inputs, parsed.model_dump_json())
             return parsed
         raise JSONValidationError(

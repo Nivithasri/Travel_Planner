@@ -554,3 +554,20 @@ D57 (amendment 2026-10-19, measured on the real corpus) The forced chunk 36acb56
    without it. The Ooty/Kodaikanal post (travelogue-ooty-kodaikanal) has only 6 chunks in the corpus, so the pilot takes all 6, not 10.
    The pilot (seed 42, 200 chunks): blog 33, reference 82, wikivoyage 85; 26 of 26 places; 15 chunks under 200 tokens (10 forced + 5 by
    chance). Awaiting the owner's instruction whether to substitute other chunks near the dropped one (nothing was substituted). Status: accepted.
+D58 (2026-10-20) Prompt version enrich-v2 (owner decision), before any full run. Reason, measured on the v1 pilot (200 chunks, LOG 2026-10-19):
+   closure (10 chunks) and safety (13) were assigned to chunks that are not about closure or safety (samples read by hand: travel anecdotes
+   labelled safety, hotel and transport lists labelled closure); place_type "city" was 53% (106 of 200), including tour narratives; Phase 6
+   applies fast freshness decay to closure/timing/price/safety, so aspect noise changes ranking. v2 changes, all in the system prompt:
+   (a) strict aspect definitions: closure only if the text states something is closed, shut, banned or under restoration; safety only if it
+   warns of a danger, scam or risk to the traveller; timing only if it gives hours, a schedule or the best time; price only if it gives
+   costs; otherwise food/scenery/history/other; (b) when unsure choose "other"; (c) is_warning true only for an explicit warning in the
+   text; (d) place_type: a travel anecdote or tour narrative is region or other, city only when the chunk describes the city itself.
+   The model, options (temperature 0, seed, num_ctx 4096, num_predict 300), schema, validators and scans are unchanged. PROMPT_VERSION is
+   enrich-v2, the messages differ, so every cache key changes; the v1 cache entries are untouched. Checkpoints are now one file per prompt
+   version (data/enriched/checkpoint_<version>.jsonl); the v1 checkpoint was renamed to checkpoint_enrich-v1.jsonl, not deleted, and a
+   checkpoint of another version is refused (CheckpointMismatch). Debug data: data/enriched/debug_raw.jsonl (gitignored) keeps, per network
+   attempt, chunk_id, attempt number, the raw reply cut to 2,000 characters, the validation error, and per chunk a final record with the
+   outcome and mentioned_places before filtering. It is UNTRUSTED model output (every record carries untrusted_llm_output true): read it as
+   text, never feed it back into a prompt. A cache hit makes no network attempt, so it writes only the final record. The label_sample.py
+   gold sample (30 chunks, seeded, excluding the 200 pilot chunks the prompt was tuned on) lets the owner measure aspect and is_warning
+   accuracy against hand labels; no labels are written by the assistant. Status: accepted.
