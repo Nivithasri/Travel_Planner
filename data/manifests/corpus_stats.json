@@ -1,0 +1,503 @@
+{
+ "chunking": {
+  "merged_tails": 16,
+  "oversize_splits": 0,
+  "short_tails": 10
+ },
+ "chunks": 1389,
+ "counter": "regex-proxy",
+ "d23_dry_run": {
+  "Alappuzha": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Auroville": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Badami": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Bengaluru": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Bhadrachalam": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Chennai": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Gokarna": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Hampi": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Hyderabad": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Kanniyakumari": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Kochi": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Kodagu": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Kodaikanal": {
+   "passes_chunks": false,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Madurai": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Mahabalipuram": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Munnar": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Mysuru": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Ooty": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Pondicherry": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Rameswaram": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Srisailam": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Tirupati": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Varkala": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Visakhapatnam": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference",
+    "wikivoyage"
+   ]
+  },
+  "Warangal": {
+   "passes_chunks": true,
+   "passes_raw": true,
+   "types_in_chunks": [
+    "blog",
+    "reference"
+   ]
+  },
+  "Wayanad": {
+   "passes_chunks": false,
+   "passes_raw": false,
+   "types_in_chunks": [
+    "reference",
+    "wikivoyage"
+   ]
+  }
+ },
+ "date_kind": {
+  "published": 242,
+  "revised": 1104,
+  "sitemap_lastmod": 43
+ },
+ "drops": {
+  "chunk": 30,
+  "exact_duplicate": 1
+ },
+ "estimate": {
+  "chunks": 1943,
+  "difference": -554,
+  "high": 2429,
+  "low": 1619,
+  "source": "D39 (ii), LOG.md 2026-10-19"
+ },
+ "freshness": {
+  "published_in_window": 0,
+  "reference_date": "2026-10-18",
+  "share": 0.0,
+  "window_start": "2025-04-18"
+ },
+ "holdout_drops": [
+  {
+   "holdout": "Araku Valley",
+   "level": "chunk",
+   "n": 4,
+   "source": "blog"
+  },
+  {
+   "holdout": "Araku Valley",
+   "level": "chunk",
+   "n": 1,
+   "source": "wikipedia"
+  },
+  {
+   "holdout": "Araku Valley",
+   "level": "chunk",
+   "n": 3,
+   "source": "wikivoyage"
+  },
+  {
+   "holdout": "Thanjavur",
+   "level": "chunk",
+   "n": 5,
+   "source": "wikipedia"
+  },
+  {
+   "holdout": "Thanjavur",
+   "level": "chunk",
+   "n": 3,
+   "source": "wikivoyage"
+  },
+  {
+   "holdout": "Thekkady",
+   "level": "chunk",
+   "n": 1,
+   "source": "wikipedia"
+  },
+  {
+   "holdout": "Thekkady",
+   "level": "chunk",
+   "n": 13,
+   "source": "wikivoyage"
+  }
+ ],
+ "null_date_share": 0.8258,
+ "params": {
+  "max_incl_overlap": 300,
+  "min": 200,
+  "near_dup_threshold": 0.8,
+  "overlap_max": 40,
+  "shingle": 5,
+  "tail_merge_below": 100,
+  "target": 250
+ },
+ "per_place": {
+  "Alappuzha": {
+   "reference": 22,
+   "wikivoyage": 21
+  },
+  "Auroville": {
+   "reference": 12,
+   "wikivoyage": 15
+  },
+  "Badami": {
+   "blog": 18,
+   "reference": 7,
+   "wikivoyage": 7
+  },
+  "Bengaluru": {
+   "blog": 29,
+   "reference": 48,
+   "wikivoyage": 54
+  },
+  "Bhadrachalam": {
+   "reference": 1,
+   "wikivoyage": 8
+  },
+  "Chennai": {
+   "blog": 3,
+   "reference": 41,
+   "wikivoyage": 46
+  },
+  "Gokarna": {
+   "blog": 20,
+   "reference": 8,
+   "wikivoyage": 19
+  },
+  "Hampi": {
+   "blog": 14,
+   "reference": 35,
+   "wikivoyage": 32
+  },
+  "Hyderabad": {
+   "blog": 36,
+   "reference": 46,
+   "wikivoyage": 42
+  },
+  "Kanniyakumari": {
+   "blog": 13,
+   "reference": 9,
+   "wikivoyage": 17
+  },
+  "Kochi": {
+   "blog": 5,
+   "reference": 73,
+   "wikivoyage": 47
+  },
+  "Kodagu": {
+   "blog": 39,
+   "reference": 11,
+   "wikivoyage": 12
+  },
+  "Kodaikanal": {
+   "reference": 12,
+   "wikivoyage": 20
+  },
+  "Madurai": {
+   "blog": 6,
+   "reference": 31,
+   "wikivoyage": 39
+  },
+  "Mahabalipuram": {
+   "blog": 3,
+   "reference": 6,
+   "wikivoyage": 19
+  },
+  "Munnar": {
+   "reference": 7,
+   "wikivoyage": 21
+  },
+  "Mysuru": {
+   "blog": 10,
+   "reference": 27,
+   "wikivoyage": 48
+  },
+  "Ooty": {
+   "blog": 13,
+   "reference": 14,
+   "wikivoyage": 21
+  },
+  "Pondicherry": {
+   "blog": 3,
+   "reference": 13,
+   "wikivoyage": 30
+  },
+  "Rameswaram": {
+   "reference": 21,
+   "wikivoyage": 9
+  },
+  "Srisailam": {
+   "reference": 3,
+   "wikivoyage": 5
+  },
+  "Tirupati": {
+   "blog": 8,
+   "reference": 24,
+   "wikivoyage": 11
+  },
+  "Varkala": {
+   "reference": 4,
+   "wikivoyage": 18
+  },
+  "Visakhapatnam": {
+   "blog": 6,
+   "reference": 33,
+   "wikivoyage": 21
+  },
+  "Warangal": {
+   "blog": 16,
+   "reference": 12
+  },
+  "Wayanad": {
+   "reference": 38,
+   "wikivoyage": 7
+  }
+ },
+ "per_published_year": {
+  "2004": 9,
+  "2005": 9,
+  "2006": 9,
+  "2007": 21,
+  "2008": 16,
+  "2011": 52,
+  "2012": 8,
+  "2013": 6,
+  "2015": 3,
+  "2018": 41,
+  "2019": 5,
+  "2021": 20,
+  "2022": 21,
+  "2023": 7,
+  "2024": 8,
+  "2025": 7,
+  "none": 1147
+ },
+ "per_revised_year": {
+  "2026": 1104,
+  "none": 285
+ },
+ "per_source_type": {
+  "blog": 242,
+  "reference": 558,
+  "wikivoyage": 589
+ },
+ "per_state": {
+  "AP": 111,
+  "KA": 438,
+  "KL": 263,
+  "PY": 73,
+  "TN": 343,
+  "TS": 161
+ },
+ "reconciliation": [
+  "records: 97 in = 96 kept + 1 exact duplicates + 0 hold-out (url/title)",
+  "chunks: 1419 created = 1389 out + 30 hold-out (text) + 0 near duplicates"
+ ],
+ "removed_chars": {
+  "blocked_section": 17744,
+  "citation_marker": 74,
+  "empty_header": 308,
+  "image_credit": 228,
+  "inline_link_joins": 244,
+  "notes_bibliography": 7895,
+  "read_more_link": 312,
+  "related_footer": 5620,
+  "share_header": 2016
+ },
+ "substring_scan": {
+  "araku": 1,
+  "brihad": 0,
+  "chikk": 7,
+  "chikm": 0,
+  "kumil": 1,
+  "periyar": 17,
+  "tanj": 1,
+  "thanj": 0,
+  "thekk": 5
+ },
+ "tokens": {
+  "max": 300,
+  "min": 55,
+  "over_max": 0,
+  "p50": 256,
+  "p95": 278,
+  "under_min": 54
+ }
+}
