@@ -405,3 +405,18 @@ def test_reference_date_is_not_an_input_to_chunks():
     assert "date" not in inspect.signature(process_place).parameters
     out, _ = run([rec(para(30))])
     assert set(out[0][1]) == set(BaseChunk.model_fields)
+
+
+def test_link_fragment_rejoin_keeps_list_items_headings_and_short_real_lines_separate():
+    body = ("The temple is old.\n"
+            "Shiva Carvings\n"  # heading followed by a capitalised sentence
+            "There are many carvings.\n"
+            "Places to visit\n"
+            "Agastya Teertha Lake\n"  # list items
+            "Bhutanatha Temple\n"
+            "Open daily.\n"  # short real line
+            "The whole\nBangalore\ninternational airport is new.")  # a real link fragment
+    lines = clean_record(rec(body), None).text.split("\n")
+    assert lines == ["The temple is old.", "Shiva Carvings", "There are many carvings.",
+                     "Places to visit", "Agastya Teertha Lake", "Bhutanatha Temple",
+                     "Open daily.", "The whole Bangalore international airport is new."]
