@@ -1,6 +1,6 @@
 {
  "_doc": "Owner decisions read by scripts/freeze.py (D48). Set only by the project owner. reddit_resolved: true once Reddit is collected or its absence is accepted (D45). d33_mode: null (undecided) | \"sidecar\" (chunks.jsonl unchanged; data/processed/d33_excluded.json lists the places no Phase 4 dev/test query may target: a query-eligibility list; retrieval is NOT filtered unless the owner records otherwise here). \"exclude\" (rewrite chunks.jsonl) is not implemented.",
- "reddit_resolved": false,
- "reddit_note": "",
- "d33_mode": null
+ "reddit_resolved": true,
+ "reddit_note": "Accepted deviation (D48 xvi): Reddit API access pending; no Reddit source in the frozen corpus; later Reddit content goes to the live layer only.",
+ "d33_mode": "sidecar"
 }

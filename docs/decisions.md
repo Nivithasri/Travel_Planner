@@ -472,3 +472,9 @@ D48 (amendment 2026-10-19, cleanup round)
    on the snapshot: 941f36c8ed383169 (Kanniyakumari Wikipedia), Thanjavur at offset 775 and Kumily at 824, attributed to Thanjavur.
    The Madurai Wikipedia and Wikivoyage records each have separate chunks for different hold-outs, not a chunk naming two
    (`python scripts/phase2_evidence.py holdoutdrops`).
+D48 (amendment 2026-10-19, owner decisions before the freeze)
+   (xvi) REDDIT is an ACCEPTED DEVIATION (settles D45 (2) for the snapshot): Reddit API access is still pending; the frozen corpus has no
+   Reddit source; any later Reddit content goes to the live layer only (D31), never into the frozen corpus. config/freeze.json
+   reddit_resolved = true with this note. D33 MODE is "sidecar": data/processed/d33_excluded.json is a Phase 4 query-eligibility list; no
+   chunk is deleted, chunks.jsonl is unchanged and retrieval is unfiltered (D48 xii). The owner set EVAL_REFERENCE_DATE=2026-10-18 and
+   TOKENIZER_DIR in .env. Status: accepted.
