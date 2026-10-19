@@ -104,6 +104,7 @@ def check(robots_text: str, user_agent: str, url: str) -> Verdict:
 DROP_NAMES = (
     "Thanjavur", "Tanjore", "Thanjai", "Chikmagalur", "Chikkamagaluru", "Araku Valley", "Araku",
     "Thekkady", "Kumily", "Brihadisvara", "Brihadeeswarar",
+    "Thekkadi", "Brihadeeswara",  # spelling variants found in the raw text (D48 amendment)
 )
 # term -> canonical hold-out (registry name), so drops can be counted per hold-out (D48)
 HOLDOUT_OF = {
@@ -112,6 +113,7 @@ HOLDOUT_OF = {
     "chikmagalur": "Chikmagalur", "chikkamagaluru": "Chikmagalur",
     "araku valley": "Araku Valley", "araku": "Araku Valley",
     "thekkady": "Thekkady", "kumily": "Thekkady",
+    "thekkadi": "Thekkady", "brihadeeswara": "Thanjavur",
 }
 NAME_TAGS = ("name", "name:en", "alt_name", "old_name", "official_name", "short_name")
 _PERIYAR = re.compile(

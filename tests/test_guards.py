@@ -638,6 +638,8 @@ def test_filter_uses_center_for_ways_and_alternate_name_tags():
     ("Periyar Wildlife Sanctuary is near", "Thekkady"),
     ("the national park, Periyar, has elephants", "Thekkady"),
     ("Thekkady/Periyar is a day away", "Thekkady"),
+    ("on the Munnar Thekkadi route", "Thekkady"),
+    ("Big Temple or Brihadeeswara Temple", "Thanjavur"),
 ])
 def test_text_naming_a_holdout_matches_with_its_canonical_name(text, holdout):
     hit = HoldoutFilter().text_match(text)

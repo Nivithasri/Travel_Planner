@@ -381,3 +381,8 @@ D48 (2026-10-19) Phase 2 cleaning and chunking rules (owner-reviewed plan; no fr
    acceptance of 2026-10-18 recorded in docs/sources.md (no decision ID existed; this entry records it). O12 (sharing) stays open.
    (9) Facts envelopes (data/raw/wikidata, open_meteo, overpass) are never chunked. No chunk may have source_type live (the enum has no
    such value; tested). Status: accepted.
+D48 (amendment 2026-10-19, hold-out spellings) A stem scan of the 97 raw bodies (brihad|tanj|thanj|araku|thekk|kumil|chikm|chikk) found two
+   hold-out spellings outside the D39 list: "Thekkadi" (Munnar Wikivoyage, "Munnar Thekkadi route") and "Brihadeeswara" (a
+   Mahabalipuram inditales footer, "Brihadeeswara Temple, Tanjore"). Both are added to DROP_NAMES (src/facts/facts.py) as Thekkady and
+   Thanjavur. The other stem hits are different words (Thekkumbhagom, Chikkadpally, Mathukumilli, Gitanjali, ...). Status: accepted,
+   flagged to the owner.
