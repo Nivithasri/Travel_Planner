@@ -108,6 +108,18 @@ def _opt(name: str) -> str | None:
     return os.environ.get(name, "").strip() or None
 
 
+def load_reference_date(env_file: str | os.PathLike | None = None) -> date | None:
+    """EVAL_REFERENCE_DATE alone (D4), for offline steps that do not need the Ollama settings."""
+    load_dotenv(env_file if env_file is not None else REPO_ROOT / ".env", override=False)
+    raw = _opt("EVAL_REFERENCE_DATE")
+    if raw is None:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError as exc:
+        raise ConfigError(f"EVAL_REFERENCE_DATE must be YYYY-MM-DD: {exc}") from exc
+
+
 def load_tokenizer_dir(env_file: str | os.PathLike | None = None) -> Path | None:
     """TOKENIZER_DIR (optional): a local folder holding the bge-m3 tokenizer.json (D48). Unset means
     the regex token proxy is used. Never downloads anything."""

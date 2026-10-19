@@ -1,0 +1,20 @@
+{
+ "_doc": "Learned boilerplate lines (D48). Written only by `python scripts/process.py learn`; cleaning applies `lines` and never learns. `rejected` = candidates the owner review keeps as content; never applied.",
+ "min_records": 3,
+ "max_chars": 120,
+ "hosts": {
+  "inditales.com": {
+   "lines": [],
+   "rejected": [
+    {
+     "line": "Travel Tips",
+     "records": 4
+    },
+    {
+     "line": "Meditation Hall",
+     "records": 3
+    }
+   ]
+  }
+ }
+}
