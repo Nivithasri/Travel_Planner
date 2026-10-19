@@ -8,7 +8,7 @@ domain below has been collected into the corpus; only its robots.txt, its homepa
 pages were read, to decide whether collecting from it is acceptable.
 
 Evidence file: `data/manifests/source_evidence.json` (retrieved 2026-10-18 13:19 UTC).
-Regenerate it with `python scripts/historical/gather_source_evidence.py` (live network; needs `CONTACT_EMAIL`
+Regenerate it with `python gather_source_evidence.py (deleted, D47)` (live network; needs `CONTACT_EMAIL`
 in `.env`). The quotes below are copied from that file. This is a technical and policy reading by
 the project, not legal advice.
 
@@ -271,7 +271,7 @@ ClaudeBot, CCBot, Google-Extended, ...). Its terms, privacy and disclaimer paths
 
 ## Round 2: ten more candidate blogs (2026-10-18)
 
-Evidence: `data/manifests/blog_evidence.json`. Regenerate with `python scripts/historical/gather_source_evidence.py --domains <list> --out data/manifests/blog_evidence.json`
+Evidence: `data/manifests/blog_evidence.json`. Regenerate with `python gather_source_evidence.py (deleted, D47) --domains <list> --out data/manifests/blog_evidence.json`
 (31 requests). The ten were picked from two web searches and the owner's brief; the searches found no blog that
 states a Creative Commons licence, and the homepage check for `creativecommons.org` links found none on any
 reachable site. Stopped at ten as instructed. None is added to the allowlist.
@@ -361,7 +361,7 @@ Decision pending with the owner; no transcript or Data API collection is enabled
 ## Round 5 close-out (2026-10-18, D30)
 D27 stands: YouTube transcripts and the Data API stay off for anything stored. The three cached Data API search responses
 (fetched 2026-10-18 14:20:47Z to 14:21:58Z) were deleted under the 30-day rule. `data/manifests`, `data/raw`, `docs/`, `LOG.md` and
-the request log contain no video titles or channel names; one test fixture in `tests/test_withdraw.py` (commit 89b4a9c) contains
+the request log contain no video titles or channel names; one test fixture in `test_withdraw.py (deleted, D47)` (commit 89b4a9c) contains
 a real channel name by mistake, reported to the owner and left untouched pending a decision (history is not rewritten).
 
 ## Licence ledger (2026-10-18, owner request; open item O12)

@@ -1,47 +1,199 @@
-"""Polite, cached HTTP fetch. Every download in the project goes through this module (rule 4).
-
-- Responses (200, 404, 410) are stored in the disk cache together with `retrieved_at` and the ETag.
-  A fresh entry (age <= max_age, or max_age None) is returned without any network call. A stale
-  entry is revalidated with If-None-Match / If-Modified-Since; a 304 refreshes `retrieved_at` only.
-- robots.txt is fetched once per host (cached for ROBOTS_TTL_S) and checked before each page fetch.
-  A missing robots.txt (404/410) allows; an unreachable or erroring one disallows (conservative).
-- One request at a time per host with a minimum delay, shared by all threads.
-- 429, 5xx and transport errors are retried with backoff (Retry-After honoured, capped), bounded by
-  `max_retries` and the optional `deadline`. Other errors are not cached.
-- Redirects are NOT followed by the transport. This client follows them itself, one hop at a time,
-  and every hop is throttled, counted, logged and checked: a hop is only followed within the same
-  site (host without a leading "www.") or to a host in `redirect_hosts`, never from https to http,
-  and (when robots are checked for the request) only if robots.txt allows the target. A refused
-  redirect is logged as "redirect-refused" and raises FetchError.
-- TLS and DNS failures are recorded once per host and never retried; the host is not contacted
-  again (`unreachable_hosts` can be preloaded from config). They are not blocks and are not counted
-  against `max_requests`, the hard cap on network requests of one run (RequestBudgetExhausted).
-- Circuit breaker: after `circuit_threshold` (2) consecutive connect or timeout failures to a host,
-  every further request to it in this client's lifetime is skipped with a FetchError: no network, no
-  throttle wait, not counted against the cap, logged once as "circuit open". Any completed HTTP
-  response resets the count. A new client (the next run) starts closed. TLS/DNS is separate.
-- `requests_made` counts real network calls (robots.txt included): the proof that a reuse is free.
-  Every request, redirect hop and cache hit can be written to a RequestLog (no content).
-- All exception text is redacted (URLs lose their query strings, key=/token= values are removed).
-- Transport, clock and sleep are injectable so tests never touch the network or wait.
-"""
+"""Polite, allowlisted, logged, cached HTTP (rule 4): redaction, the request log, the D43 request
+allowlist and the HTTP client."""
 from __future__ import annotations
 
+import json
+import re
 import threading
 import time
+import uuid
 from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
 import requests
 
-from src.common.cache import DiskCache
-from src.common.redact import redact
-from src.common.requestlog import RequestLog
+from src.common.cache import DiskCache, append_jsonl
+from src.common.schemas import REPO_ROOT
+
+# ==== redact ======================================================================
+# Redaction of URLs, query strings and secrets in text that may be logged, stored or printed.
+#
+# Exception messages from `requests` and from libraries embed the full request URL, including
+# query strings such as `?key=...`. Every message that can reach a log, a status file, a note or the
+# terminal goes through `redact()` first.
+
+_URL = re.compile(r"https?://[^\s'\"<>)\]]+")
+_SECRET_KV = re.compile(
+    r"(?i)\b(key|api_key|apikey|token|access_token|auth|secret|password|sig|signature)"
+    r"\s*[=:]\s*[^&\s'\"<>)\]]+"
+)
+
+
+def strip_query(url: str) -> str:
+    """scheme://host/path with the query string and fragment removed."""
+    return re.split(r"[?#]", url, maxsplit=1)[0]
+
+
+def redact(text: object) -> str:
+    out = _URL.sub(lambda m: strip_query(m.group(0)), str(text))
+    return _SECRET_KV.sub(lambda m: m.group(1) + "=<redacted>", out)
+
+
+# ==== requestlog ==================================================================
+# Per-request log: one JSON line per request or redirect hop, no content, no query strings.
+#
+# Fields: ts (UTC), run_id, host, path, kind, status, from_cache, attempt (1-based; 0 for a
+# cache hit), source (the collector in progress, when known), note (e.g. "redirect-refused").
+# Written through `append_jsonl`, so every line is flushed and a crash loses at most the last one.
+
+DEFAULT_REQUEST_LOG = REPO_ROOT / "data" / "manifests" / "request_log.jsonl"
+
+
+def classify_url(url: str) -> str:
+    p = urlsplit(url)
+    host, path = p.netloc.lower(), p.path.lower()
+    if path.endswith("robots.txt"):
+        return "robots"
+    if "sitemap" in path:
+        return "sitemap"
+    if host.endswith("googleapis.com") or path.endswith("api.php") or path.endswith("/sparql"):
+        return "api"
+    if host.endswith("youtube.com") and (path.startswith("/youtubei/") or "/api/" in path):
+        return "transcript"
+    return "page"
+
+
+class RequestLog:
+    def __init__(self, path: str | Path, run_id: str | None = None,
+                 clock: Callable[[], float] = time.time):
+        self.path = Path(path)
+        self.run_id = run_id or uuid.uuid4().hex[:8]
+        self.clock = clock
+        self.source: str | None = None  # set by the caller while a collector runs
+
+    def write(self, url: str, status: int | None, from_cache: bool, attempt: int,
+              note: str | None = None, kind: str | None = None) -> None:
+        p = urlsplit(url)
+        rec = {
+            "ts": datetime.fromtimestamp(self.clock(), tz=timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"),
+            "run_id": self.run_id, "host": p.netloc.lower(), "path": p.path,
+            "kind": kind or classify_url(url), "status": status, "from_cache": from_cache,
+            "attempt": attempt, "source": self.source, "note": note,
+        }
+        append_jsonl(self.path, [rec])
+
+
+# ==== allowlist ===================================================================
+# The request allowlist (D43): which hosts and paths a production HttpClient may contact.
+#
+# Built from config/sources.json: `web_allowlist` domains, `api_hosts` entries (host + path prefix,
+# several prefixes per host allowed) and the `policy_fetch` hosts. Matching is explicit and exact:
+# a configured web domain also admits its `www.`/bare twin (nothing else); there is no suffix match,
+# no subdomain match and no "same family" guess. Every request and redirect hop is checked.
+
+CONFIG_PATH = REPO_ROOT / "config" / "sources.json"
+
+
+def host_key(host: str) -> str:
+    """The configured-domain rule: lower case, one leading "www." removed. Nothing else."""
+    h = host.lower()
+    return h[4:] if h.startswith("www.") else h
+
+
+def _under(path: str, prefix: str) -> bool:
+    if prefix.endswith("/"):
+        return path.startswith(prefix)
+    return path == prefix or path.startswith(prefix + "/")
+
+
+class Allowlist:
+    def __init__(self, web_domains=(), api_prefixes: dict[str, list[str]] | None = None,
+                 api_caps: dict[str, int] | None = None, api_delays: dict[str, float] | None = None,
+                 policy_hosts=()):
+        self.web = {host_key(d) for d in web_domains}
+        self.api = {h.lower(): list(p) for h, p in (api_prefixes or {}).items()}
+        self.caps = {h.lower(): int(c) for h, c in (api_caps or {}).items()}
+        self.delays = {h.lower(): float(d) for h, d in (api_delays or {}).items()}
+        self.policy = {h.lower() for h in policy_hosts}
+
+    @classmethod
+    def from_config(cls, path: Path = CONFIG_PATH) -> Allowlist:
+        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        prefixes: dict[str, list[str]] = {}
+        caps: dict[str, int] = {}
+        delays: dict[str, float] = {}
+        for h in doc.get("api_hosts", {}).get("hosts", []):
+            host = str(h["host"]).lower()
+            prefixes.setdefault(host, []).append(h["path_prefix"])
+            caps[host] = max(caps.get(host, 0), int(h["max_requests_per_run"]))
+            delays[host] = max(delays.get(host, 0.0), float(h["min_delay_s"]))
+        return cls([d["domain"] for d in doc.get("web_allowlist", [])], prefixes, caps, delays,
+                   doc.get("policy_fetch", {}).get("hosts", []))
+
+    def reason(self, url: str) -> str | None:
+        """None when the URL may be requested, else why it is refused."""
+        parts = urlsplit(url)
+        host, path = parts.netloc.lower(), parts.path or "/"
+        if parts.scheme not in ("http", "https"):
+            return f"scheme {parts.scheme!r} is not http or https"
+        if "@" in parts.netloc:
+            return "user information (user@host) in the URL is not accepted"
+        if host_key(host) in self.web:
+            return None
+        if host in self.api:
+            if path == "/robots.txt" or any(_under(path, p) for p in self.api[host]):
+                return None
+            return f"path {path!r} on {host} is outside {self.api[host]}"
+        if host in self.policy:
+            return None
+        return f"host {host!r} is not in the allowlist"
+
+
+# HttpClient (D43).
+
+
+# ==== http ========================================================================
+# Polite, cached HTTP fetch. Every download in the project goes through this module (rule 4).
+#
+# - Responses (200, 404, 410) are stored in the disk cache together with `retrieved_at` and the
+#   ETag.
+#   A fresh entry (age <= max_age, or max_age None) is returned without any network call. A stale
+#   entry is revalidated with If-None-Match / If-Modified-Since; a 304 refreshes `retrieved_at`
+#   only.
+# - robots.txt is fetched once per host (cached for ROBOTS_TTL_S) and checked before each page
+#   fetch.
+#   A missing robots.txt (404/410) allows; an unreachable or erroring one disallows (conservative).
+# - One request at a time per host with a minimum delay, shared by all threads.
+# - 429, 5xx and transport errors are retried with backoff (Retry-After honoured, capped), bounded
+#   by
+#   `max_retries` and the optional `deadline`. Other errors are not cached.
+# - Redirects are NOT followed by the transport. This client follows them itself, one hop at a time,
+#   and every hop is throttled, counted, logged and checked: a hop is only followed within the same
+#   site (host without a leading "www.") or to a host in `redirect_hosts`, never from https to http,
+#   and (when robots are checked for the request) only if robots.txt allows the target. A refused
+#   redirect is logged as "redirect-refused" and raises FetchError.
+# - TLS and DNS failures are recorded once per host and never retried; the host is not contacted
+#   again (`unreachable_hosts` can be preloaded from config). They are not blocks and are not
+#   counted
+#   against `max_requests`, the hard cap on network requests of one run (RequestBudgetExhausted).
+# - Circuit breaker: after `circuit_threshold` (2) consecutive connect or timeout failures to a
+#   host,
+#   every further request to it in this client's lifetime is skipped with a FetchError: no network,
+#   no
+#   throttle wait, not counted against the cap, logged once as "circuit open". Any completed HTTP
+#   response resets the count. A new client (the next run) starts closed. TLS/DNS is separate.
+# - `requests_made` counts real network calls (robots.txt included): the proof that a reuse is free.
+#   Every request, redirect hop and cache hit can be written to a RequestLog (no content).
+# - All exception text is redacted (URLs lose their query strings, key=/token= values are removed).
+# - Transport, clock and sleep are injectable so tests never touch the network or wait.
 
 ROBOTS_TTL_S = 24 * 3600
 DEFAULT_MIN_DELAY_S = 1.0

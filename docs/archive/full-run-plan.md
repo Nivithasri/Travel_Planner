@@ -22,7 +22,7 @@ Varkala, Bhadrachalam. (26 collectable = 3 slice + 6 + 17; the 4 hold-outs are n
   is robots-blocked and not listed either. They are in `unreachable_not_retested`, so even a future allowlist mistake
   would not contact them.
 
-## TLS and DNS failures (implemented, tested in tests/test_http.py)
+## TLS and DNS failures (implemented, tested in tests/test_common.py)
 Recorded once per host, never retried, never treated as a block (no HTTP status, so `check_block` ignores them),
 not counted against the request cap, and the host is not contacted again in the run. Config entries behind it:
 `config/sources.json` -> `unreachable_not_retested` (6 hosts, preloaded as unreachable with `unreachable_reason`,
@@ -40,10 +40,10 @@ in that list because of HTTP 403 on robots.txt in the evidence round, not TLS.
 
 ## Commands (to run only after approval)
 ```
-python scripts/collect_core.py --places Wayanad,Kodagu,Pondicherry,Auroville,Hyderabad,Chennai --sources wikivoyage,wikipedia,web
-python scripts/collect_core.py --places Wayanad,Kodagu,Pondicherry,Auroville,Hyderabad,Chennai --sources wikivoyage,wikipedia,web --execute
+python scripts/collect.py --places Wayanad,Kodagu,Pondicherry,Auroville,Hyderabad,Chennai --sources wikivoyage,wikipedia,web
+python scripts/collect.py --places Wayanad,Kodagu,Pondicherry,Auroville,Hyderabad,Chennai --sources wikivoyage,wikipedia,web --execute
 python scripts/coverage_report.py
-python scripts/estimate_corpus_size.py
+python estimate_corpus_size.py (deleted, D47)
 ```
 The first line prints the plan only. Repeat the key-prefix leak scan and the hold-out check after the run.
 

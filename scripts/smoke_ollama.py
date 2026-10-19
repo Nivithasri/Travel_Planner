@@ -20,8 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pydantic import BaseModel  # noqa: E402
 
 from src.common.cache import DiskCache  # noqa: E402
-from src.common.config import load_settings  # noqa: E402
 from src.common.llm import OllamaClient  # noqa: E402
+from src.common.schemas import load_settings  # noqa: E402
 
 
 class Pong(BaseModel):

@@ -16,8 +16,8 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Hand-off for the live layer (HttpClient, cache, request log reusable; note for Valincia in HANDOFF)
 - [ ] Reddit collector: DEFERRED (D45). Code exists and is tested offline; no credentials, 0 records, live behaviour and access rules not confirmed. Run before the Phase 2 freeze if credentials arrive, else accepted at the freeze
 - [ ] YouTube transcripts: DROPPED (D27, D30), accepted deviation; official pages: 0 records (D45)
-- [x] Done when: every core destination has raw data from at least two source types (26 of 26; 18 of 26 under the stricter D23, a recorded deviation from the plan's 20), a never-seen place (Yercaud) is collected with one command, and a second call makes zero network requests (tests/test_ensure_place.py)
-- Open owner items are listed in docs/HANDOFF.md (terms quotes, wiki robots gap, O12, squash before push, Reddit credentials)
+- [x] Done when: every core destination has raw data from at least two source types (26 of 26; 18 of 26 under the stricter D23, a recorded deviation from the plan's 20), a never-seen place (Yercaud) is collected with one command, and a second call makes zero network requests (tests/test_collect.py)
+- Open owner items are listed in docs/HANDOFF.md (terms quotes, wiki robots gap, O12, Reddit credentials). Pushed: 8ed3f86 "Finalize Phase 1" with tag phase-1-done; D47 simplification commit on top
 
 ## Phase 2: Cleaning and chunking
 - [ ] Tasks (see docs/plan.md)

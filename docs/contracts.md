@@ -65,5 +65,5 @@ attribution, source_revision, response). Not records.jsonl and not part of the c
 
 ## Live store
 data/live/places/<slug>.json (status), data/live/registry.json (resolved places). gitignored. The snapshot registry
-data/registry/core_places.json is committed and only written by scripts/historical/build_core_list.py --write (D46; the auto-bootstrap script was removed). Committed manifest:
+data/registry/core_places.json is committed and fixed: the scripts that built it were removed (D46, D47), so no code writes it; changing it needs a decisions.md entry. Committed manifest:
 data/manifests/raw_manifest.jsonl (url, source, place, retrieved_at, sha256, bytes; no content).

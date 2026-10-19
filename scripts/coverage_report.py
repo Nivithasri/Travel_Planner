@@ -11,10 +11,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.collect.coverage import raw_stats, render, transcript_outcomes  # noqa: E402
-from src.collect.orchestrator import CORE_REGISTRY, RAW_ROOT, STATUS_ROOT  # noqa: E402
-from src.common.config import REPO_ROOT, load_collect_settings  # noqa: E402
-from src.places.registry import Registry  # noqa: E402
+from src.collect.run import (  # noqa: E402  # noqa: E402
+    CORE_REGISTRY,
+    RAW_ROOT,
+    STATUS_ROOT,
+    raw_stats,
+    render,
+    transcript_outcomes,
+)
+from src.common.schemas import REPO_ROOT, load_collect_settings  # noqa: E402
+from src.places.places import Registry  # noqa: E402
 
 
 def main() -> int:

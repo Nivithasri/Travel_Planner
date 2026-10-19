@@ -78,8 +78,6 @@ class DiskCache:
             return _MISS
         return entry["value"]
 
-    def has(self, kind: str, model: str, inputs: Any) -> bool:
-        return self._read(self.path_for(kind, model, inputs)) is not _MISS
 
     def get(self, kind: str, model: str, inputs: Any, default: Any = None) -> Any:
         value = self._read(self.path_for(kind, model, inputs))

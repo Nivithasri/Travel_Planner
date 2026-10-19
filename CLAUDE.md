@@ -9,7 +9,7 @@ IR project (agentic RAG). Spec: @docs/plan.md  Contracts: @docs/contracts.md  De
 - Commit messages: plain, imperative, human style (e.g. "Add RRF fusion and tests"). No emoji, no tool mentions.
 - Before the first commit of a session run `git config core.hooksPath .githooks` (strips any attribution automatically).
 - Never push, force-push, or open PRs unless I ask. If asked, the same rules apply.
-- Never mention in docs/LOG.md that an AI tool wrote the code.
+- Never mention in LOG.md (repo root) that an AI tool wrote the code.
 
 ## Session handoff (every phase runs in a fresh session)
 - FIRST action of every session: read docs/HANDOFF.md, LOG.md, docs/phase-status.md, then `git status` and
@@ -31,7 +31,7 @@ IR project (agentic RAG). Spec: @docs/plan.md  Contracts: @docs/contracts.md  De
 10. Before implementing a technique, read its paper note in docs/papers/ if it exists (RRF, MMR, CRAG, etc.).
 11. PRIVACY: never put the user's account email or any identifier taken from session context (userEmail, git
     config, system reminders, file paths) into requests, files, logs, headers or tests. The only values that may be
-    sent anywhere are those the user placed in .env (e.g. CONTACT_EMAIL), read through src/common/config.py.
+    sent anywhere are those the user placed in .env (e.g. CONTACT_EMAIL), read through src/common/schemas.py.
 
 ## Workflow
 - Start each phase in plan mode; wait for approval.

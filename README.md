@@ -29,22 +29,20 @@ through the polite, cached, allowlisted HTTP client (`src/common/http.py`, `conf
 
 | Command | What it does |
 |---|---|
-| `python scripts/collect_core.py --places <names>` | plan a collection run for core places; add `--execute` to run it |
+| `python scripts/collect.py core --places <names>` | plan a collection run for core places; add `--execute` to run it |
+| `python scripts/collect.py facts --source <wikidata\|open_meteo\|overpass> --places <names>` | facts-layer envelopes; add `--execute` |
+| `python scripts/collect.py demo --place <name>` | never-seen-place demo into `data/live/` only; add `--execute` |
 | `python scripts/coverage_report.py` | D23 coverage per place (offline) |
-| `python scripts/coverage_matrix.py` | place x source and aspect estimate (offline) |
-| `python scripts/estimate_corpus_size.py` | projected chunk counts (offline, estimate only) |
-| `python scripts/collect_facts.py --source <wikidata\|open_meteo\|overpass> --places <names>` | facts-layer envelopes; add `--execute` |
-| `python scripts/ensure_place_demo.py --place <name>` | never-seen-place demo into `data/live/` only; add `--execute` |
-| `python scripts/check_robots.py` | RFC 9309 robots verdicts for the API hosts; add `--execute` |
 | `python scripts/smoke_ollama.py` | check the live Ollama endpoint (run before Phase 3) |
-| `python scripts/withdraw_source.py ...` | withdraw a source from the snapshot and prove nothing is left |
 
-`scripts/historical/` holds one-off scripts that build their own HTTP client and bypass the allowlist; they
-refuse to run without `--historical` (D43). Do not run them.
+`python scripts/collect.py <subcommand> --help` lists the flags. Exit codes: 2 hold-out or bad input, 3 block,
+4 request cap reached, 5 (facts) a fetch error stopped the run.
 
 ## Layout
-`src/collect` collectors and on-demand ingestion, `src/places` registry and resolver, `src/facts` facts layer,
-`src/common` config, cache, HTTP, LLM and schemas; `src/process`, `src/retrieval`, `src/agents`, `src/tools`,
+`src/common/{http,cache,llm,schemas}.py` (HTTP client with allowlist and request log; disk cache; Ollama client;
+settings and contract models), `src/collect/sources.py` (collectors) and `src/collect/run.py` (raw and live
+stores, coverage, ensure_place, orchestrator), `src/places/places.py` (registry, Wikidata, resolver),
+`src/facts/facts.py` (facts layer); `tests/` has six files. `src/process`, `src/retrieval`, `src/agents`, `src/tools`,
 `eval`, `app`, `index` are filled in later phases. `data/raw` and `data/processed` are gitignored; the frozen
 corpus rules are in [CLAUDE.md](CLAUDE.md). Results and the commands that reproduce them are in [LOG.md](LOG.md);
 decisions in [docs/decisions.md](docs/decisions.md); contracts in [docs/contracts.md](docs/contracts.md);

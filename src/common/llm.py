@@ -22,7 +22,7 @@ import requests
 from pydantic import BaseModel, ValidationError
 
 from src.common.cache import DiskCache
-from src.common.config import DEFAULT_LLM_SEED, DEFAULT_RETRY_BUDGET_S, load_settings
+from src.common.schemas import DEFAULT_LLM_SEED, DEFAULT_RETRY_BUDGET_S, load_settings
 
 T = TypeVar("T", bound=BaseModel)
 

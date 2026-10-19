@@ -4,7 +4,7 @@ Status 2026-10-18. The planned collection projects to about 1,600 to 2,400 chunk
 10,000 to 20,000. These are the in-policy ways to add text. Every gain is an ESTIMATE; the measured inputs and the
 assumptions are stated so the owner can check them.
 
-## Measured inputs (3 slice places, strict estimate, scripts/estimate_corpus_size.py)
+## Measured inputs (3 slice places, strict estimate, estimate_corpus_size.py (deleted, D47))
 - Wikipedia place page: about 26.9k characters (about 32 chunks at 250 tokens). Wikivoyage page: about 27.1k (about 32).
 - inditales: 3 posts, about 8.5k characters each (about 10 chunks per post); found for 2 of 3 places.
 - One place today: about 74 chunks (62.5k characters). One chunk is about 850 new characters (250 tokens, 15% overlap).

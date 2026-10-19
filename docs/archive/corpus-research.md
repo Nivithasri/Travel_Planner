@@ -5,8 +5,8 @@ Date 2026-10-18. Every figure is an ESTIMATE with its assumptions stated. Licenc
 search snippet exists, the cell says UNVERIFIED and has no quote. Not legal advice. Nothing was downloaded into the project;
 no dump was fetched. Hold-outs (Chikmagalur, Araku Valley, Thekkady, Thanjavur, D17) are excluded everywhere below.
 
-## D1. What the corpus has today (scripts/coverage_matrix.py, read-only, keyword aspect tags = estimate only)
-Command: `python scripts/coverage_matrix.py`. 9 places collected, 17 not collected, 4 hold-outs. Cleaned characters (strict
+## D1. What the corpus has today (coverage_matrix.py (deleted, D47), read-only, keyword aspect tags = estimate only)
+Command: `python coverage_matrix.py (deleted, D47)`. 9 places collected, 17 not collected, 4 hold-outs. Cleaned characters (strict
 level) per place and source type, from the run on 2026-10-18:
 
 | place | blog | reference (Wikipedia, Sahapedia) | wikivoyage | publish-dated records | newest publish date |

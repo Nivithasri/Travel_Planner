@@ -2,10 +2,13 @@
 
 ## Status
 Phase 1 (data collection and place registry) is COMPLETE and reviewed (`/phase-review 1`, 2026-10-19, verdict PASS WITH NOTES), tagged `phase-1-done`.
-Next: Phase 2 (cleaning, chunking, freeze). Start it in plan mode and wait for approval. Never push (82+ local commits ahead of origin/main, which holds only
-"Initial commit"; squash or filter before any push, because commit 89b4a9c still holds a real third-party channel name that 32e88e4 removes from the tree but not from history).
+Next: Phase 2 (cleaning, chunking, freeze). Start it in plan mode and wait for approval.
+PUSHED: origin/main holds "Initial commit", then 8ed3f86 "Finalize Phase 1" (all Phase 1 work squashed into one commit; tag phase-1-done
+on 8ed3f86, pushed), then the D47 commit "Simplify Phase 1 code". Push only when asked, plain fast-forward, never force. The pre-squash
+history exists only in the local bundle ../travel-planner-pre-squash.bundle (never pushed; it holds the old third-party channel name and
+the old .env.example address, and it sits in the OneDrive-synced Documents folder).
 
-Verified at the end of Phase 1 (commands in LOG.md, 2026-10-19 entries): `python -m pytest -q` 452 passed at the review, 415 after the D46 cleanup (37 tests of removed dead code deleted); `python -m ruff check .` clean;
+Verified at the end of Phase 1 (commands in LOG.md, 2026-10-19 entries): `python -m pytest -q` 452 passed at the review, 415 after D46, 352 after D47 (tests of deleted code removed; LOG.md lists them); `python -m ruff check .` clean;
 `wc -l data/manifests/raw_manifest.jsonl` 179 (153 file/record lines verified by sha256 + 13 youtube lines + 13 withdrawn lines); request log 443 lines in 13 runs, network + cache = lines
 in every run; `python scripts/coverage_report.py` 18 of 26 places pass D23.
 
@@ -14,9 +17,9 @@ in every run; `python scripts/coverage_report.py` 18 of 26 places pass D23.
 - Raw records `data/raw/<source>/<place>/records.jsonl`: 97 records (wikipedia 26, wikivoyage 25, blog 43, sahapedia 3, official 0, reddit 0; one inditales post is stored under both Ooty and Kodaikanal).
 - Facts envelopes (not records, D37): `data/raw/wikidata` 26, `data/raw/open_meteo` 29 (26 + 3 noelev files, D42 primary rules), `data/raw/overpass/_south/airports.json` (48 elements, unfiltered). Each Open-Meteo file: 3,653 days, 0 nulls.
 - Live store `data/live/` (Yercaud demo only); `.cache/http` (1,288 files after the quarantine); `.cache/_quarantine/` (64 page entries from hosts that are excluded or ask-first in docs/sources.md, moved not deleted; INDEX.jsonl lists them).
-- Code: `src/collect/{wiki,web,reddit,raw,store,ensure,orchestrator,coverage,types,size_estimate,policy_pages,withdraw}.py` plus `youtube.py` (a 21-line D27 refusal stub, D46), `src/places/{registry,resolve,core_list,wikidata,wv_lists}.py`, `src/facts/*`, `src/common/{config,cache,http,allowlist,llm,schemas,redact,requestlog}.py`. Merged in D46: geo into facts/holdout, aliases into places/registry, overrides into places/core_list, matrix into collect/size_estimate, guard into common/allowlist.
-- Scripts: `scripts/collect_core.py --places <names> [--execute]` (prints the plan without --execute), `scripts/coverage_report.py` (offline), `scripts/collect_facts.py`, `scripts/ensure_place_demo.py`, `scripts/estimate_corpus_size.py`. The two historical scripts in `scripts/historical/` (build_core_list, gather_source_evidence) need `--historical` and bypass the D43 allowlist; do not run them. bootstrap_registry and the auto-bootstrap experiment were removed (D46).
-- Guards: every production client refuses hosts outside config/sources.json before any network call (D43); `tests/test_api_hosts_golden.py` pins the 8 api_hosts entries.
+- Code (D47, 8 modules, no __init__.py; namespace packages): `src/common/{http,cache,llm,schemas}.py` (http = client + allowlist + request log + redaction; schemas = settings + pydantic models), `src/collect/sources.py` (wiki, web, Reddit collectors), `src/collect/run.py` (types, raw store, live store, coverage, ensure_place, orchestrator; YouTube is refused there in one entry, D27), `src/places/places.py` (registry, Wikidata lookups, resolver), `src/facts/facts.py` (RFC 9309 matcher, hold-out filter, api_hosts, envelopes, Wikidata/Overpass/Open-Meteo fetchers). Placeholders: `src/{process,retrieval,agents,tools}/.gitkeep`.
+- Scripts: `scripts/collect.py core|facts|demo ...` (old collect_core, collect_facts, ensure_place_demo; same flags and exit codes; plan only without --execute), `scripts/coverage_report.py` (offline), `scripts/smoke_ollama.py` (Phase 3), hooks in `scripts/hooks/`. The historical scripts, the policy-page and withdraw tools, the size estimates and check_robots were deleted in D47 (the bundle and git history keep them).
+- Guards: every production client refuses hosts outside config/sources.json before any network call (D43); `tests/test_guards.py` holds every test a mutation check relies on (allowlist, redirect refusals, api_hosts golden list, request-log guard, contact privacy, circuit breaker, hold-out filter). Tests: six files (test_common, test_collect, test_places, test_facts, test_hooks_scripts, test_guards).
 
 ## How to run
 - Install `pip install -e .[dev]`; Python 3.10.11 (D9); `ruff`/`pytest` are not on PATH: `python -m pytest -q`, `python -m ruff check .`.
@@ -43,7 +46,7 @@ Scan scopes: key-prefix scans are 0 over tracked files, all revisions, git log -
 1. Terms quotes (config terms_status unchanged): paste primary quotes for en.wikipedia.org, en.wikivoyage.org, www.wikidata.org /w/api.php, query.wikidata.org (secondary evidence only, D43/facts-layer 5d), the wikimedia.org pageviews host (secondary evidence), Overpass and Open-Meteo.
    Also the ROBOTS gap: robots.txt for en.wikipedia.org and en.wikivoyage.org was never fetched, so the exemption for their /w/api.php calls rests on D36 and the Wikimedia API terms, not on a matcher verdict.
 2. O12: what may be shared, pushed or uploaded (ODbL airports, CC BY-SA text, CC BY-NC-SA Sahapedia).
-3. Squash or filter-repo before any push.
+3. Done: Phase 1 squashed and pushed (8ed3f86, tag phase-1-done). Decide whether to keep or move the local pre-squash bundle (OneDrive-synced).
 4. D33 is applied at the Phase 2 freeze; no hidden_gem place survives (D44).
 5. Reddit credentials (D45); D24 scoping review; the ask-first emails in docs/outreach.md are unsent.
 6. O13 (Phase 5): the 33-code airport allowlist data file and its test DO NOT EXIST yet.

@@ -1,23 +1,27 @@
+"""Tests for src/places: registry, Wikidata lookups, resolver (D47)."""
 from __future__ import annotations
 
 import json
 from datetime import date
 
 from src.common.cache import DiskCache
-from src.common.config import REPO_ROOT
 from src.common.http import HttpClient, TransportResponse
 from src.common.schemas import PlaceRegistryEntry, State
-from src.places.registry import Registry, clean_aliases, normalize, slugify
-from src.places.resolve import resolve_place
-from src.places.wikidata import (
+from src.places.places import (
     Ancestor,
     Candidate,
     Entity,
+    Registry,
     WikidataClient,
+    normalize,
     pageview_window,
-    parse_point,
+    resolve_place,
+    slugify,
     state_from_ancestors,
 )
+
+# ==== from test_places_resolve.py
+
 
 AS_OF = date(2026, 10, 18)
 
@@ -62,11 +66,14 @@ def ent(qid, label, lat=10.0, lon=77.0, title=None, aliases=()):
 
 
 KERALA = Ancestor("Q1186", "Kerala", False)
+
+
 TN = Ancestor("Q1445", "Tamil Nadu", False)
+
+
 IDUKKI = Ancestor("Q2", "Idukki", True)
 
 
-# ---- normalisation / registry ---------------------------------------------------------------
 def test_normalize_and_slug():
     assert normalize("  Pondichéry! ") == "pondichery"
     assert slugify("Fort Kochi") == "fort_kochi"
@@ -82,7 +89,6 @@ def test_registry_lookup_by_alias_and_roundtrip(tmp_path):
     assert Registry.load(tmp_path / "missing.json").entries == []
 
 
-# ---- state scope ----------------------------------------------------------------------------
 def test_puducherry_is_its_own_state_including_mahe_yanam_karaikal():
     assert state_from_ancestors([KERALA]) == "KL"
     pudu = Ancestor("Q66743", "Puducherry", False)
@@ -100,14 +106,11 @@ def test_puducherry_place_resolves_with_state_py():
     assert res.status == "resolved" and res.entry.state.value == "PY"
 
 
-def test_parse_point_and_window():
-    assert parse_point("Point(76.9 10.1)") == (10.1, 76.9)
-    assert parse_point("nonsense") is None
+def test_pageview_window():
     assert pageview_window(date(2026, 10, 18)) == ("2025100100", "2026093000")
     assert pageview_window(date(2026, 1, 5)) == ("2025010100", "2025123100")
 
 
-# ---- resolution -----------------------------------------------------------------------------
 def test_registry_hit_makes_no_wikidata_call():
     wd = FakeWD({})
     reg = Registry([entry("Munnar", aliases=["Moonar"])])
@@ -186,7 +189,6 @@ def test_name_collision_gets_qualified():
     assert res.entry.name.startswith("Kovalam (") and res.entry.state.value == "TN"
 
 
-# ---- real WikidataClient against a fake transport -------------------------------------------
 def make_wd(tmp_path, routes):
     def transport(method, url, headers, timeout):
         for frag, body in routes.items():
@@ -230,25 +232,6 @@ def test_wikidata_client_parses_entity_search_and_ancestors(tmp_path):
     assert http.requests_made == n  # everything cached: a repeat resolution is free
 
 
-def test_sitelink_lookup_sends_no_normalize_and_maps_titles(tmp_path):
-    urls = []
-    entities = {
-        "Q1": {"labels": {"en": {"value": "Munnar"}},
-               "sitelinks": {"enwikivoyage": {"title": "Munnar"}}},
-        "-1": {"site": "enwikivoyage", "title": "Nowhere", "missing": ""},
-    }
-
-    def transport(method, url, headers, timeout):
-        urls.append(url)
-        return TransportResponse(200, {}, json.dumps({"entities": entities}))
-
-    http = HttpClient(DiskCache(tmp_path), "T/1 (t@example.com)", transport=transport,
-                      sleep=lambda s: None, min_delay_s=0)
-    got = WikidataClient(http).entities_by_wikivoyage_titles(["munnar", "Nowhere"])
-    assert list(got) == ["munnar"] and got["munnar"].qid == "Q1"
-    assert "normalize" not in urls[0]
-
-
 def test_wikidata_error_body_raises_and_is_not_cached(tmp_path):
     from src.common.http import FetchError
 
@@ -261,49 +244,3 @@ def test_wikidata_error_body_raises_and_is_not_cached(tmp_path):
 
     with _pytest.raises(FetchError):
         WikidataClient(http).search("x")
-
-
-# ---- merged from tests/test_aliases.py: 
-
-def alias_entry(name, aliases):
-    return PlaceRegistryEntry(name=name, aliases=aliases, state="TN", region_cluster="x",
-                              popularity="popular", lat=10.0, lon=77.0)
-
-
-def test_short_latin_alias_dropped_but_non_latin_short_alias_kept():
-    out, dropped = clean_aliases([alias_entry("Hyderabad", ["Hyd", "Haidarabad", "ஊட்டி", "ABC"])])
-    assert out[0].aliases == ["Haidarabad", "ஊட்டி"]
-    assert {(d.alias, d.reason) for d in dropped} == {
-        ("Hyd", "short_latin"), ("ABC", "short_latin")}
-
-
-def test_four_character_alias_is_kept():
-    out, dropped = clean_aliases([alias_entry("Ooty", ["Udhi"])])
-    assert out[0].aliases == ["Udhi"] and dropped == []
-
-
-def test_alias_shared_by_two_entries_is_removed_from_both():
-    a, b = alias_entry("Alpha", ["Twin Town", "Alfa"]), alias_entry("Beta", ["twin  town!"])
-    out, dropped = clean_aliases([a, b])
-    assert out[0].aliases == ["Alfa"] and out[1].aliases == []
-    assert sorted(d.place for d in dropped) == ["Alpha", "Beta"]
-    assert all(d.reason.startswith("shared_with:") for d in dropped)
-
-
-def test_alias_equal_to_another_entrys_name_is_dropped_and_names_survive():
-    out, dropped = clean_aliases([alias_entry("Alpha", ["Beta"]), alias_entry("Beta", [])])
-    assert out[0].aliases == [] and [e.name for e in out] == ["Alpha", "Beta"]
-    assert dropped[0].reason == "shared_with:Beta"
-
-
-def test_shipped_registry_has_no_short_or_shared_aliases():
-    reg = Registry.load(REPO_ROOT / "data" / "registry" / "core_places.json")
-    seen: dict[str, str] = {}
-    for e in reg.entries:
-        for a in e.aliases:
-            assert not (a.isascii() and len(a) < 4), (e.name, a)
-            key = normalize(a)
-            assert seen.setdefault(key, e.name) == e.name, (a, e.name, seen[key])
-            assert reg.get(a) is None or reg.get(a).name == e.name
-    assert json.loads((REPO_ROOT / "data/registry/core_places.json").read_text("utf-8"))["meta"][
-        "aliases_dropped"] is not None
