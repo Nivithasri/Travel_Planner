@@ -3,7 +3,7 @@ written. Offline.
 
     python scripts/freeze.py                      # dry run
     python scripts/freeze.py --apply-d33          # dry run of the D33 step (effects table)
-    python scripts/freeze.py --apply-d33 --execute   # write data/processed/d33_excluded.json
+    python scripts/freeze.py --apply-d33 --execute   # write both d33_excluded.json copies
     python scripts/freeze.py --execute            # write data/processed/FROZEN (all must pass)
 
 The D33 sidecar is a Phase 4 query-eligibility list: chunks.jsonl is unchanged and retrieval is NOT
@@ -30,7 +30,8 @@ from src.process.process import TOKENIZER_FILES, ReconcileError, check_corpus  #
 
 REAL_COUNTER_PREFIX = "tokenizer.json sha256:"
 ENV_SOURCE = "EVAL_REFERENCE_DATE in .env"
-FROZEN_FILES = ("chunks.jsonl", "drops.jsonl", "attribution.json")
+FROZEN_FILES = ("chunks.jsonl", "drops.jsonl", "attribution.json")  # checked against the manifest
+D33_NAME = "d33_excluded.json"  # in data/processed and, committed, in data/manifests
 
 
 def sha256(path: Path) -> str:
@@ -118,10 +119,12 @@ def preconditions(ctx: Ctx) -> list[tuple[str, bool, str]]:
                 f"reddit_resolved={ctx.config.get('reddit_resolved')!r} "
                 f"{ctx.config.get('reddit_note', '')}".strip()))
     mode = ctx.config.get("d33_mode")
-    side = ctx.processed / "d33_excluded.json"
-    out.append(("D33 applied (d33_mode sidecar and d33_excluded.json present)",
-                mode == "sidecar" and side.exists(),
-                f"d33_mode={mode!r}, sidecar exists={side.exists()}"))
+    side, copy = ctx.processed / D33_NAME, ctx.manifests / D33_NAME
+    same = side.exists() and copy.exists() and sha256(side) == sha256(copy)
+    out.append(("D33 applied (d33_mode sidecar; processed and manifests copies identical)",
+                mode == "sidecar" and same,
+                f"d33_mode={mode!r}, processed copy exists={side.exists()}, manifests copy "
+                f"exists={copy.exists()}, identical={same}"))
     return out
 
 
@@ -178,9 +181,10 @@ def run(root: Path, env_file: Path | None, execute: bool, apply_d33: bool) -> in
             return 0
         doc = {"rule": "D23 at chunk level, applied once (D33, D48)",
                "excluded": sorted(x.split(" (")[0] for x in excluded)}
-        (ctx.processed / "d33_excluded.json").write_text(
-            json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
-        print("wrote data/processed/d33_excluded.json")
+        text = json.dumps(doc, indent=1, sort_keys=True) + "\n"
+        for d in (ctx.processed, ctx.manifests):  # the manifests copy is committed (no text)
+            (d / D33_NAME).write_text(text, encoding="utf-8", newline="\n")
+        print(f"wrote data/processed/{D33_NAME} and data/manifests/{D33_NAME}")
         return 0
     checks = preconditions(ctx)
     for name, ok, why in checks:
@@ -196,6 +200,9 @@ def run(root: Path, env_file: Path | None, execute: bool, apply_d33: bool) -> in
     doc = {
         "chunks_jsonl_sha256": sha256(ctx.processed / "chunks.jsonl"),
         "attribution_json_sha256": sha256(ctx.processed / "attribution.json"),
+        "drops_jsonl_sha256": sha256(ctx.processed / "drops.jsonl"),
+        "d33_excluded_json_sha256": sha256(ctx.processed / D33_NAME),
+        "manifests_d33_excluded_json_sha256": sha256(ctx.manifests / D33_NAME),
         "chunk_count": len(ctx.chunks),
         "counter": ctx.manifest["counter"],
         "tokenizer_files_sha256": tokenizer_files(load_tokenizer_dir(env_file)),
@@ -218,7 +225,8 @@ def main() -> int:
     g.add_argument("--dry-run", action="store_true", help="default")
     g.add_argument("--execute", action="store_true")
     ap.add_argument("--apply-d33", action="store_true",
-                    help="D33 sidecar: write data/processed/d33_excluded.json, the Phase 4 "
+                    help="D33 sidecar: write data/processed/d33_excluded.json and its committed "
+                         "copy data/manifests/d33_excluded.json, the Phase 4 "
                          "query-eligibility list (no dev/test query may target a listed place). "
                          "chunks.jsonl is unchanged and retrieval is NOT filtered unless the "
                          "owner records otherwise in config/freeze.json")

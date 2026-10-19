@@ -1,0 +1,14 @@
+{
+ "excluded": [
+  "Alappuzha",
+  "Auroville",
+  "Bhadrachalam",
+  "Kodaikanal",
+  "Munnar",
+  "Rameswaram",
+  "Srisailam",
+  "Varkala",
+  "Wayanad"
+ ],
+ "rule": "D23 at chunk level, applied once (D33, D48)"
+}

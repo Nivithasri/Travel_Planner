@@ -361,7 +361,8 @@ def _freeze_root(tmp_path, monkeypatch, counter_kind):
         "reference_date_source": "EVAL_REFERENCE_DATE in .env"}}), encoding="utf-8")
     (cfg / "freeze.json").write_text(json.dumps({"reddit_resolved": True, "d33_mode": "sidecar"}),
                                      encoding="utf-8")
-    (proc / "d33_excluded.json").write_text("{}", encoding="utf-8")
+    for d in (proc, man):  # the sidecar and its committed copy
+        (d / "d33_excluded.json").write_text('{"excluded": ["X"]}\n', encoding="utf-8")
     return root, env
 
 
@@ -390,9 +391,16 @@ def test_freeze_dry_run_writes_nothing_and_execute_writes_the_marker(tmp_path, m
     import tokenizers
 
     doc = json.loads(frozen.read_text(encoding="utf-8"))
-    assert set(doc) == {"chunks_jsonl_sha256", "attribution_json_sha256", "chunk_count", "counter",
-                        "tokenizer_files_sha256", "tokenizers_version", "reference_date",
-                        "reference_date_source", "frozen_at_utc"}
+    assert set(doc) == {"chunks_jsonl_sha256", "attribution_json_sha256", "drops_jsonl_sha256",
+                        "d33_excluded_json_sha256", "manifests_d33_excluded_json_sha256",
+                        "chunk_count", "counter", "tokenizer_files_sha256", "tokenizers_version",
+                        "reference_date", "reference_date_source", "frozen_at_utc"}
+    proc = root / "data" / "processed"
+    for key, path in (("drops_jsonl_sha256", proc / "drops.jsonl"),
+                      ("d33_excluded_json_sha256", proc / "d33_excluded.json"),
+                      ("manifests_d33_excluded_json_sha256",
+                       root / "data" / "manifests" / "d33_excluded.json")):
+        assert doc[key] == hashlib.sha256(path.read_bytes()).hexdigest(), key
     tj = tmp_path / "bge-m3" / "tokenizer.json"
     assert doc["tokenizer_files_sha256"] == {"tokenizer.json":
                                              hashlib.sha256(tj.read_bytes()).hexdigest()}
@@ -422,3 +430,32 @@ def test_freeze_refuses_flag_date_unresolved_reddit_and_d33_without_decision(tmp
     assert fz.run(root, env, execute=True, apply_d33=True) == 2  # d33_mode null -> refused
     assert "REFUSED" in capsys.readouterr().out
     assert not (root / "data" / "processed" / "FROZEN").exists()
+
+
+def test_freeze_refuses_when_the_two_d33_copies_differ_or_one_is_missing(tmp_path, monkeypatch,
+                                                                         capsys):
+    import scripts.freeze as fz
+
+    root, env = _freeze_root(tmp_path, monkeypatch, "real")
+    copy = root / "data" / "manifests" / "d33_excluded.json"
+    copy.write_text('{"excluded": ["Y"]}\n', encoding="utf-8")
+    assert fz.run(root, env, execute=True, apply_d33=False) == 2
+    out = capsys.readouterr().out
+    assert "[FAIL] D33 applied" in out and "identical=False" in out
+    copy.unlink()
+    assert fz.run(root, env, execute=True, apply_d33=False) == 2
+    assert "manifests copy exists=False" in capsys.readouterr().out
+    assert not (root / "data" / "processed" / "FROZEN").exists() and not REAL_FROZEN.exists()
+
+
+def test_apply_d33_execute_writes_identical_processed_and_manifests_copies(tmp_path, monkeypatch):
+    import scripts.freeze as fz
+
+    root, env = _freeze_root(tmp_path, monkeypatch, "real")
+    proc, man = root / "data" / "processed", root / "data" / "manifests"
+    for d in (proc, man):
+        (d / "d33_excluded.json").unlink()
+    assert fz.run(root, env, execute=True, apply_d33=True) == 0
+    a, b = (proc / "d33_excluded.json").read_bytes(), (man / "d33_excluded.json").read_bytes()
+    assert a == b and b"\r" not in a and "excluded" in json.loads(a)
+    assert fz.run(root, env, execute=False, apply_d33=False) == 0  # all preconditions pass

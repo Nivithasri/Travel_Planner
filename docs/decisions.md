@@ -488,3 +488,9 @@ D48 (amendment 2026-10-19, corpus rebuilt with the real tokenizer)
    starts at a section header; 408,936 / 212.5 = 1,924, close to the estimate. Tokenizer counts are not strictly additive across chunk
    boundaries, so these figures are approximate. D33 sidecar applied (data/processed/d33_excluded.json, 9 places). freeze.py dry run:
    8 of 8 preconditions pass; the freeze itself awaits the owner. Status: accepted.
+D48 (amendment 2026-10-19, before the freeze)
+   (xviii) FROZEN and data/manifests/frozen_manifest.json also record sha256 of data/processed/drops.jsonl, data/processed/d33_excluded.json
+   and data/manifests/d33_excluded.json. `freeze.py --apply-d33 --execute` writes the sidecar to data/processed and a committed copy to
+   data/manifests (place names only, no text); the D33 precondition fails unless both copies exist and are byte-identical (tests in temp
+   directories). drops.jsonl was already checked against processed_manifest.json. models/ (the owner's local TOKENIZER_DIR) is gitignored.
+   Status: accepted.

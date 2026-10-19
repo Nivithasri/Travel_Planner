@@ -10,7 +10,7 @@ Next: owner go-ahead -> `python scripts/freeze.py --execute` -> record FROZEN in
 start Phase 3 before that.
 
 ## Verified at the end of this session (commands and outputs in LOG.md, 2026-10-19 Phase 2 entries)
-`python -m pytest -q` 433 passed; `python -m ruff check .` clean; `python scripts/process.py --write` (no --reference-date) run
+`python -m pytest -q` 435 passed; `python -m ruff check .` clean; `python scripts/process.py --write` (no --reference-date) run
 twice -> identical sha256 for every output (chunks.jsonl ee117551..., 1,696 chunks, counter "tokenizer.json sha256:21106b6d7dab",
 reference date 2026-10-18 from "EVAL_REFERENCE_DATE in .env"); request log 443 lines before and after (no network); mutations (a-g)
 and the Phase 1 hold-out mutation (13 failures) caught, `git diff --stat` empty after each restore. Every review figure is
@@ -55,8 +55,8 @@ dropped and O8 amended (D48 iii); reference date from .env (D48 iv).
    not on the term list can still leak; the scanned landmark list was the reviewer's and is unverified.
 Accepted cost (D48 xiv): the chunk-level hold-out rule removes 11 Munnar Wikivoyage chunks via the Thekkady terms.
 3. DONE: config/freeze.json reddit_resolved true (D48 xvi), d33_mode "sidecar"; sidecar written.
-4. For review before the freeze: FROZEN hashes chunks.jsonl and attribution.json only (not drops.jsonl or d33_excluded.json), and
-   d33_excluded.json (place names only) is gitignored although Phase 4 needs it; decide whether to hash and commit it.
+4. DONE (D48 xviii): FROZEN also hashes drops.jsonl and both d33_excluded.json copies; the committed copy is
+   data/manifests/d33_excluded.json (Phase 4 reads it); models/ is gitignored.
 5. O12 sharing (below). Wikimedia Terms of Use section 7 wording: not in the repo
    (no fetched copy); needed for the report and app attribution (Phase 8).
 Phase 1 items still open: terms quotes and the wiki robots gap (D36/D43), O12, the pre-squash bundle location, D24 review, outreach
