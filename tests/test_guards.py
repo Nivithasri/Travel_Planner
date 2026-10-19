@@ -643,6 +643,7 @@ def test_filter_uses_center_for_ways_and_alternate_name_tags():
     ("irrigation is fostered by the Periyar Dam", "Thekkady"),
     ("boating on Periyar Lake", "Thekkady"),
     ("the Mullaperiyar Dam dispute", "Thekkady"),
+    ("Borra Caves are caves discovered by William King in 1807.", "Araku Valley"),
 ])
 def test_text_naming_a_holdout_matches_with_its_canonical_name(text, holdout):
     hit = HoldoutFilter().text_match(text)
@@ -655,6 +656,8 @@ def test_text_naming_a_holdout_matches_with_its_canonical_name(text, holdout):
     "Periyar (E. V. Ramasamy), the social reformer, spoke here.",
     "Periyar University in Salem",
     "Buses leave from the Periyar Bus Stand.",
+    "Visakhapatnam has beaches such as RK Beach, Rushikonda Beach and Yarada.",
+    "the Borra village road",  # "Borra" alone is not the landmark term
     "Arakuvalley as one word",  # concatenated token: no match by design (word boundaries, D48)
     "Karaku Road and Tanjoreans",  # substrings inside other words do not match
     "Munnar tea estates",

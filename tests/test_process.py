@@ -420,3 +420,13 @@ def test_link_fragment_rejoin_keeps_list_items_headings_and_short_real_lines_sep
     assert lines == ["The temple is old.", "Shiva Carvings", "There are many carvings.",
                      "Places to visit", "Agastya Teertha Lake", "Bhutanatha Temple",
                      "Open daily.", "The whole Bangalore international airport is new."]
+
+
+def test_borra_caves_chunk_drops_and_visakhapatnam_text_without_it_is_kept():
+    e = entry("Visakhapatnam", "AP")
+    out, rep = run([rec(para(5) + " Borra Caves are caves discovered in 1807. " + para(5, start=40),
+                        place="Visakhapatnam")], e=e)
+    assert out == [] and rep.chunk_drops[0]["holdout"] == "Araku Valley"
+    out, rep = run([rec(para(5) + " RK Beach and Rushikonda Beach are popular. "
+                        + para(5, start=40), place="Visakhapatnam")], e=e)
+    assert out and rep.chunk_drops == []

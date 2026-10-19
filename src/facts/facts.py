@@ -106,6 +106,7 @@ DROP_NAMES = (
     "Thekkady", "Kumily", "Brihadisvara", "Brihadeeswarar",
     "Thekkadi", "Brihadeeswara",  # spelling variants found in the raw text (D48 amendment)
     "Mullaperiyar",  # the dam that forms Periyar Lake at Thekkady (O8 as amended in D48)
+    "Borra Caves",  # Araku hills landmark (owner decision, D48 amendment)
 )
 # term -> canonical hold-out (registry name), so drops can be counted per hold-out (D48)
 HOLDOUT_OF = {
@@ -115,6 +116,7 @@ HOLDOUT_OF = {
     "araku valley": "Araku Valley", "araku": "Araku Valley",
     "thekkady": "Thekkady", "kumily": "Thekkady",
     "thekkadi": "Thekkady", "brihadeeswara": "Thanjavur", "mullaperiyar": "Thekkady",
+    "borra caves": "Araku Valley",
 }
 NAME_TAGS = ("name", "name:en", "alt_name", "old_name", "official_name", "short_name")
 _PERIYAR = re.compile(
