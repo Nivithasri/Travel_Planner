@@ -1,29 +1,30 @@
 # HANDOFF (overwritten at the end of every phase; the next session reads this first)
 
 ## Status
-Phase 2 (cleaning and chunking) is BUILT and verified but STOPPED BEFORE THE FREEZE, on the owner's instruction (the freeze
-needs the owner's go-ahead after Reddit is resolved). There is NO `phase-2-done` tag. `data/processed/FROZEN` does not exist.
+Phase 2 (cleaning and chunking) is BUILT, rebuilt with the real bge-m3 tokenizer, and READY TO FREEZE: `python scripts/freeze.py
+--dry-run` shows 8 of 8 preconditions PASS. The freeze itself was NOT run; it waits for the owner's go-ahead after reviewing the
+report. There is NO `phase-2-done` tag and `data/processed/FROZEN` does not exist.
 Phase 1 is complete; tag `phase-1-done` is on 61f1355 (moved from 8ed3f86 on 2026-10-19 with an owner-authorized force push of
-that one tag; `git ls-remote --tags origin` shows 61f1355). Push only when asked; never force a branch.
-Next: the owner decides the open Phase 2 items below, then runs the freeze procedure. Do not start Phase 3.
+that one tag). Push only when asked; never force a branch.
+Next: owner go-ahead -> `python scripts/freeze.py --execute` -> record FROZEN in LOG.md -> commit frozen_manifest.json -> tag. Do not
+start Phase 3 before that.
 
 ## Verified at the end of this session (commands and outputs in LOG.md, 2026-10-19 Phase 2 entries)
-`python -m pytest -q` 433 passed; `python -m ruff check .` clean; `python scripts/process.py --reference-date 2026-10-18 --write`
-run twice -> identical sha256 for every output (chunks.jsonl b3265a45...); request log 443 lines before and after (no network);
-mutations (a-f) on the pipeline, (g) on the freeze tokenizer check and the Phase 1 hold-out mutation (13 failures) caught, `git diff
---stat` empty after each restore. Every review figure is reproducible with `python scripts/phase2_evidence.py all` (read-only).
-`python scripts/freeze.py --dry-run` on the real corpus: exit 2, 4 FAIL (proxy counter, reference date not from .env, Reddit
-unresolved, D33 not applied), 4 PASS.
+`python -m pytest -q` 433 passed; `python -m ruff check .` clean; `python scripts/process.py --write` (no --reference-date) run
+twice -> identical sha256 for every output (chunks.jsonl ee117551..., 1,696 chunks, counter "tokenizer.json sha256:21106b6d7dab",
+reference date 2026-10-18 from "EVAL_REFERENCE_DATE in .env"); request log 443 lines before and after (no network); mutations (a-g)
+and the Phase 1 hold-out mutation (13 failures) caught, `git diff --stat` empty after each restore. Every review figure is
+reproducible with `python scripts/phase2_evidence.py all` (read-only; it uses the same counter as process.py).
 
 ## What exists
 - Code: `src/process/process.py` (clean, chunk, hold-out, dedupe, attribution, stats; `process_place()` is pure and is reused by
   the live path), `scripts/process.py` (`learn` | dry run | `--write` | `--live <slug>`, `--reference-date`).
   `HoldoutFilter.text_match` in src/facts/facts.py. Schema: `date_kind`, `revised_date` (D48). Tests: tests/test_process.py.
   `scripts/freeze.py` (dry run by default; `--apply-d33`; `--execute`), owner decisions in `config/freeze.json`
-  (reddit_resolved false, d33_mode null). `scripts/phase2_evidence.py` (read-only evidence).
+  (reddit_resolved true = accepted deviation D48 xvi; d33_mode "sidecar"). `scripts/phase2_evidence.py` (read-only evidence).
 - Rule file: `config/boilerplate.json` (inditales.com: 0 applied lines, 2 rejected by review: "Travel Tips", "Meditation Hall").
-- Outputs (gitignored, NOT frozen): `data/processed/chunks.jsonl` (1,387), `drops.jsonl` (33: 32 hold-out chunks, 1 exact
-  duplicate), `attribution.json` (96 urls: title, source, licence, revid, lastmod). Live: `data/live/processed/yercaud.jsonl` (18).
+- Outputs (gitignored, NOT frozen yet): `data/processed/chunks.jsonl` (1,696), `drops.jsonl` (31: 30 hold-out chunks, 1 exact
+  duplicate), `d33_excluded.json` (D33 sidecar, 9 places: a Phase 4 query-eligibility list), `attribution.json` (96 urls: title, source, licence, revid, lastmod). Live: `data/live/processed/yercaud.jsonl` (18).
 - Committed: `data/manifests/corpus_stats.{md,json}` (per source, state, place, year, date_kind, tokens, drops, D23 dry run,
   comparison with the 1,943 estimate) and `data/manifests/processed_manifest.json` (sha256, bytes, lines; no content).
 - Phase 1 layout unchanged (src/common, src/collect, src/places, src/facts; scripts/collect.py, coverage_report.py, smoke_ollama.py).
@@ -32,19 +33,19 @@ unresolved, D33 not applied), 4 PASS.
 ## How to run
 - `pip install -e .[dev]`; Python 3.10.11 (D9); `python -m pytest -q`, `python -m ruff check .` (not on PATH).
 - `git config core.hooksPath .githooks` in any fresh clone. No AI attribution anywhere (CLAUDE.md).
-- `.env` MISMATCH: it holds only CONTACT_EMAIL and YOUTUBE_API_KEY (key names checked, values never read). The previous HANDOFF said
-  it also held OLLAMA_BASE_URL, GENERATOR_MODEL, JUDGE_MODEL, EMBED_MODEL and EVAL_REFERENCE_DATE: it does not. OWNER: add
-  `EVAL_REFERENCE_DATE=2026-10-18`; until then pass `--reference-date 2026-10-18` (it overrides .env when both are set; the stats
-  record the value and its source). Phase 3 (Ollama) also needs the Ollama keys. `.env` was not modified.
-- Optional `TOKENIZER_DIR` (local folder with the bge-m3 tokenizer.json; never downloaded). Unset = regex proxy counter.
+- `.env` (owner-set, never printed): CONTACT_EMAIL, YOUTUBE_API_KEY, TOKENIZER_DIR (models/bge-m3, untracked, 17 MB
+  tokenizer.json; do not commit it), EVAL_REFERENCE_DATE=2026-10-18. Phase 3 (Ollama) still needs OLLAMA_BASE_URL, GENERATOR_MODEL,
+  JUDGE_MODEL, EMBED_MODEL.
+- Never pass --reference-date for the freeze run: the date must come from .env.
 
-## Phase 2 numbers (regex proxy counter; recompute with the real tokenizer)
-1,387 chunks (estimate 1,943, range 1,619-2,429). Measured: 5.036 characters per proxy token vs the estimate's 4; cleaning removed
-3.2% of characters. Whether bge-m3 gives more chunks is a HYPOTHESIS, not measured. Hold-out drops (all chunk level): Araku Valley 9
-(incl. Borra Caves), Thanjavur 8, Thekkady 15, Chikmagalur 0; record-level (url/title) 0. D23 dry run: 17 of 26 at chunk level (Kodaikanal fails at
-chunk level only), 18 at raw level; if D33 were applied: 17 places, 1,143 chunks, 0 hidden_gem places. Near-dup threshold removes
-nothing (max Jaccard 0.2155). Accepted deviations (D48 vii): 10k-20k chunks unreachable; 3 source types, one blog host; 0
-published chunks in the 18-month window.
+## Phase 2 numbers (bge-m3 tokenizer)
+1,696 chunks (proxy run 1,387; estimate 1,943, range 1,619-2,429; -247). Measured: 4.025 characters per bge-m3 token; about 236.9 new
+tokens per chunk vs the estimate's 212.5 (overlap capped at 40, none across headers), which explains the remaining gap (D48 xvii).
+blog 283, reference 696, wikivoyage 717; date_kind published 283, revised 1,358, sitemap_lastmod 55. Tokens min 52, p50 259, p95 287,
+max 300, 0 over 300. Hold-out drops (chunk level): Araku Valley 8, Thanjavur 7, Thekkady 15, Chikmagalur 0; record level 0. D23: 17 of
+26 at chunk level (Kodaikanal fails at chunk level only), 18 at raw level; D33 sidecar: 17 eligible places, 1,383 chunks of eligible
+places, 0 hidden_gem. Near-dup threshold removed nothing in the proxy run (max Jaccard 0.2155) and 0 here. Accepted deviations (D48
+vii, xvi): 10k-20k chunks unreachable; 3 source types, one blog host; 0 published chunks in the 18-month window; no Reddit.
 
 ## OPEN OWNER ITEMS (Phase 2)
 DECIDED in the review round: Kodaikanal stays a chunk-level D23 fail (D48 i); Thekkadi/Brihadeeswara accepted (D48 ii); Periyar Dam
@@ -53,8 +54,10 @@ dropped and O8 amended (D48 iii); reference date from .env (D48 iv).
 2. DECIDED: "Borra Caves" is an Araku Valley term (D48 viii); chunk 500b7e3d23575ed7 is dropped. Residual risk accepted: landmarks
    not on the term list can still leak; the scanned landmark list was the reviewer's and is unverified.
 Accepted cost (D48 xiv): the chunk-level hold-out rule removes 11 Munnar Wikivoyage chunks via the Thekkady terms.
-3. Set `config/freeze.json` reddit_resolved (after D45 is settled) and d33_mode ("sidecar" is the only implemented mode).
-4. `.env` keys (above). Reddit credentials (D45). O12 sharing (below). Wikimedia Terms of Use section 7 wording: not in the repo
+3. DONE: config/freeze.json reddit_resolved true (D48 xvi), d33_mode "sidecar"; sidecar written.
+4. For review before the freeze: FROZEN hashes chunks.jsonl and attribution.json only (not drops.jsonl or d33_excluded.json), and
+   d33_excluded.json (place names only) is gitignored although Phase 4 needs it; decide whether to hash and commit it.
+5. O12 sharing (below). Wikimedia Terms of Use section 7 wording: not in the repo
    (no fetched copy); needed for the report and app attribution (Phase 8).
 Phase 1 items still open: terms quotes and the wiki robots gap (D36/D43), O12, the pre-squash bundle location, D24 review, outreach
 emails unsent, O13 airport allowlist file (Phase 5), attribution in the report and app (Open-Meteo, OSM, Wikimedia).

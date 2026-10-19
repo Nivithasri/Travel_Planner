@@ -24,11 +24,11 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Boilerplate removal (fixed rules + reviewed rule file config/boilerplate.json), exact and near-duplicate removal (D48)
 - [x] South India scope: every record's place checked against the registry (collectable, not hold-out)
 - [x] Dates normalized; date_kind published | revised | sitemap_lastmod | none with BaseChunk invariants (D48, O9)
-- [x] Chunks 200-300 tokens (hard max incl. overlap), source_type/url/date/state/place; deterministic ids (1,387 chunks, proxy counter)
+- [x] Chunks 200-300 tokens (hard max incl. overlap), source_type/url/date/state/place; deterministic ids (1,696 chunks, bge-m3 tokenizer, reference date from .env)
 - [x] Hold-out drop (url/title record level, text chunk level), counted per hold-out and source; output scan 0 hits
 - [x] Corpus statistics: data/manifests/corpus_stats.{md,json}; sha256 manifest data/manifests/processed_manifest.json
 - [x] D23/D33 dry run: 17 of 26 pass at chunk level (18 at raw level; Kodaikanal, D48 amendment g); nothing removed
-- [ ] Freeze: NOT done. Needs the owner's go-ahead after Reddit is resolved, the real bge-m3 tokenizer (TOKENIZER_DIR), D33 applied, and the checklist in docs/HANDOFF.md
+- [ ] Freeze: NOT done. All 8 freeze.py preconditions pass (real tokenizer, .env reference date, Reddit accepted as deviation D48 xvi, D33 sidecar written); waiting for the owner's go-ahead to run `python scripts/freeze.py --execute`
 - [ ] Done when: the corpus is frozen. From this point it never changes, so every metric stays reproducible.
 
 ## Phase 3: Enrichment and indexing

@@ -478,3 +478,13 @@ D48 (amendment 2026-10-19, owner decisions before the freeze)
    reddit_resolved = true with this note. D33 MODE is "sidecar": data/processed/d33_excluded.json is a Phase 4 query-eligibility list; no
    chunk is deleted, chunks.jsonl is unchanged and retrieval is unfiltered (D48 xii). The owner set EVAL_REFERENCE_DATE=2026-10-18 and
    TOKENIZER_DIR in .env. Status: accepted.
+D48 (amendment 2026-10-19, corpus rebuilt with the real tokenizer)
+   (xvii) The corpus was rebuilt with TOKENIZER_DIR (tokenizer.json sha256 21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08,
+   Unigram model, vocabulary 250,002, tokenizers 0.22.2; consistent with bge-m3's XLM-R vocabulary, but identity with the official
+   release is not verified offline) and EVAL_REFERENCE_DATE from .env. 1,696 chunks (proxy run: 1,387). MEASURED: 4.025 characters per
+   bge-m3 token on the cleaned text (proxy 5.036; 1.251 real tokens per proxy token). The remaining gap to the ~1,943 estimate (-247) is
+   also MEASURED, not a hypothesis: the estimate assumed about 212.5 new tokens per chunk (250 with 15% overlap); the run adds about
+   236.9 (408,936 cleaned tokens / 1,726 chunks created), because overlap is capped at 40 tokens and is never carried into a chunk that
+   starts at a section header; 408,936 / 212.5 = 1,924, close to the estimate. Tokenizer counts are not strictly additive across chunk
+   boundaries, so these figures are approximate. D33 sidecar applied (data/processed/d33_excluded.json, 9 places). freeze.py dry run:
+   8 of 8 preconditions pass; the freeze itself awaits the owner. Status: accepted.
