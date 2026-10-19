@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
 from pathlib import Path
@@ -89,6 +89,89 @@ def load_settings(env_file: str | os.PathLike | None = None) -> Settings:
         eval_reference_date=ref_date,
         cache_dir=cache_dir,
     )
+
+
+LLM_API_NUMBERS = ("LLM_RPM", "LLM_TPM", "LLM_RPD", "LLM_TPD")
+LLM_API_URL_NAMES = ("LLM_API_BASE_URL", "LLM_API_URL")  # the second is accepted as an alias
+LLM_JSON_MODES = ("json_object", "none")
+
+
+@dataclass(frozen=True)
+class LLMApiSettings:
+    """Hosted OpenAI-compatible API (D59). The URL and the key never appear in a repr."""
+
+    base_url: str = field(repr=False)
+    api_key: str = field(repr=False)
+    generator_model: str
+    judge_model: str
+    rpm: int
+    tpm: int
+    rpd: int
+    tpd: int
+    seed: int
+    retry_budget_s: float
+    json_mode: str
+    cache_dir: Path
+
+    @property
+    def quota_state_path(self) -> Path:
+        return REPO_ROOT / "data" / "enriched" / "quota_state.json"
+
+
+def load_llm_settings(env_file: str | os.PathLike | None = None) -> LLMApiSettings:
+    """Settings for the hosted LLM API. ANY unset key means refuse to run (ConfigError); the error
+    lists key NAMES only, never values."""
+    load_dotenv(env_file if env_file is not None else REPO_ROOT / ".env", override=False)
+    url_name = next((n for n in LLM_API_URL_NAMES if os.environ.get(n, "").strip()), None)
+    wanted = ["LLM_API_KEY", "GENERATOR_MODEL", "JUDGE_MODEL", *LLM_API_NUMBERS]
+    missing = [k for k in wanted if not os.environ.get(k, "").strip()]
+    if url_name is None:
+        missing.insert(0, "LLM_API_BASE_URL")
+    if missing:
+        raise ConfigError(f"Missing required settings: {', '.join(missing)} (see .env.example)")
+    generator = os.environ["GENERATOR_MODEL"].strip()
+    judge = os.environ["JUDGE_MODEL"].strip()
+    if generator == judge:
+        raise ConfigError("GENERATOR_MODEL and JUDGE_MODEL must differ")
+    base = os.environ[url_name].strip().rstrip("/")
+    if not re.match(r"^https?://[^/\s]+", base):
+        raise ConfigError(f"{url_name} must be an http(s) URL")
+    numbers = {}
+    for name in LLM_API_NUMBERS:
+        try:
+            value = int(os.environ[name].strip())
+        except ValueError as exc:
+            raise ConfigError(f"{name} must be a whole number") from exc
+        if value <= 0:
+            raise ConfigError(f"{name} must be positive")
+        numbers[name] = value
+    json_mode = os.environ.get("LLM_JSON_MODE", "").strip() or "json_object"
+    if json_mode not in LLM_JSON_MODES:
+        raise ConfigError(f"LLM_JSON_MODE must be one of {LLM_JSON_MODES}")
+    budget = _optional_number("LLM_RETRY_BUDGET_S", DEFAULT_RETRY_BUDGET_S, float)
+    if budget <= 0:
+        raise ConfigError("LLM_RETRY_BUDGET_S must be positive")
+    cache_dir = Path(os.environ.get("CACHE_DIR", "").strip() or REPO_ROOT / ".cache")
+    return LLMApiSettings(
+        base_url=base, api_key=os.environ["LLM_API_KEY"].strip(), generator_model=generator,
+        judge_model=judge, rpm=numbers["LLM_RPM"], tpm=numbers["LLM_TPM"],
+        rpd=numbers["LLM_RPD"], tpd=numbers["LLM_TPD"],
+        seed=_optional_number("LLM_SEED", DEFAULT_LLM_SEED, int), retry_budget_s=budget,
+        json_mode=json_mode, cache_dir=cache_dir)
+
+
+def env_duplicate_keys(env_file: str | os.PathLike | None = None) -> list[str]:
+    """Key NAMES that occur more than once in the .env file (the last one wins). Names only."""
+    path = Path(env_file) if env_file is not None else REPO_ROOT / ".env"
+    if not path.exists():
+        return []
+    seen: dict[str, int] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key = line.split("=", 1)[0].strip()
+            seen[key] = seen.get(key, 0) + 1
+    return sorted(k for k, n in seen.items() if n > 1)
 
 
 @dataclass(frozen=True)

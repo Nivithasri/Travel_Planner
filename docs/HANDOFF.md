@@ -5,7 +5,7 @@ Phase 2 (cleaning and chunking) is COMPLETE: the corpus is FROZEN (2026-10-19T16
 `data/processed/FROZEN` exists; the hook blocks Edit/Write on every path under data/processed and `scripts/process.py --write`
 refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Nothing has been pushed since the Step 0 tag fix: `phase-1-done` is on
 61f1355 (remote updated by an owner-authorized force push of that one tag); `phase-2-done` is local only. Push only when asked.
-Next: Phase 3 (enrichment and indexing). Start it in plan mode and wait for approval. Read this file, LOG.md, docs/phase-status.md first.
+Phase 3 (enrichment and indexing) is IN PROGRESS on a changed route (see "Phase 3 state" below). Read this file, LOG.md, docs/phase-status.md first.
 
 ## The frozen corpus (verify with `python -m pytest -q` and `sha256sum data/processed/*`)
 | file | sha256 |
@@ -24,22 +24,40 @@ D23: 17 of 26 places pass at chunk level (18 at raw level; Kodaikanal fails at c
 Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source types, one blog host; 0 published chunks in the
 18-month window (freshness comes only from the live layer, D32); no Reddit, no official, no YouTube.
 
-## Phase 3 start-up checklist
-1. Enriched chunks go to `data/enriched/chunks.jsonl` (gitignored), NEVER to data/processed (D48 xi). After writing, run
-   `check_enriched_matches_frozen(enriched, frozen)` (src/process/process.py): same chunk_id set and identical chunk_id, text, url,
-   date, date_kind, revised_date, state, place, source_type per id. Phase 3 may only fill context_note, place_type, season_tags, aspect,
-   is_warning (EnrichedChunk, D10). `place` is already set by Phase 2; O5 asks Phase 3 to check LLM-extracted places against the
-   registry through aliases, with rule-based fallback.
-2. `.env` now holds the Ollama keys (OLLAMA_BASE_URL, GENERATOR_MODEL, JUDGE_MODEL, EMBED_MODEL) as well as CONTACT_EMAIL,
-   YOUTUBE_API_KEY, TOKENIZER_DIR, EVAL_REFERENCE_DATE (key names only). `scripts/smoke_ollama.py` was run by the owner against the
-   Kaggle/ngrok Ollama on 2026-10-19: 6/6 PASS (generator qwen2.5:latest, judge llama3.1:8b, embed bge-m3:latest). Owner-reported;
-   the tunnel URL changes each session.
-3. O12 for PROCESSING is decided (D49): all chunks may go to the owner's PRIVATE Kaggle notebook/dataset; nothing enriched is shared
-   with the partner or made public until the owner resolves O12. Enrichment runs locally through the tunnel (D56); the notebook embeds.
-4. Read docs/papers notes if any exist (only an index README exists; none for BGE-M3 or Contextual Retrieval yet).
-5. Frozen-file hook: data/processed is read-only. Indexes go to index/ (gitignored). Embeddings must use the same model and
-   tokenizer family; D2 asks for a vector-parity check on a few chunks.
-6. Tests: the freeze tests assert the real FROZEN is unchanged (`_real_frozen_untouched`), not absent. Do not delete data/processed/FROZEN.
+## Phase 3 state (2026-10-20, IN PROGRESS; not tagged)
+Route changed (D59, supersedes D56; amends D1, D49, D58): the Kaggle account is BANNED, so there is no Kaggle notebook, no Kaggle dataset and
+no ngrok Ollama (kaggle/README.md is obsolete). Enrichment uses a hosted OpenAI-compatible API on its FREE tier (Groq): generator
+openai/gpt-oss-20b, judge openai/gpt-oss-120b (judge unused in Phase 3). Embeddings (plain and contextual) are computed LOCALLY on CPU with
+sentence-transformers bge-m3 for the 1,696 chunks and for queries; the Ollama embed-agreement check and the Kaggle parity check are dropped
+(deviations in D59). No API call has been made with the new client: it was written and tested offline with a fake transport and clock.
+1. OWNER ACTIONS before the first call. (a) READ AND CONFIRM THE PROVIDER'S DATA-USE TERMS (retention, training on inputs) and the FREE-PLAN
+   LIMITS from its dashboard; nothing in the repo verifies either (no network in the implementation session). D49 covered only the private
+   Kaggle; it does not cover a third-party API. The first call sends reference and wikivoyage chunk text (CC BY-SA); blog chunks (inditales.com,
+   a copyrighted personal blog) are sent only with --include-blog. (b) Fix .env: the URL key must be LLM_API_BASE_URL (LLM_API_URL is accepted
+   as an alias); LLM_API_KEY, GENERATOR_MODEL, JUDGE_MODEL, LLM_RPM, LLM_TPM, LLM_RPD, LLM_TPD must all be set (any unset = the scripts refuse
+   to run); GENERATOR_MODEL and JUDGE_MODEL appear TWICE in the current .env (names only checked; the last one wins; the scripts warn): delete
+   the old Ollama pair. (c) Later, for indexing: pip install bm25s PyStemmer sentence-transformers, download bge-m3 to a folder and set
+   EMBED_LOCAL_DIR in .env (the assistant never installs or downloads).
+2. Run order (each step stops on any problem): `python scripts/smoke_llm.py`; then `python scripts/enrich.py --pilot` (79 chunks: 60 seeded + the
+   gold chunks that are not blog, 19 new; blog off; prints tokens per chunk and a PROJECTION of days for all 1,696 chunks and for the
+   eligible-only subsets). `--pilot --eligible-only` would send 71 chunks but only 12 of the 30 gold chunks are usable then (the gold sample
+   was drawn from the whole corpus: 10 are blog and 8 are in excluded places). Only after the owner approves: `python scripts/enrich.py --full --eligible-only`, repeated each day until it prints no INCOMPLETE
+   (exit 5 = the daily quota is used up, resets at the next UTC day; exit 3 = five failures in a row; exit 4 = key/model/config rejected), then
+   `python scripts/enrich.py --assemble --eligible-only` (writes data/enriched/chunks.jsonl, provenance.jsonl and the manifest; unprocessed
+   chunks of the 9 excluded places and the blog chunks get the rule-based fields, labelled rule_only in provenance.jsonl).
+3. The owner's gold labels: data/enriched/gold_sample.csv (30 chunks, text only, labels empty). Fill aspect_gold and is_warning_gold, then
+   `python scripts/label_sample.py --score` (needs LLM labels for those chunks: run `python scripts/enrich.py --gold`; with blog off 20 of the
+   30 are sent).
+4. Comparability: the v1 pilot (200 chunks, qwen2.5 via Ollama, data/enriched/checkpoint_enrich-v1.jsonl) is NOT comparable with the new model;
+   any v1-vs-v3 comparison is confounded (scripts/compare_runs.py prints that). Prompt versions: v1 and v2 were Ollama-era; v2 never ran; the
+   current prompt is enrich-v3 (shrunk: 1,071 characters, D60).
+5. Enriched chunks go to `data/enriched/chunks.jsonl` (gitignored), NEVER to data/processed (D48 xi); `check_enriched_matches_frozen` must pass.
+   Phase 3 may only fill context_note, place_type, season_tags, aspect, is_warning, plus the optional mentioned_places (D50, to be sent to
+   Valincia). `place` stays as frozen. O12 still blocks sharing anything enriched with the partner.
+6. Never print or log the URL, the key or response headers: OllamaClient/OpenAICompatClient scrub every error and debug record (tests).
+   data/enriched/debug_raw.jsonl is UNTRUSTED model output, scrubbed of keys and URLs, gitignored.
+7. Frozen-file hook: data/processed is read-only. Indexes go to index/ (gitignored). The freeze tests assert the real FROZEN is unchanged.
+   Not started: BM25 (contextual and plain, D55), the dense indexes, scripts/query_index.py, the index manifest, the early sample for Valincia.
 
 ## What exists (code)
 - `src/process/process.py` (clean, chunk, hold-out, dedupe, attribution, stats, `check_corpus`, `check_enriched_matches_frozen`;
@@ -49,7 +67,11 @@ Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source
 - `HoldoutFilter.text_match` in src/facts/facts.py (hold-out terms incl. Borra Caves, Periyar context rule O8).
 - Schema: `date_kind`, `revised_date` (D48). Decisions: docs/decisions.md D48 (i-xix) holds every Phase 2 rule and amendment.
 - Phase 1 layout unchanged (src/common, src/collect, src/places, src/facts; scripts/collect.py, coverage_report.py, smoke_ollama.py).
-- Tests: 436 (tests/test_process.py, test_hooks_scripts.py incl. freeze tooling, test_guards.py, test_common.py, ...).
+- Phase 3 code: `src/process/enrich.py` (prompt enrich-v3, validation, leak/copy scans, rule fallback, pilot selection, resumable `run_batch`, scope
+  and labelled assembly, report and projection), `src/process/label.py` + `scripts/label_sample.py` (gold sheet and scoring), `scripts/enrich.py`,
+  `scripts/smoke_llm.py`, `scripts/compare_runs.py`, `scripts/mutation_checks.py` (14 mutations), `OpenAICompatClient`/`RateLimiter`/`scrub_text` in
+  `src/common/llm.py`, `load_llm_settings` in `src/common/schemas.py`.
+- Tests: 588 passed, 1 skipped (tests/test_process.py, test_enrich.py, test_llm_api.py, test_label_sample.py, test_hooks_scripts.py, ...).
 
 ## How to run
 - `pip install -e .[dev]`; Python 3.10.11 (D9); `python -m pytest -q`, `python -m ruff check .` (not on PATH).
@@ -59,7 +81,7 @@ Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source
 
 ## OPEN OWNER ITEMS
 1. O12 for SHARING: what may be shared with the partner, pushed or made public (processing on a private Kaggle is decided, D49).
-2. Before Phase 3 step 6: install bm25s, PyStemmer, sentence-transformers and download bge-m3 to a local folder set as EMBED_LOCAL_DIR in .env (the assistant never installs or downloads). Reddit credentials only if Reddit is ever added to the live layer (D48 xvi).
+2. Phase 3: confirm the hosted API's data-use terms and free-plan limits, fix .env (see Phase 3 state), later install bm25s PyStemmer sentence-transformers and download bge-m3 (EMBED_LOCAL_DIR). Reddit credentials only if Reddit is ever added to the live layer (D48 xvi).
 3. Wikimedia Terms of Use section 7 wording: not in the repo (no fetched copy); needed for the report and app (Phase 8).
 4. Phase 1 items still open: terms quotes and the wiki robots gap (D36/D43), the pre-squash bundle location, D24 review, outreach
    emails unsent, O13 airport allowlist file (Phase 5), attribution in the report and app (Open-Meteo, OSM, Wikimedia).

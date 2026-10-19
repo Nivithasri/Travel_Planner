@@ -15,7 +15,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TESTS = ["tests/test_enrich.py", "tests/test_process.py", "tests/test_facts.py"]
+TESTS = ["tests/test_enrich.py", "tests/test_process.py", "tests/test_facts.py",
+         "tests/test_llm_api.py"]
 
 MUTATIONS = [
     ("M1 leak scan disabled (leak_scan returns None)", "src/process/enrich.py",
@@ -43,6 +44,28 @@ MUTATIONS = [
      '        if leak_scan(name, holdout):\n            dropped["holdout"] += 1\n'
      '            continue\n',
      ''),
+    ("M8 rate limiter pacing disabled (never sleeps)", "src/common/llm.py",
+     '            if wait <= 0:\n',
+     '            if True:\n'),
+    ("M9 scrubbing disabled (keys, headers and URLs pass through)", "src/common/llm.py",
+     '    for pattern in _SECRET_PATTERNS:\n        text = pattern.sub("<redacted>", text)\n',
+     '    return text\n    for pattern in _SECRET_PATTERNS:\n'
+     '        text = pattern.sub("<redacted>", text)\n'),
+    ("M10 reasoning text stored with the reply", "src/common/llm.py",
+     '    return content\n\n\nclass OpenAICompatClient',
+     '    return content + str(message.get("reasoning", ""))\n\n\nclass OpenAICompatClient'),
+    ("M11 daily token budget not enforced", "src/common/llm.py",
+     '        if self.day_tokens + est_tokens > self.tpd_eff:\n',
+     '        if False:\n'),
+    ("M12 Retry-After ignored", "src/common/llm.py",
+     '            if retry_after is not None:  # the server said how long to wait: honour it\n',
+     '            if False:\n'),
+    ("M13 checkpoint model/prompt mismatch not refused", "src/process/enrich.py",
+     '        if prov.get("model") != model or prov.get("prompt_version") != PROMPT_VERSION:\n',
+     '        if False:\n'),
+    ("M14 blog chunks sent although --include-blog is off", "src/process/enrich.py",
+     '    if chunk["source_type"] == "blog" and not include_blog:\n',
+     '    if False:\n'),
 ]
 
 

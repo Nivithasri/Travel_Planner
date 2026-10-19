@@ -32,8 +32,12 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Done when: the corpus is frozen. From this point it never changes, so every metric stays reproducible.
 - Deviations (accepted, D48 vii/xvi): 1,696 chunks vs the plan's 10k-20k; 3 source types, one blog host; 0 published chunks in the 18-month window; no Reddit/official/YouTube
 
-## Phase 3: Enrichment and indexing
-- [ ] Tasks (see docs/plan.md)
+## Phase 3: Enrichment and indexing (IN PROGRESS, 2026-10-20; route changed by D59: hosted API, local CPU embeddings, no Kaggle)
+- [x] Enrichment code, validation, leak/copy scans, rule fallback, resumable batch, pilot selection, gold sheet (tests: 588 passed; 14 mutations caught)
+- [x] Hosted OpenAI-compatible client with client-side rate limiter, usage accounting and scrubbing (offline tests only; no API call made yet)
+- [ ] smoke_llm.py run by the owner; 60+30 pilot run with the token projection; owner approval; --full (spans days); --assemble
+- [ ] BM25 (contextual and plain), dense indexes (plain, contextual) with local sentence-transformers, query_index.py, index manifest
+- [ ] Early sample for Valincia (blocked by O12); HANDOFF rewrite and tag phase-3-done
 - [ ] Done when: a script takes a query and returns ranked chunks from each index.
 
 ## Phase 4: Test collection and evaluation harness

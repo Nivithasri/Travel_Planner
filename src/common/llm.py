@@ -1,4 +1,7 @@
-"""Ollama client. All LLM access in the project goes through this module.
+"""LLM clients. All LLM access in the project goes through this module: OllamaClient (local server,
+legacy since D59) and OpenAICompatClient (hosted OpenAI-compatible API with a client-side rate
+limiter, D59). The notes below describe the Ollama client; the hosted one is at the end of the file.
+
 
 - Base URL comes from OLLAMA_BASE_URL via config; models are always passed in by the caller.
 - Every call goes through the disk cache. The cache key uses the model and the API path but NOT the
@@ -13,9 +16,15 @@
 """
 from __future__ import annotations
 
+import json
 import random
+import re
 import time
-from collections.abc import Callable
+from collections import Counter, deque
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, TypeVar
 from urllib.parse import urlsplit
 
@@ -49,12 +58,64 @@ class JSONValidationError(LLMError):
     pass
 
 
+class AuthError(LLMError):
+    """401/403: the key is wrong or lacks access. Never retried."""
+
+
+class QuotaExhausted(LLMError):
+    """A daily budget is used up (or the server asked for a long wait). Not a transport failure,
+    never a fallback: stop, and resume after the reset."""
+
+    def __init__(self, reason: str, *, tokens_today: int = 0, requests_today: int = 0,
+                 reset_in_s: float | None = None):
+        super().__init__(reason)
+        self.reason = reason
+        self.tokens_today = tokens_today
+        self.requests_today = requests_today
+        self.reset_in_s = reset_in_s
+
+
 class _Retryable(Exception):
     pass
 
 
+class _RetryAfter(_Retryable):
+    """429 with a Retry-After the client honours instead of its own backoff."""
+
+    def __init__(self, message: str, retry_after: float):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 class _BadBody(_Retryable):
     pass
+
+
+_SECRET_PATTERNS = (
+    re.compile(r"(?i)bearer\s+[A-Za-z0-9._~+/=-]+"),
+    re.compile(r"\bgsk_[A-Za-z0-9]+"),
+    re.compile(r"\bsk-[A-Za-z0-9_-]{8,}"),
+    re.compile(r"(?i)(authorization|x-api-key|api-key)\s*[:=]\s*\S+"),
+    re.compile(r"https?://[^\s'\"<>)\]]+"),
+)
+
+
+def scrub_text(text: str, secrets: Iterable[str] = ()) -> str:
+    """Remove keys, bearer tokens, auth headers, URLs and any given secret strings (the base URL,
+    its host, the key) from text that may reach a log line, an exception or a debug record.
+    Patterns run first, so a URL that contains a secret goes as a whole; then every secret, and
+    the first and last 10 characters of a long one (error messages abbreviate long strings)."""
+    for pattern in _SECRET_PATTERNS:
+        text = pattern.sub("<redacted>", text)
+    pieces = set()
+    for secret in secrets:
+        if secret:
+            pieces.add(secret)
+            if len(secret) >= 20:
+                pieces.update({secret[:10], secret[-10:]})
+    for piece in sorted(pieces, key=len, reverse=True):
+        text = text.replace(piece, "<redacted>")
+    return text
 
 
 def _reply_text(body: Any) -> str:
@@ -76,6 +137,7 @@ def _reply_text(body: Any) -> str:
 
 
 class OllamaClient:
+    chat_path = CHAT_PATH
     def __init__(
         self,
         base_url: str,
@@ -175,7 +237,11 @@ class OllamaClient:
                 return attempt_fn((min(connect, remaining), min(read, remaining)))
             except _Retryable as exc:
                 last = exc
-            delay = self.backoff_base * (2**attempt) * (0.5 + random.random() / 2)
+            retry_after = getattr(last, "retry_after", None)
+            if retry_after is not None:  # the server said how long to wait: honour it
+                delay = float(retry_after)
+            else:
+                delay = self.backoff_base * (2**attempt) * (0.5 + random.random() / 2)
             if attempt == self.max_retries or self._clock() - start + delay >= self.retry_budget_s:
                 break
             self._sleep(delay)
@@ -199,6 +265,14 @@ class OllamaClient:
             return _reply_text(body)
 
         return self._with_budget(attempt)
+
+    def _key_options(self, payload: dict) -> dict:
+        """The part of the request that belongs in the cache key besides model and messages."""
+        return payload["options"]
+
+    def scrub(self, text: str) -> str:
+        """Public name for _scrub: callers that write debug records use it."""
+        return self._scrub(text)
 
     def _options(self, options: dict | None) -> dict:
         return {"temperature": 0, "seed": self.seed, **(options or {})}
@@ -282,9 +356,9 @@ class OllamaClient:
         payload = self._payload(model, messages, options, format)
         inputs = {
             "messages": messages,
-            "options": payload["options"],
+            "options": self._key_options(payload),
             "format": payload.get("format"),
-            "path": CHAT_PATH,
+            "path": self.chat_path,
         }
         return self.cache.get_or_compute("llm_chat", model, inputs, lambda: self._request(payload))
 
@@ -304,9 +378,9 @@ class OllamaClient:
         payload = self._payload(model, messages, options, "json")
         inputs = {
             "messages": messages,
-            "options": payload["options"],
+            "options": self._key_options(payload),
             "schema": schema.model_json_schema(),
-            "path": CHAT_PATH,
+            "path": self.chat_path,
         }
         cached = self.cache.get("llm_json", model, inputs, default=None)
         if isinstance(cached, str):
@@ -342,3 +416,403 @@ class OllamaClient:
             f"No valid JSON for {schema.__name__} after {self.max_json_attempts} attempts: "
             f"{last_error[:300]}"
         )
+
+
+# ==== OpenAI-compatible hosted API (D59) ==========================================================
+# Chat completions on a hosted free tier (Groq). Same cache, retry budget and JSON repair loop as
+# the Ollama client above; adds a client-side rate limiter, usage accounting and scrubbing of
+# keys, headers and URLs. Sequential only. Reasoning text is never read, cached or stored.
+
+CHAT_COMPLETIONS_PATH = "/chat/completions"
+MODELS_PATH = "/models"
+MAX_COMPLETION_TOKENS_CAP = 300  # D59: enrichment replies are short; also bounds token spend
+REASONING_EFFORTS = ("low", "medium", "high")
+MAX_RETRY_AFTER_S = 120.0  # a longer Retry-After is a quota stop, not a wait
+_DURATION = re.compile(r"(\d+(?:\.\d+)?)(ms|d|h|m|s)")
+_UNIT_S = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0, "d": 86400.0}
+
+
+def parse_duration(text: Any) -> float | None:
+    """Seconds from "30", "2m59.56s", "1h2m", "6ms" ... or None when it is not a duration."""
+    if text is None:
+        return None
+    t = str(text).strip()
+    if not t:
+        return None
+    try:
+        return float(t)
+    except ValueError:
+        pass
+    parts = _DURATION.findall(t)
+    if not parts or "".join(a + b for a, b in parts) != t:
+        return None
+    return sum(float(a) * _UNIT_S[b] for a, b in parts)
+
+
+def _to_int(value: Any) -> int | None:
+    try:
+        return int(float(str(value).strip()))
+    except (TypeError, ValueError):
+        return None
+
+
+@dataclass(frozen=True)
+class RateInfo:
+    """Rate-limit headers of one response. As documented for the target API: the *-requests
+    headers describe the DAILY request limit (RPD), the *-tokens headers the PER-MINUTE token
+    limit (TPM). Retry-After is read separately and only on a 429."""
+
+    rpd_limit: int | None = None
+    rpd_remaining: int | None = None
+    rpd_reset_s: float | None = None
+    tpm_limit: int | None = None
+    tpm_remaining: int | None = None
+    tpm_reset_s: float | None = None
+
+
+def _lower(headers: Any) -> dict[str, str]:
+    try:
+        return {str(k).lower(): str(v) for k, v in dict(headers or {}).items()}
+    except (TypeError, ValueError):
+        return {}
+
+
+def parse_rate_headers(headers: Any) -> RateInfo:
+    h = _lower(headers)
+    return RateInfo(
+        rpd_limit=_to_int(h.get("x-ratelimit-limit-requests")),
+        rpd_remaining=_to_int(h.get("x-ratelimit-remaining-requests")),
+        rpd_reset_s=parse_duration(h.get("x-ratelimit-reset-requests")),
+        tpm_limit=_to_int(h.get("x-ratelimit-limit-tokens")),
+        tpm_remaining=_to_int(h.get("x-ratelimit-remaining-tokens")),
+        tpm_reset_s=parse_duration(h.get("x-ratelimit-reset-tokens")),
+    )
+
+
+def retry_after_seconds(headers: Any) -> float | None:
+    return parse_duration(_lower(headers).get("retry-after"))
+
+
+class RateLimiter:
+    """Client-side pacing for RPM, TPM, RPD and TPD. Never relies on 429s.
+
+    Effective limits: RPM, TPM and RPD with a 20% safety margin; the daily token budget is 85% of
+    TPD. Per-minute usage is a 60 s sliding window; the daily counters are persisted in
+    `state_path` (UTC date, tokens, requests) so a run on the next day resumes with a fresh budget
+    and a restart on the same day does not forget what was spent. A call is reserved with an
+    ESTIMATE before it is sent and corrected with the `usage` the API reports afterwards."""
+
+    def __init__(self, rpm: int, tpm: int, rpd: int, tpd: int, *, margin: float = 0.20,
+                 tpd_share: float = 0.85, clock: Callable[[], float] = time.monotonic,
+                 sleep: Callable[[float], None] = time.sleep,
+                 utcnow: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+                 state_path: Path | str | None = None):
+        if min(rpm, tpm, rpd, tpd) <= 0:
+            raise ValueError("RPM, TPM, RPD and TPD must be positive")
+        self.limits = {"rpm": rpm, "tpm": tpm, "rpd": rpd, "tpd": tpd}
+        self.rpm_eff = max(1, int(rpm * (1 - margin)))
+        self.tpm_eff = tpm * (1 - margin)
+        self.rpd_eff = max(1, int(rpd * (1 - margin)))
+        self.tpd_eff = tpd * tpd_share
+        self._clock, self._sleep, self._utcnow = clock, sleep, utcnow
+        self.state_path = Path(state_path) if state_path else None
+        self.window: deque[list] = deque()  # [time, tokens] per request in the last 60 s
+        self.slept_s = 0.0
+        self.n429 = 0
+        self.rate_info: RateInfo | None = None
+        self.day = self._today()
+        self.day_tokens = 0
+        self.day_requests = 0
+        self._rpd_blocked_for_s: float | None = None
+        self._tpm_hint: tuple[int, float] | None = None
+        self._load()
+
+    # ---- daily state -----------------------------------------------------------------------
+    def _today(self) -> str:
+        return self._utcnow().strftime("%Y-%m-%d")
+
+    def _load(self) -> None:
+        if not self.state_path or not self.state_path.exists():
+            return
+        try:
+            st = json.loads(self.state_path.read_text(encoding="utf-8"))
+            if st.get("date") == self.day:
+                self.day_tokens = int(st["tokens"])
+                self.day_requests = int(st["requests"])
+        except (ValueError, KeyError, TypeError, OSError):
+            pass  # unreadable state: start the day at zero rather than refuse to run
+
+    def _save(self) -> None:
+        if self.state_path:
+            from src.common.cache import atomic_write_text
+
+            atomic_write_text(self.state_path, json.dumps(
+                {"date": self.day, "tokens": self.day_tokens, "requests": self.day_requests}))
+
+    def _roll_day(self) -> None:
+        today = self._today()
+        if today != self.day:
+            self.day, self.day_tokens, self.day_requests = today, 0, 0
+            self._rpd_blocked_for_s = None
+            self._save()
+
+    def seconds_to_utc_midnight(self) -> float:
+        now = self._utcnow()
+        nxt = (now.replace(hour=0, minute=0, second=0, microsecond=0)).timestamp() + 86400
+        return max(0.0, nxt - now.timestamp())
+
+    def _exhausted(self, reason: str, reset_in_s: float | None) -> QuotaExhausted:
+        return QuotaExhausted(reason, tokens_today=self.day_tokens,
+                              requests_today=self.day_requests, reset_in_s=reset_in_s)
+
+    # ---- before / after a call -------------------------------------------------------------
+    def before_call(self, est_tokens: int) -> list:
+        """Block (sleep) until one more request of ~est_tokens fits every per-minute limit, or
+        raise QuotaExhausted when a daily budget would be exceeded. Returns the reservation."""
+        self._roll_day()
+        if est_tokens > self.tpm_eff:
+            raise LLMError("one request is larger than the per-minute token budget "
+                           f"({est_tokens} > {int(self.tpm_eff)}); shorten the prompt")
+        midnight = self.seconds_to_utc_midnight()
+        if self._rpd_blocked_for_s is not None:
+            raise self._exhausted("the API reports no daily requests left", self._rpd_blocked_for_s)
+        if self.day_requests + 1 > self.rpd_eff:
+            raise self._exhausted(f"daily request budget used ({self.day_requests} of "
+                                  f"{self.rpd_eff} allowed)", midnight)
+        if self.day_tokens + est_tokens > self.tpd_eff:
+            raise self._exhausted(f"daily token budget used ({self.day_tokens} of "
+                                  f"{int(self.tpd_eff)} allowed)", midnight)
+        while True:
+            now = self._clock()
+            while self.window and self.window[0][0] <= now - 60:
+                self.window.popleft()
+            wait = 0.0
+            if len(self.window) >= self.rpm_eff:
+                wait = max(wait, self.window[len(self.window) - self.rpm_eff][0] + 60 - now)
+            used = sum(e[1] for e in self.window)
+            if used + est_tokens > self.tpm_eff:
+                freed = 0
+                for t, tokens in self.window:
+                    freed += tokens
+                    if used - freed + est_tokens <= self.tpm_eff:
+                        wait = max(wait, t + 60 - now)
+                        break
+            if self._tpm_hint is not None:
+                remaining, reset_s = self._tpm_hint
+                self._tpm_hint = None
+                if remaining < est_tokens:
+                    wait = max(wait, min(reset_s, 60.0))
+            if wait <= 0:
+                break
+            self._sleep(wait + 0.05)
+            self.slept_s += wait + 0.05
+        entry = [self._clock(), est_tokens]
+        self.window.append(entry)
+        return entry
+
+    def after_call(self, entry: list, actual_tokens: int, info: RateInfo | None) -> None:
+        entry[1] = actual_tokens
+        self.day_tokens += actual_tokens
+        self.day_requests += 1
+        if info is not None:
+            self.rate_info = info
+            if info.rpd_remaining is not None and info.rpd_remaining <= 0:
+                self._rpd_blocked_for_s = info.rpd_reset_s or self.seconds_to_utc_midnight()
+            if info.tpm_remaining is not None and info.tpm_reset_s is not None:
+                self._tpm_hint = (info.tpm_remaining, info.tpm_reset_s)
+        self._save()
+
+    def failed(self, entry: list) -> None:
+        """A call that errored: the request counts, the estimate stays in the minute window, no
+        tokens are added to the day (the API reported none)."""
+        self.day_requests += 1
+        self._save()
+
+    def snapshot(self) -> dict:
+        return {"date": self.day, "tokens_today": self.day_tokens,
+                "requests_today": self.day_requests, "tpd_budget": int(self.tpd_eff),
+                "rpd_budget": self.rpd_eff, "slept_s": round(self.slept_s, 1),
+                "http_429": self.n429}
+
+
+def _chat_completion_text(body: Any) -> str:
+    """The final content of a chat completion. Only `message.content` is read: a reasoning field
+    (gpt-oss) is ignored, never cached and never stored."""
+    if not isinstance(body, dict):
+        raise _BadBody("body is not a JSON object")
+    choices = body.get("choices")
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        raise _BadBody("body has no choices")
+    message = choices[0].get("message")
+    content = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(content, str) or not content.strip():
+        why = choices[0].get("finish_reason")
+        raise _BadBody(f"empty reply (finish_reason {why!r}); max_tokens may be too small for the "
+                       "reasoning plus the JSON")
+    return content
+
+
+class OpenAICompatClient(OllamaClient):
+    chat_path = CHAT_COMPLETIONS_PATH
+
+    def __init__(self, base_url: str, api_key: str, cache: DiskCache, *,
+                 limiter: RateLimiter | None = None, json_mode: str = "json_object",
+                 max_tokens_cap: int = MAX_COMPLETION_TOKENS_CAP, **kwargs: Any):
+        super().__init__(base_url, cache, **kwargs)
+        if not api_key:
+            raise ValueError("an API key is required")
+        self._api_key = api_key
+        self.limiter = limiter
+        self.json_mode = json_mode
+        self.max_tokens_cap = max_tokens_cap
+        self.usage: Counter = Counter()  # prompt, completion, reasoning, total, calls
+        self.last_usage: dict[str, int] = {}
+        self._last_headers: Any = {}
+
+    @classmethod
+    def from_settings(cls, **kwargs: Any) -> OpenAICompatClient:  # type: ignore[override]
+        from src.common.schemas import load_llm_settings
+
+        s = load_llm_settings()
+        limiter = kwargs.pop("limiter", None) or RateLimiter(
+            s.rpm, s.tpm, s.rpd, s.tpd, state_path=s.quota_state_path)
+        kwargs.setdefault("seed", s.seed)
+        kwargs.setdefault("retry_budget_s", s.retry_budget_s)
+        cache = kwargs.pop("cache", None) or DiskCache(s.cache_dir)
+        return cls(s.base_url, s.api_key, cache, limiter=limiter, json_mode=s.json_mode,
+                   **kwargs)
+
+    # ---- request shape ---------------------------------------------------------------------
+    def _headers(self) -> dict[str, str]:
+        return {"Content-Type": "application/json", "Authorization": f"Bearer {self._api_key}"}
+
+    def _scrub(self, text: str) -> str:
+        return scrub_text(text, [self.base_url, urlsplit(self.base_url).netloc, self._api_key])
+
+    def _options(self, options: dict | None) -> dict:
+        return {"temperature": 0, "seed": self.seed, **(options or {})}
+
+    def _payload(self, model: str, messages: list[dict], options: dict | None, fmt: Any) -> dict:
+        opts = self._options(options)
+        max_tokens = opts.get("max_tokens")
+        if not isinstance(max_tokens, int) or isinstance(max_tokens, bool) or not (
+                0 < max_tokens <= self.max_tokens_cap):
+            raise ValueError(f"max_tokens must be an integer in 1..{self.max_tokens_cap}")
+        payload: dict[str, Any] = {"model": model, "messages": messages,
+                                   "temperature": opts["temperature"], "seed": opts["seed"],
+                                   "max_tokens": max_tokens, "stream": False}
+        effort = opts.get("reasoning_effort")
+        if effort is not None:
+            if effort not in REASONING_EFFORTS:
+                raise ValueError(f"reasoning_effort must be one of {REASONING_EFFORTS}")
+            if "gpt-oss" in model.lower():  # only reasoning models take it; others never get it
+                payload["reasoning_effort"] = effort
+        if fmt == "json" and self.json_mode == "json_object":
+            payload["response_format"] = {"type": "json_object"}
+        return payload
+
+    def _key_options(self, payload: dict) -> dict:
+        return {k: v for k, v in payload.items() if k not in ("model", "messages")}
+
+    @staticmethod
+    def _estimate_tokens(payload: dict) -> int:
+        chars = sum(len(m["content"]) for m in payload["messages"])
+        return chars // 3 + 1 + payload["max_tokens"]  # conservative: 3 characters per token
+
+    # ---- transport -------------------------------------------------------------------------
+    def _call(self, send: Callable[[], Any], what: str) -> Any:
+        try:
+            resp = send()
+        except (requests.exceptions.MissingSchema, requests.exceptions.InvalidSchema,
+                requests.exceptions.InvalidURL) as exc:
+            raise LLMError(f"LLM_API_BASE_URL is not a valid URL ({type(exc).__name__}); "
+                           "check .env") from None
+        except requests.RequestException as exc:
+            raise _Retryable(f"transport error ({type(exc).__name__}): "
+                             f"{self._scrub(str(exc))}") from None
+        self._last_headers = getattr(resp, "headers", None) or {}
+        status = resp.status_code
+        if status in (401, 403):
+            raise AuthError(f"authentication failed (HTTP {status}): check LLM_API_KEY in .env")
+        if status == 404:
+            raise ModelNotFoundError(f"model or endpoint not found ({what}); check the model id "
+                                     "and LLM_API_BASE_URL in .env (the URL is not printed)")
+        if status == 429:
+            if self.limiter is not None:
+                self.limiter.n429 += 1
+            wait = retry_after_seconds(self._last_headers)
+            if wait is None:
+                raise _Retryable("HTTP 429 without Retry-After")
+            if wait > MAX_RETRY_AFTER_S:
+                lim = self.limiter
+                raise QuotaExhausted(
+                    f"HTTP 429: the API asks to wait {int(wait)} s", reset_in_s=wait,
+                    tokens_today=lim.day_tokens if lim else 0,
+                    requests_today=lim.day_requests if lim else 0)
+            raise _RetryAfter(f"HTTP 429, retry after {wait:g} s", wait)
+        if status >= 500:
+            raise _Retryable(f"HTTP {status}")
+        if status != 200:
+            raise LLMError(f"HTTP {status} from the API: {self._scrub(resp.text[:300])!r}")
+        try:
+            return resp.json()
+        except ValueError as exc:
+            snippet = self._scrub(resp.text[:120]).replace("\n", " ")
+            raise _BadBody(f"HTTP 200 but body is not JSON ({snippet!r})") from exc
+
+    def _record_usage(self, body: Any, estimate: int) -> int:
+        u = body.get("usage") if isinstance(body, dict) else None
+        if not isinstance(u, dict):
+            self.usage["usage_missing"] += 1
+            self.last_usage = {"prompt": 0, "completion": 0, "reasoning": 0, "total": estimate}
+        else:
+            prompt = _to_int(u.get("prompt_tokens")) or 0
+            completion = _to_int(u.get("completion_tokens")) or 0
+            details = u.get("completion_tokens_details")
+            reasoning = _to_int(details.get("reasoning_tokens")) or 0 if isinstance(
+                details, dict) else 0
+            total = _to_int(u.get("total_tokens")) or (prompt + completion)
+            self.last_usage = {"prompt": prompt, "completion": completion,
+                               "reasoning": reasoning, "total": total}
+        for k, v in self.last_usage.items():
+            self.usage[k] += v
+        self.usage["calls"] += 1
+        return self.last_usage["total"]
+
+    def _request(self, payload: dict) -> str:
+        est = self._estimate_tokens(payload)
+
+        def attempt(timeout: tuple[float, float]) -> str:
+            entry = self.limiter.before_call(est) if self.limiter else None
+            try:
+                body = self._call(
+                    lambda: self._post(self.base_url + self.chat_path, json=payload,
+                                       headers=self._headers(), timeout=timeout),
+                    f"model {payload['model']!r}")
+            except BaseException:
+                if entry is not None:
+                    self.limiter.failed(entry)
+                raise
+            actual = self._record_usage(body, est)
+            if entry is not None:
+                self.limiter.after_call(entry, actual, parse_rate_headers(self._last_headers))
+            return _chat_completion_text(body)
+
+        return self._with_budget(attempt)
+
+    def list_models(self) -> list[str]:
+        """Model ids the key can use (GET /models). Not cached, not rate-limited: a health check."""
+
+        def attempt(timeout: tuple[float, float]) -> list[str]:
+            body = self._call(lambda: self._get(self.base_url + MODELS_PATH,
+                                                headers=self._headers(), timeout=timeout),
+                              "listing models")
+            data = body.get("data") if isinstance(body, dict) else None
+            if not isinstance(data, list):
+                raise _BadBody("body has no 'data' list")
+            return [m["id"] for m in data if isinstance(m, dict) and "id" in m]
+
+        return self._with_budget(attempt)
+
+    def embed(self, texts: list[str], model: str) -> list[list[float]]:
+        raise NotImplementedError("D59: embeddings are computed locally with sentence-transformers")

@@ -1,10 +1,11 @@
-"""Read-only comparison of two enrichment runs over the same chunks (D58). No LLM call.
+"""Read-only comparison of two enrichment checkpoints over the same chunks. No API call.
 
-    python scripts/compare_runs.py                      # enrich-v1 vs enrich-v2 side by side
+    python scripts/compare_runs.py                      # the v1 (qwen) checkpoint vs the v3 one
     python scripts/compare_runs.py --samples 20         # + 20 samples, >= 6 whose aspect changed
 
-Reads data/enriched/checkpoint_<version>.jsonl for both versions and data/processed/chunks.jsonl
-for the text. The sample list prefers chunks whose aspect changed to or from closure/safety.
+CONFOUNDED (D59): the v1 checkpoint was produced by a different model (qwen2.5 on Ollama) than
+the current one (a hosted gpt-oss model), so any difference mixes the prompt change with the model
+change; it says nothing about the prompt alone. Reads data/processed/chunks.jsonl for the text.
 """
 from __future__ import annotations
 
@@ -24,20 +25,31 @@ ENRICHED = REPO_ROOT / "data" / "enriched"
 FAST = {"closure", "safety"}
 
 
-def load(version: str) -> dict[str, dict]:
-    return {r["chunk_id"]: r for r in read_jsonl(ENRICHED / f"checkpoint_{version}.jsonl")}
+def load(spec: str) -> dict[str, dict]:
+    """A checkpoint file name, a path, or a prompt version (then the single matching file)."""
+    path = Path(spec)
+    if not path.exists():
+        path = ENRICHED / spec
+    if not path.exists():
+        found = sorted(ENRICHED.glob(f"checkpoint_{spec}*.jsonl"))
+        if len(found) != 1:
+            sys.exit(f"{spec!r}: expected exactly one checkpoint file, found {len(found)}")
+        path = found[0]
+    return {r["chunk_id"]: r for r in read_jsonl(path)}
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--old", default="enrich-v1")
-    ap.add_argument("--new", default="enrich-v2")
+    ap.add_argument("--old", default="checkpoint_enrich-v1.jsonl")
+    ap.add_argument("--new", default="enrich-v3")
     ap.add_argument("--samples", type=int, default=0)
     ap.add_argument("--seed", type=int, default=11)
     args = ap.parse_args(argv)
     old, new = load(args.old), load(args.new)
     cmp = compare_runs(old, new)
-    print(format_comparison(cmp, args.old.split("-")[-1], args.new.split("-")[-1]))
+    print("CONFOUNDED: the two checkpoints come from different models (D59); a difference mixes "
+          "the prompt and the model.")
+    print(format_comparison(cmp, "old", "new"))
     if not args.samples:
         return 0
     chunks = {}

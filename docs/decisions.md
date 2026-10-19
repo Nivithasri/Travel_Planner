@@ -571,3 +571,49 @@ D58 (2026-10-20) Prompt version enrich-v2 (owner decision), before any full run.
    text, never feed it back into a prompt. A cache hit makes no network attempt, so it writes only the final record. The label_sample.py
    gold sample (30 chunks, seeded, excluding the 200 pilot chunks the prompt was tuned on) lets the owner measure aspect and is_warning
    accuracy against hand labels; no labels are written by the assistant. Status: accepted.
+D59 (2026-10-20) Enrichment moves from Ollama to a hosted OpenAI-compatible LLM API (Groq, free tier only; owner decision). SUPERSEDES D56 (local
+   driver through the Ollama tunnel) and AMENDS D1 (Kaggle notebooks), D49 (private Kaggle processing) and D58 (prompt enrich-v2 on qwen).
+   Reason: the Kaggle account is banned, so there is no Kaggle GPU, no notebook and no ngrok-fronted Ollama. DEVIATIONS recorded: (1) the Kaggle
+   embedding notebook and the private Kaggle dataset are DROPPED (kaggle/README.md is obsolete); (2) the Ollama bge-m3 embedding-agreement check
+   on 50 chunks (D51) is DROPPED; (3) the Kaggle-vs-local-CPU vector parity check (D2) is DROPPED. Embeddings plan: corpus AND queries are embedded
+   locally on CPU with sentence-transformers bge-m3 (1,696 chunks, two matrices; the owner downloads the model, EMBED_LOCAL_DIR); the
+   OllamaClient code stays in src/common/llm.py but nothing in Phase 3 uses it. CLAUDE.md rule 5 still says OLLAMA_BASE_URL; it is stale after
+   this decision and is left for the owner to reword. What the new client does (src/common/llm.py OpenAICompatClient): chat completions
+   (POST /chat/completions) with response_format json_object when LLM_JSON_MODE allows, usage tokens (prompt, completion, reasoning) recorded per
+   chunk, GET /models for the listing; the same DiskCache, retry budget and chat_json repair loop as the Ollama client. Keys in .env:
+   LLM_API_BASE_URL (LLM_API_URL accepted as an alias), LLM_API_KEY, GENERATOR_MODEL, JUDGE_MODEL (must differ; the judge is unused in Phase 3),
+   LLM_RPM, LLM_TPM, LLM_RPD, LLM_TPD (ANY unset means refuse to run). Models: GENERATOR_MODEL openai/gpt-oss-20b, JUDGE_MODEL
+   openai/gpt-oss-120b. Request shape: temperature 0, seed, max_tokens at most 300 (enforced), reasoning_effort low sent only to a gpt-oss model
+   and only with a valid value; reasoning text is never read, cached or stored (only message.content). Rate limiting (never relies on 429s,
+   sequential only): a 60 s sliding window for RPM and TPM and persisted daily counters (data/enriched/quota_state.json, UTC date) for RPD and TPD;
+   effective limits are 80% of RPM, TPM and RPD and 85% of TPD; a call is reserved with a conservative estimate (3 characters per token plus
+   max_tokens) and corrected with the usage the API reports. Headers: x-ratelimit-limit/remaining/reset-requests are read as the DAILY request
+   limit (RPD), x-ratelimit-limit/remaining/reset-tokens as the PER-MINUTE token limit (TPM); Retry-After is read only on a 429 and honoured
+   (a value over 120 s is a quota stop, not a wait). A daily budget reached, a 429 with a long Retry-After or remaining-requests 0 raises
+   QuotaExhausted: exit code 5, prints tokens used, the reset time if known and the resume command; five failures in a row exit 3; a rejected
+   key, model or configuration exits 4. Error bodies are never cached; a quota or transport error is never a fallback. Scrubbing: scrub_text removes
+   keys, bearer tokens, Authorization lines, every URL, the base URL, its host and the key (and its first and last 10 characters, because error
+   text abbreviates long strings) from every error message, response snippet and debug record; two exceptions that carried the host are raised
+   from None. Checkpoints are one file per prompt version AND model (checkpoint_<version>_<model>.jsonl) and a record of another version or model is
+   refused. COMPARABILITY: the v1 pilot ran on qwen2.5 through Ollama; it is not comparable to anything the new model produces, and any
+   v1-vs-v3 comparison is confounded by the model change (scripts/compare_runs.py says so). DATA USE: D49 covered only the owner's private
+   Kaggle; it does NOT cover a third-party API. The owner must read and confirm the provider's data-use terms (retention, training on inputs) and
+   the free-plan limits BEFORE the first call: this was not verified (no network access in the implementation session), so reference and
+   wikivoyage chunks (CC BY-SA text) go out on the first call and blog chunks only with --include-blog. Status: accepted.
+D60 (2026-10-20) Prompt enrich-v3, scope gating and the pilot (owner decision; follows D59). (1) The system prompt is shrunk from 2,121 to 1,071
+   characters (bge-m3 tokenizer proxy: 301 tokens; 357 by the conservative 3-characters-per-token estimate) keeping every v2 rule (strict aspect
+   definitions, "if unsure: other", explicit-warning is_warning, the place_type rule for anecdotes); PROMPT_VERSION is enrich-v3 because the text
+   changed and v2 never ran (no v2 checkpoint exists), so v2 cache entries cannot be confused with v3. Test: prompt + the longest chunk +
+   max_tokens stays under 1,500 estimated tokens (measured for the longest frozen chunk, 1,507 characters: 930 + 300 = 1,230). (2) --eligible-only
+   restricts a run to the 17 D33-eligible places; the 9 excluded places (data/manifests/d33_excluded.json) stay unprocessed and are later
+   assembled with the rule-based fields and the provenance source rule_only:excluded_place in data/enriched/provenance.jsonl (the chunk schema is
+   closed, so the label lives in the sidecar). (3) Blog chunks (inditales.com, copyrighted personal blog) are NOT sent unless --include-blog,
+   which the owner uses only after confirming the provider's data-use terms; skipped blog chunks are counted ("not sent") and are not
+   fallback-labelled in the run report; at assembly they get rule_only:blog_not_sent. (4) Pilot: 60 seeded chunks (seed 42) stratified by
+   source type and place, force-including up to 6 Ooty/Kodaikanal-post chunks and 10 under-200-token tails, drawn from the pool left after the
+   scope filters (the 6 Ooty/Kodaikanal chunks are blog, so they enter only with --include-blog), PLUS the 30 gold_sample.csv chunks after the
+   same filters (with blog off, 20 of the 30). (5) --gold runs only the gold chunks; --limit N stops after N new chunks; --full runs every chunk in
+   scope; the daily budget makes --full span several days. (6) The "1,143 eligible chunks" quoted in the request is the proxy-counter figure;
+   measured on the frozen corpus (python, data/manifests/d33_excluded.json against data/processed/chunks.jsonl): 1,383 chunks belong to the 17
+   eligible places (wikivoyage 560, reference 540, blog 283; all 283 blog chunks are in eligible places), 1,100 without blog; all 1,696 chunks
+   include 313 in the 9 excluded places. The report's projection uses these counts. Status: accepted.

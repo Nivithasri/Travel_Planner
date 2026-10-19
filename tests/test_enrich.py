@@ -109,15 +109,17 @@ def test_prompt_delimits_untrusted_text_and_cannot_be_closed_from_inside():
     user = msgs[1]["content"]
     assert user.count("<chunk>") == 1 and user.count("</chunk>") == 1
     assert user.rstrip().endswith("</chunk>")
-    assert "UNTRUSTED" in msgs[0]["content"] and "never follow" in msgs[0]["content"]
+    assert "untrusted data" in msgs[0]["content"] and "never follow" in msgs[0]["content"]
     assert "place=Munnar" in user and f"page_title={TITLE}" in user
 
 
-def test_prompt_fits_num_ctx_for_a_maximal_chunk():
-    big = {**CHUNK, "text": "word " * 600}  # far above 300 bge-m3 tokens
+def test_prompt_fits_the_1500_token_budget_for_a_maximal_chunk():
+    big = {**CHUNK, "text": "word " * 250}  # about 1,250 characters, more than the longest chunk
     assert prompt_fits(build_messages(CHUNK, TITLE))
     assert not prompt_fits(build_messages({**CHUNK, "text": "x" * 20000}, TITLE))
     assert prompt_fits(build_messages(big, TITLE))
+    assert enrich.estimate_tokens(build_messages(big, TITLE)) + enrich.ENRICH_OPTIONS[
+        "max_tokens"] < 1500
 
 
 @pytest.mark.skipif(not Path("data/processed/chunks.jsonl").exists(),
@@ -246,7 +248,7 @@ def test_llm_success_returns_the_model_fields(tmp_path):
     assert prov["prompt_version"] == PROMPT_VERSION
     assert prov["rule_aspect"] in {a.value for a in enrich.Aspect}
     p = post.calls[0]
-    assert p["options"]["num_ctx"] == 4096 and p["options"]["temperature"] == 0
+    assert p["options"]["max_tokens"] == 300 and p["options"]["temperature"] == 0
     assert "seed" in p["options"] and p["model"] == MODEL
 
 
@@ -528,7 +530,7 @@ def test_killed_run_resumes_with_no_repeated_network_call(tmp_path):
     assert len(recs) == 6 and posts["n"] == 4 + 3  # 3 left to do; the dead call is redone once
     assert sum(r["prov"]["network_calls"] for r in recs) == 6  # every chunk paid exactly one call
     sm = enrich.summarize(recs)
-    assert sm["reconciliation"]["with_network_calls"] == 6 and sm["reconciliation"]["posts"] == 6
+    assert sm["reconciliation"]["llm_network"] == 6 and sm["reconciliation"]["posts"] == 6
 
 
 # ---- report -----------------------------------------------------------------------
@@ -551,9 +553,11 @@ def test_summarize_reconciles_calls_cache_and_fallbacks():
     sm = enrich.summarize(records)
     r = sm["reconciliation"]
     assert sm["chunks"] == 7 and sm["llm"] == 4 and sm["fallback"] == 3
-    assert r == {"chunks": 7, "with_network_calls": 5, "served_from_cache": 1,
-                 "no_call_prompt_too_long": 1, "posts": 1 + 0 + 1 + 2 + 3 + 0 + 1}
-    assert r["with_network_calls"] + r["served_from_cache"] + r["no_call_prompt_too_long"] == 7
+    assert r == {"chunks": 7, "llm_cache": 1, "llm_network": 3,
+                 "fallback_by_reason": {"note_leak": 1, "json_invalid": 1, "prompt_too_long": 1},
+                 "posts": 1 + 0 + 1 + 2 + 3 + 0 + 1, "no_call_prompt_too_long": 1}
+    # chunks = llm_ok(cache) + llm_ok(network) + fallback(by reason)
+    assert r["llm_cache"] + r["llm_network"] + sum(r["fallback_by_reason"].values()) == 7
     assert sm["leak_hits_note"] == 1 and sm["mentioned_dropped"] == {"holdout": 1, "unknown": 2}
     assert sm["fallback_reasons"] == {"note_leak": 1, "json_invalid": 1, "prompt_too_long": 1}
     assert sm["json_valid_rate"] == pytest.approx(6 / 7)
@@ -598,16 +602,19 @@ def test_embed_is_cached_and_validated(tmp_path):
 
 # ---- prompt v2 and debug records (D58) -----------------------------------------------
 
-def test_prompt_v2_defines_aspects_strictly_and_asks_for_other_when_unsure():
-    assert PROMPT_VERSION == "enrich-v2"
+def test_prompt_v3_keeps_the_aspect_warning_and_place_type_rules_in_fewer_tokens():
+    assert PROMPT_VERSION == "enrich-v3"
     system = build_messages(CHUNK, TITLE)[0]["content"]
-    for phrase in ("closure only if the excerpt states that something is closed, shut, banned or "
-                   "under restoration", "safety only if it warns of a danger, a scam or a risk",
-                   "timing only if it gives opening hours, a schedule or the best time",
-                   "price only if it gives costs", 'When unsure choose "other"',
-                   "explicit warning", "travel anecdote or tour narrative is region or other",
-                   "Use city only when the excerpt describes the city or town itself"):
+    for phrase in ("closure = states something is closed, shut, banned or under restoration",
+                   "safety = warns of a danger, scam or risk",
+                   "timing = gives hours, a schedule or the best time",
+                   "price = gives costs, fees or fares", "If unsure: other",
+                   "is_warning: true only for an explicit warning",
+                   "A travel anecdote or tour narrative is region or other",
+                   "city only if the text describes the city itself", "untrusted data",
+                   "JSON"):
         assert phrase in system, phrase
+    assert len(system) < 1300  # D59: the v2 text was 2,121 characters
 
 
 def test_debug_records_keep_raw_replies_errors_and_unfiltered_mentioned_places(tmp_path):

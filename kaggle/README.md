@@ -1,6 +1,11 @@
+# OBSOLETE (D59, 2026-10-20): the Kaggle account is banned. Do not follow this runbook.
+
+Enrichment now uses a hosted OpenAI-compatible API (see docs/decisions.md D59, D60 and scripts/enrich.py) and
+embeddings are computed locally on CPU with sentence-transformers. The text below is kept only as history.
+
 # Kaggle runbook (written by the user; notebook details are filled in during Phase 3)
 
-Phase 3 amendments (D49, D51, D56): enrichment runs LOCALLY through the tunnel (not in a notebook); the notebook only embeds. Dataset and notebook are PRIVATE (D49).
+Phase 3 amendments (D49, D51, D56): enrichment runs LOCALLY through the tunnel (not in a notebook); the notebook only embeds. Dataset and notebook are PRIVATE (D49). [SUPERSEDED by D59]
 
 ## A. Enrichment + embedding notebook (resumable)
 1. Upload data/enriched/chunks.jsonl (after enrichment) as a PRIVATE Kaggle dataset. Never data/processed (frozen, D48 xi).
