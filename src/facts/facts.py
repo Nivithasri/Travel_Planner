@@ -98,13 +98,14 @@ def check(robots_text: str, user_agent: str, url: str) -> Verdict:
 # Hold-out filter for facts (D17, D37, docs/facts-layer.md 3.2).
 #
 # A feature is dropped when any of its name tags matches a hold-out name or alias (word match),
-# or when "Periyar" stands next to Thekkady, Kumily, Periyar Lake, Tiger Reserve, National Park or
+# or when "Periyar" stands next to Thekkady, Kumily, Lake, Dam, Tiger Reserve, National Park or
 # Wildlife Sanctuary (O8), or when it lies within `radius_km` of a hold-out centre.
 
 DROP_NAMES = (
     "Thanjavur", "Tanjore", "Thanjai", "Chikmagalur", "Chikkamagaluru", "Araku Valley", "Araku",
     "Thekkady", "Kumily", "Brihadisvara", "Brihadeeswarar",
     "Thekkadi", "Brihadeeswara",  # spelling variants found in the raw text (D48 amendment)
+    "Mullaperiyar",  # the dam that forms Periyar Lake at Thekkady (O8 as amended in D48)
 )
 # term -> canonical hold-out (registry name), so drops can be counted per hold-out (D48)
 HOLDOUT_OF = {
@@ -113,11 +114,11 @@ HOLDOUT_OF = {
     "chikmagalur": "Chikmagalur", "chikkamagaluru": "Chikmagalur",
     "araku valley": "Araku Valley", "araku": "Araku Valley",
     "thekkady": "Thekkady", "kumily": "Thekkady",
-    "thekkadi": "Thekkady", "brihadeeswara": "Thanjavur",
+    "thekkadi": "Thekkady", "brihadeeswara": "Thanjavur", "mullaperiyar": "Thekkady",
 }
 NAME_TAGS = ("name", "name:en", "alt_name", "old_name", "official_name", "short_name")
 _PERIYAR = re.compile(
-    r"Periyar\s+(?:Lake|Tiger\s+Reserve|National\s+Park|Wildlife\s+Sanctuary)"
+    r"Periyar\s+(?:Lake|Dam|Tiger\s+Reserve|National\s+Park|Wildlife\s+Sanctuary)"
     r"|(?:National\s+Park|Wildlife\s+Sanctuary)\W+Periyar", re.IGNORECASE)
 
 

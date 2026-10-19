@@ -31,6 +31,7 @@ from src.facts.facts import HoldoutFilter  # noqa: E402
 from src.places.places import Registry, slugify  # noqa: E402
 from src.process.process import (  # noqa: E402
     attribution,
+    check_corpus,
     corpus_stats,
     dedupe_records,
     learn_boilerplate,
@@ -76,8 +77,12 @@ def run_batch(write: bool, reference_date: date | None = None) -> int:
     holdout = HoldoutFilter.from_registry(registry)
     rules = load_rules()
     count, counter_name = load_counter(load_tokenizer_dir())
-    ref_date = reference_date or load_reference_date()
-    if ref_date is None:
+    env_date = load_reference_date()
+    if reference_date is not None:
+        ref_date, ref_source = reference_date, "--reference-date (overrides .env)"
+    elif env_date is not None:
+        ref_date, ref_source = env_date, "EVAL_REFERENCE_DATE in .env"
+    else:
         sys.exit("EVAL_REFERENCE_DATE is not set in .env: pass --reference-date YYYY-MM-DD (D4)")
     records = load_raw(RAW_ROOT)
     for r in records:  # scope check: Phase 1 must never have produced these
@@ -106,7 +111,9 @@ def run_batch(write: bool, reference_date: date | None = None) -> int:
     places = [e.name for e in registry.entries if not e.holdout]
     d23_raw = {e.name: place_coverage(e, RAW_ROOT).passes for e in registry.entries
                if not e.holdout}
-    stats = corpus_stats(chunks, reports, drops, count, counter_name, ref_date, d23_raw, places)
+    check_corpus(chunks, holdout)  # raises: live chunk, hold-out mention, duplicate id, schema
+    stats = corpus_stats(chunks, reports, drops, count, counter_name, ref_date, d23_raw, places,
+                         ref_source)
     stats["reconciliation"] = recon
     md = render_md(stats, dups, rec_drops)
     print(md)
@@ -167,8 +174,9 @@ def render_md(s: dict, dups: list[dict], rec_drops: list[dict]) -> str:
               ""]
     f = s["freshness"]
     lines += [f"Null-date share: {s['null_date_share']}. Freshness (published dates only, window "
-              f"{f['window_start']} to {f['reference_date']}): {f['published_in_window']} chunks, "
-              f"share {f['share']}.", "",
+              f"{f['window_start']} to {f['reference_date']}; reference date from "
+              f"{f['reference_date_source']}): {f['published_in_window']} chunks, "
+              f"share {f['share']}. The reference date is used only here; it is in no chunk.", "",
               "## Removed text (characters per rule)", "",
               *[f"- {k}: {v}" for k, v in s["removed_chars"].items()], "",
               "## Drops", "", *[f"- {k}: {v}" for k, v in s["drops"].items()], "",

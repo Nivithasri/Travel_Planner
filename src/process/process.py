@@ -47,6 +47,8 @@ def load_counter(tokenizer_dir: Path | None) -> tuple[TokenCounter, str]:
     from tokenizers import Tokenizer
 
     tok = Tokenizer.from_file(str(path))
+    tok.no_truncation()  # count the whole text, whatever the file configures
+    tok.no_padding()
     digest = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
 
     def count(text: str) -> int:
@@ -548,6 +550,31 @@ class ReconcileError(RuntimeError):
     pass
 
 
+def check_corpus(chunks: list[dict], holdout) -> None:
+    """Invariants checked before every write and again at the freeze: no `live` chunk, no
+    hold-out mention, unique ids, every chunk valid under BaseChunk."""
+    ids = [c["chunk_id"] for c in chunks]
+    problems = []
+    if len(ids) != len(set(ids)):
+        problems.append(f"{len(ids) - len(set(ids))} duplicate chunk ids")
+    live = [c["chunk_id"] for c in chunks if c.get("source_type") == "live"]
+    if live:
+        problems.append(f"{len(live)} chunks with source_type live: {live[:3]}")
+    hits = [c["chunk_id"] for c in chunks if holdout.text_match(c["text"])]
+    if hits:
+        problems.append(f"{len(hits)} chunks name a hold-out: {hits[:3]}")
+    invalid = 0
+    for c in chunks:
+        try:
+            BaseChunk(**c)
+        except ValueError:  # pydantic ValidationError is a ValueError
+            invalid += 1
+    if invalid:
+        problems.append(f"{invalid} chunks fail BaseChunk validation")
+    if problems:
+        raise ReconcileError("corpus check failed: " + "; ".join(problems))
+
+
 def reconcile(n_raw: int, n_kept: int, n_exact: int, n_record_holdout: int,
               created: int, out: int, n_chunk_holdout: int, n_near: int) -> list[str]:
     rows = [
@@ -568,7 +595,7 @@ def _pct(values: list[int], q: float) -> int:
 
 def corpus_stats(chunks: list[dict], reports: list[PlaceReport], drops: list[dict],
                  count: TokenCounter, counter_name: str, ref_date: date,
-                 d23_raw: dict[str, bool], places: list[str]) -> dict:
+                 d23_raw: dict[str, bool], places: list[str], ref_source: str = "") -> dict:
     tokens = [count(c["text"]) for c in chunks]
     by = lambda key: dict(sorted(Counter(key(c) for c in chunks).items()))  # noqa: E731
     window = months_before(ref_date, 18)
@@ -609,7 +636,8 @@ def corpus_stats(chunks: list[dict], reports: list[PlaceReport], drops: list[dic
         "per_revised_year": by(lambda c: c["revised_date"][:4] if c["revised_date"] else "none"),
         "date_kind": by(lambda c: c["date_kind"]),
         "null_date_share": round(sum(c["date"] is None for c in chunks) / max(1, len(chunks)), 4),
-        "freshness": {"reference_date": ref_date.isoformat(), "window_start": window.isoformat(),
+        "freshness": {"reference_date": ref_date.isoformat(), "reference_date_source": ref_source,
+                      "window_start": window.isoformat(),
                       "published_in_window": len(fresh),
                       "share": round(len(fresh) / max(1, len(chunks)), 4)},
         "removed_chars": dict(sorted(removed.items())),

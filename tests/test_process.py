@@ -15,6 +15,7 @@ from src.process.process import (
     OVERLAP,
     ReconcileError,
     attribution,
+    check_corpus,
     chunk_text,
     clean_record,
     dedupe_records,
@@ -68,6 +69,26 @@ def test_proxy_counter_is_the_default_and_counts_words_and_punctuation():
 def test_tokenizer_dir_without_tokenizer_json_fails_clearly(tmp_path):
     with pytest.raises(FileNotFoundError, match="tokenizer.json"):
         load_counter(tmp_path)
+    with pytest.raises(FileNotFoundError, match="tokenizer.json"):
+        load_counter(tmp_path / "missing_dir")
+
+
+def test_tokenizer_dir_path_counts_without_special_tokens_truncation_or_padding(tmp_path):
+    from tokenizers import Tokenizer, models, pre_tokenizers, processors
+
+    vocab = {"[UNK]": 0, "[CLS]": 1, "[SEP]": 2, "[PAD]": 3, "the": 4, "fort": 5, "opens": 6}
+    tok = Tokenizer(models.WordLevel(vocab, unk_token="[UNK]"))
+    tok.pre_tokenizer = pre_tokenizers.Whitespace()
+    tok.post_processor = processors.TemplateProcessing(
+        single="[CLS] $A [SEP]", special_tokens=[("[CLS]", 1), ("[SEP]", 2)])
+    tok.enable_truncation(max_length=3)
+    tok.enable_padding(length=20, pad_id=3, pad_token="[PAD]")
+    tok.save(str(tmp_path / "tokenizer.json"))
+    count, name = load_counter(tmp_path)
+    text = "the fort opens the fort opens at nine"  # 8 words, 2 unknown
+    assert count(text) == 8  # no [CLS]/[SEP], not truncated to 3, not padded to 20
+    assert name.startswith("tokenizer.json sha256:")
+    assert proxy_count(text) == 8
 
 
 # ==== clean
@@ -357,3 +378,30 @@ def test_basechunk_rejects_a_live_chunk():
     out, _ = run([rec(para(30))])
     with pytest.raises(ValidationError):
         BaseChunk(**{**out[0][1], "source_type": "live"})
+
+
+def test_periyar_dam_and_mullaperiyar_drop_in_the_pipeline_but_bus_stand_is_kept():
+    for phrase, dropped in (("fostered by the Periyar Dam.", True), ("the Mullaperiyar Dam.", True),
+                            ("on Periyar Lake.", True), ("from the Periyar Bus Stand.", False),
+                            ("along the Periyar river.", False)):
+        out, rep = run([rec(para(5) + " Water is " + phrase + " " + para(5, start=60))])
+        assert bool(rep.chunk_drops) is dropped, phrase
+
+
+def test_check_corpus_rejects_live_holdout_and_duplicate_ids():
+    out, _ = run([rec(para(40))])
+    chunks = [c for _, c in out]
+    check_corpus(chunks, HoldoutFilter())
+    for bad in ([{**chunks[0], "source_type": "live"}],
+                [{**chunks[0], "text": chunks[0]["text"] + " Kumily"}],
+                [chunks[0], chunks[0]]):
+        with pytest.raises(ReconcileError):
+            check_corpus(bad, HoldoutFilter())
+
+
+def test_reference_date_is_not_an_input_to_chunks():
+    import inspect
+
+    assert "date" not in inspect.signature(process_place).parameters
+    out, _ = run([rec(para(30))])
+    assert set(out[0][1]) == set(BaseChunk.model_fields)
