@@ -824,3 +824,9 @@ def test_enrich_chunk_falls_back_when_the_api_keeps_rejecting_the_json(tmp_path)
     assert fields == rule_based(CHUNK, TITLE)
     assert [r["kind"] for r in records] == ["attempt", "attempt", "attempt", "final"]
     assert records[0]["raw"] == '{"context_note": "cut off'  # kept for diagnosis (untrusted)
+
+
+def test_the_daily_token_share_is_configurable_and_defaults_to_85_percent():
+    assert limiter(Clock(), tpd=200000).tpd_eff == 170000
+    lim = RateLimiter(30, 8000, 1000, 200000, tpd_share=0.95)
+    assert lim.tpd_eff == pytest.approx(190000)

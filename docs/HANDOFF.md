@@ -82,6 +82,7 @@ weights hashed in models/bge-m3-full/WEIGHTS_MANIFEST.json). Prompt `enrich-v4` 
 PROGRESS LOG (append one line per day; the numbers come from `python scripts/enrich.py --report --full --eligible-only`):
    - Day 1, 2026-10-19 UTC (started 22:46 UTC after the pilots had spent 135,985 tokens): stopped by the budget (exit 5) at 168,898 tokens and 209 requests; 39 new chunks;
      93 of 1,100 in scope done, 1,007 remain; 89 model-written + 4 fallback (all `ungrounded`); leak hits 0; 828 tokens a chunk. Resume at or after 00:00 UTC 2026-10-20 (05:30 India).
+   - Day 1 continued (23:40 UTC, owner said the provider limit was not used up; `--tpd-share 0.97` lifts the client's own margin from 85% to 97% of LLM_TPD): +28 chunks, 193,324 tokens, 238 requests, 0 HTTP 429; 121 of 1,100 done, 979 remain, 6 fallbacks (all `ungrounded`). Use `--tpd-share 0.97` only when the owner agrees: the default 85% margin protects against hitting the provider's real limit.
 
 ## What exists (code)
 - `src/process/process.py` (clean, chunk, hold-out, dedupe, attribution, stats, `check_corpus`, `check_enriched_matches_frozen`;

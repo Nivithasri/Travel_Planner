@@ -698,8 +698,9 @@ class OpenAICompatClient(OllamaClient):
         from src.common.schemas import load_llm_settings
 
         s = load_llm_settings()
+        share = kwargs.pop("tpd_share", 0.85)
         limiter = kwargs.pop("limiter", None) or RateLimiter(
-            s.rpm, s.tpm, s.rpd, s.tpd, state_path=s.quota_state_path)
+            s.rpm, s.tpm, s.rpd, s.tpd, tpd_share=share, state_path=s.quota_state_path)
         kwargs.setdefault("seed", s.seed)
         kwargs.setdefault("retry_budget_s", s.retry_budget_s)
         cache = kwargs.pop("cache", None) or DiskCache(s.cache_dir)
