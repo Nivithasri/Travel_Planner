@@ -25,7 +25,7 @@ import requests  # noqa: E402
 
 from src.collect.run import CORE_REGISTRY  # noqa: E402
 from src.common.cache import append_jsonl, atomic_write_text, read_jsonl  # noqa: E402
-from src.common.llm import OllamaClient  # noqa: E402
+from src.common.llm import ModelNotFoundError, OllamaClient  # noqa: E402
 from src.common.schemas import REPO_ROOT, load_settings, load_tokenizer_dir  # noqa: E402
 from src.facts.facts import HoldoutFilter  # noqa: E402
 from src.places.places import Registry  # noqa: E402
@@ -192,6 +192,10 @@ def main(argv: list[str] | None = None) -> int:
     except StopRun as exc:
         print(f"STOPPED: {exc}")
         return 3
+    except ModelNotFoundError as exc:
+        print(f"STOPPED, nothing was processed or lost: {exc}")
+        print("If the tunnel was restarted, put the new URL in .env as OLLAMA_BASE_URL.")
+        return 4
     except KeyboardInterrupt:
         print("interrupted; everything finished so far is in the checkpoint. Re-run to resume.")
         return 130

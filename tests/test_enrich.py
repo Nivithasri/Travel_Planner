@@ -665,3 +665,64 @@ def test_checkpoints_of_other_prompt_versions_are_never_mixed(tmp_path):
                                        "network_calls": 1, "seconds": 1.0}}])
     with pytest.raises(enrich.CheckpointMismatch):
         enrich.load_checkpoint(ck, MODEL)
+
+
+# ---- the endpoint is never printed ------------------------------------------------------
+
+SECRET = "secret-tunnel-host.ngrok.test"
+
+
+class RawResp:
+    def __init__(self, status, text):
+        self.status_code, self.text = status, text
+
+    def json(self):
+        raise ValueError("not json")
+
+
+@pytest.mark.parametrize("make", [
+    lambda: RawResp(404, f"tunnel {SECRET} is offline"),
+    lambda: RawResp(400, f"bad request for https://{SECRET}/api/chat"),
+    lambda: RawResp(200, f"<html>visit https://{SECRET}/ to continue</html>"),
+    lambda: requests.ConnectionError(f"HTTPSConnectionPool(host='{SECRET}', port=443)"),
+])
+def test_no_error_message_contains_the_endpoint(tmp_path, make):
+    def post(url, json=None, headers=None, timeout=None):
+        r = make()
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+    c = OllamaClient(f"https://{SECRET}", DiskCache(tmp_path), post=post, max_retries=1,
+                     sleep=lambda s: None)
+    with pytest.raises(LLMError) as exc:
+        c.chat([{"role": "user", "content": "hi"}], MODEL)
+    text = str(exc.value) + repr(exc.value) + str(exc.value.__cause__ or "")
+    assert SECRET not in text
+
+
+# ---- version comparison -----------------------------------------------------------------
+
+def test_compare_runs_side_by_side():
+    old = {
+        "a": rec(aspect="safety", calls=1, secs=2.0),
+        "b": rec(aspect="closure", calls=2, secs=4.0),
+        "c": rec(source="fallback", reason="json_invalid", aspect="other", calls=3, secs=9.0),
+        "only_old": rec(),
+    }
+    new = {
+        "a": rec(aspect="other", calls=1, secs=1.0),
+        "b": rec(aspect="closure", calls=1, secs=2.0),
+        "c": rec(aspect="other", calls=1, secs=3.0),
+        "only_new": rec(),
+    }
+    cmp = enrich.compare_runs(old, new)
+    assert cmp["ids"] == ["a", "b", "c"]  # only chunks present in both runs
+    assert cmp["old"]["fallback"] == 1 and cmp["new"]["fallback"] == 0
+    assert cmp["old"]["repair_rate"] == pytest.approx(2 / 3) and cmp["new"]["repair_rate"] == 0
+    assert cmp["old"]["aspect"] == {"safety": 1, "closure": 1, "other": 1}
+    assert cmp["aspect_changed"] == [("a", "safety", "other")]
+    assert cmp["old"]["mean_seconds"] == pytest.approx(5.0) and cmp["new"]["mean_seconds"] == 2.0
+    text = enrich.format_comparison(cmp)
+    assert "chunks compared: 3" in text and "aspect changed for 1 of 3 chunks" in text
+    assert "fallbacks:" in text and "repair-turn rate:" in text

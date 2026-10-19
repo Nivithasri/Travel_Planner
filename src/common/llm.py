@@ -17,6 +17,7 @@ import random
 import time
 from collections.abc import Callable
 from typing import Any, TypeVar
+from urllib.parse import urlsplit
 
 import requests
 from pydantic import BaseModel, ValidationError
@@ -118,6 +119,14 @@ class OllamaClient:
             headers["ngrok-skip-browser-warning"] = "1"
         return headers
 
+    def _scrub(self, text: str) -> str:
+        """Never let the endpoint (host or URL) reach a log line or an exception message."""
+        host = urlsplit(self.base_url).netloc
+        for secret in (self.base_url, host):
+            if secret:
+                text = text.replace(secret, "<OLLAMA_BASE_URL>")
+        return text
+
     def _call(self, send: Callable[[], Any], what: str) -> Any:
         """Run one HTTP exchange and map failures to _Retryable / LLMError."""
         try:
@@ -127,24 +136,28 @@ class OllamaClient:
             requests.exceptions.InvalidSchema,
             requests.exceptions.InvalidURL,
         ) as exc:
-            raise LLMError(f"OLLAMA_BASE_URL {self.base_url!r} is not a valid URL: {exc}") from exc
+            raise LLMError(
+                f"OLLAMA_BASE_URL is not a valid URL ({type(exc).__name__}); check .env"
+            ) from None  # the original message holds the URL
         except requests.RequestException as exc:  # connection, timeout, chunked encoding, ...
-            raise _Retryable(f"transport error ({type(exc).__name__}): {exc}") from exc
+            raise _Retryable(
+                f"transport error ({type(exc).__name__}): {self._scrub(str(exc))}"
+            ) from None  # the original message holds the host
 
         status = resp.status_code
         if status == 404:
             raise ModelNotFoundError(
                 f"model or endpoint not found: check that the model is pulled and the URL is "
-                f"right ({what}, url={self.base_url})"
+                f"right ({what}; the URL is OLLAMA_BASE_URL in .env and is not printed)"
             )
         if status == 429 or status >= 500:
             raise _Retryable(f"HTTP {status}")
         if status != 200:
-            raise LLMError(f"HTTP {status} from Ollama: {resp.text[:300]!r}")
+            raise LLMError(f"HTTP {status} from Ollama: {self._scrub(resp.text[:300])!r}")
         try:
             return resp.json()
         except ValueError as exc:
-            snippet = resp.text[:120].replace("\n", " ")
+            snippet = self._scrub(resp.text[:120]).replace("\n", " ")
             raise _BadBody(f"HTTP 200 but body is not JSON ({snippet!r})") from exc
 
     def _with_budget(self, attempt_fn: Callable[[tuple[float, float]], Any]) -> Any:

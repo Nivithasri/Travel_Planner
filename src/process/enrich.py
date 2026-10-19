@@ -470,6 +470,11 @@ def load_checkpoint(path: Path, model: str) -> dict[str, dict]:
     return done
 
 
+def load_checkpoint_fields(path: Path) -> dict[str, dict]:
+    """chunk_id -> enrichment fields, for reading only (scoring); no model check."""
+    return {r["chunk_id"]: r["fields"] for r in read_jsonl(path)}
+
+
 def run_batch(order: list[str], chunks: dict[str, dict],
               process: Callable[[dict], tuple[dict, dict]], checkpoint: Path, model: str, *,
               max_consecutive_failures: int = 5, calls: Callable[[], int] = lambda: 0,
@@ -601,4 +606,62 @@ def format_report(sm: dict) -> str:
               "is_warning, LLM (rows) vs rule-based (columns). NOT accuracy.",
               *table(sm["is_warning_confusion"], ["false", "true"], "llm|rule"),
               f"agreement {pct(sm['llm_vs_rule_is_warning_agreement'])}"]
+    return "\n".join(lines)
+
+
+# ==== version comparison =============================================================
+
+def _p95(values: list[float]) -> float | None:
+    s = sorted(values)
+    return s[max(0, int(len(s) * 0.95) - 1)] if s else None
+
+
+def run_profile(records: dict[str, dict], ids: list[str]) -> dict:
+    """Distributions and cost of one prompt version over `ids` (all must be in `records`)."""
+    recs = [records[i] for i in ids]
+    n = len(recs)
+    secs = [r["prov"]["seconds"] for r in recs if r["prov"]["network_calls"] > 0]
+    fb = Counter(r["prov"]["reason"] for r in recs if r["prov"]["source"] == "fallback")
+    return {
+        "n": n,
+        "aspect": dict(Counter(r["fields"]["aspect"] for r in recs)),
+        "place_type": dict(Counter(r["fields"]["place_type"] for r in recs)),
+        "is_warning_true": sum(1 for r in recs if r["fields"]["is_warning"]),
+        "fallback": sum(fb.values()), "fallback_reasons": dict(fb),
+        "repair_rate": sum(1 for r in recs if r["prov"]["network_calls"] > 1) / n if n else None,
+        "mean_seconds": sum(secs) / len(secs) if secs else None, "p95_seconds": _p95(secs),
+    }
+
+
+def compare_runs(old: dict[str, dict], new: dict[str, dict]) -> dict:
+    ids = sorted(set(old) & set(new))
+    changed = [(i, old[i]["fields"]["aspect"], new[i]["fields"]["aspect"]) for i in ids
+               if old[i]["fields"]["aspect"] != new[i]["fields"]["aspect"]]
+    return {"ids": ids, "old": run_profile(old, ids), "new": run_profile(new, ids),
+            "aspect_changed": changed}
+
+
+def format_comparison(cmp: dict, old_name: str = "v1", new_name: str = "v2") -> str:
+    a, b = cmp["old"], cmp["new"]
+
+    def fmt(x):
+        return "n/a" if x is None else (f"{x:.2f}" if isinstance(x, float) else str(x))
+
+    def dist(name: str, labels: list[str]) -> list[str]:
+        w = max(len(x) for x in labels + [name])
+        return [f"{name:<{w}}  {old_name:>6} {new_name:>6}"] + [
+            f"{lab:<{w}}  {a[name].get(lab, 0):>6} {b[name].get(lab, 0):>6}" for lab in labels]
+
+    labs_a = sorted(set(a["aspect"]) | set(b["aspect"]))
+    labs_p = sorted(set(a["place_type"]) | set(b["place_type"]))
+    lines = [f"chunks compared: {a['n']}", *dist("aspect", labs_a), "", *dist("place_type", labs_p),
+             "",
+             f"is_warning true:   {a['is_warning_true']:>4} -> {b['is_warning_true']:>4}",
+             f"fallbacks:         {a['fallback']:>4} -> {b['fallback']:>4}   "
+             f"{a['fallback_reasons']} -> {b['fallback_reasons']}",
+             f"repair-turn rate:  {fmt(a['repair_rate'])} -> {fmt(b['repair_rate'])} "
+             "(chunks needing more than 1 call)",
+             f"seconds/chunk mean {fmt(a['mean_seconds'])} -> {fmt(b['mean_seconds'])}; "
+             f"p95 {fmt(a['p95_seconds'])} -> {fmt(b['p95_seconds'])}",
+             f"aspect changed for {len(cmp['aspect_changed'])} of {a['n']} chunks"]
     return "\n".join(lines)
