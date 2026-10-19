@@ -19,17 +19,18 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Done when: every core destination has raw data from at least two source types (26 of 26; 18 of 26 under the stricter D23, a recorded deviation from the plan's 20), a never-seen place (Yercaud) is collected with one command, and a second call makes zero network requests (tests/test_collect.py)
 - Open owner items are listed in docs/HANDOFF.md (terms quotes, wiki robots gap, O12, Reddit credentials). Pushed: 8ed3f86 "Finalize Phase 1" with tag phase-1-done; D47 simplification commit on top
 
-## Phase 2: Cleaning and chunking (built 2026-10-19; STOPPED BEFORE FREEZE; no phase-2-done tag)
-- Verified (commands in LOG.md, 2026-10-19 Phase 2 entries): pytest 432 passed, ruff clean, two `--write` runs byte-identical, 7 mutations (a-g) + Phase 1 hold-out mutation caught, request log unchanged (443)
+## Phase 2: Cleaning and chunking (FROZEN 2026-10-19; tag phase-2-done)
+- Verified (commands in LOG.md, 2026-10-19 Phase 2 entries): pytest 436 passed, ruff clean, two `--write` runs byte-identical, 7 mutations (a-g) + Phase 1 hold-out mutation caught, request log unchanged (443); `freeze.py` 8 of 8 preconditions passed, then executed
 - [x] Boilerplate removal (fixed rules + reviewed rule file config/boilerplate.json), exact and near-duplicate removal (D48)
 - [x] South India scope: every record's place checked against the registry (collectable, not hold-out)
 - [x] Dates normalized; date_kind published | revised | sitemap_lastmod | none with BaseChunk invariants (D48, O9)
-- [x] Chunks 200-300 tokens (hard max incl. overlap), source_type/url/date/state/place; deterministic ids (1,696 chunks, bge-m3 tokenizer, reference date from .env)
-- [x] Hold-out drop (url/title record level, text chunk level), counted per hold-out and source; output scan 0 hits
-- [x] Corpus statistics: data/manifests/corpus_stats.{md,json}; sha256 manifest data/manifests/processed_manifest.json
-- [x] D23/D33 dry run: 17 of 26 pass at chunk level (18 at raw level; Kodaikanal, D48 amendment g); nothing removed
-- [ ] Freeze: NOT done. All 8 freeze.py preconditions pass (real tokenizer, .env reference date, Reddit accepted as deviation D48 xvi, D33 sidecar written); waiting for the owner's go-ahead to run `python scripts/freeze.py --execute`
-- [ ] Done when: the corpus is frozen. From this point it never changes, so every metric stays reproducible.
+- [x] Chunks 200-300 tokens (hard max incl. overlap, bge-m3 tokenizer), source_type/url/date/state/place; deterministic ids (1,696 chunks)
+- [x] Hold-out drop (url/title record level, text chunk level), counted per hold-out and source; scans 0 hits
+- [x] Corpus statistics: data/manifests/corpus_stats.{md,json}; processed_manifest.json; frozen_manifest.json
+- [x] D23/D33: 17 of 26 pass at chunk level; D33 applied as a sidecar query-eligibility list (data/manifests/d33_excluded.json), nothing deleted
+- [x] Freeze: data/processed/FROZEN written 2026-10-19T16:33:44Z (chunks.jsonl sha256 ee117551...); tag phase-2-done (local, not pushed)
+- [x] Done when: the corpus is frozen. From this point it never changes, so every metric stays reproducible.
+- Deviations (accepted, D48 vii/xvi): 1,696 chunks vs the plan's 10k-20k; 3 source types, one blog host; 0 published chunks in the 18-month window; no Reddit/official/YouTube
 
 ## Phase 3: Enrichment and indexing
 - [ ] Tasks (see docs/plan.md)

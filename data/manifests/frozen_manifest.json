@@ -1,0 +1,16 @@
+{
+ "attribution_json_sha256": "0b5b73bd28b3f278aaaa8d532574dc765e194f85cd4ddc3821745d62551ee7bf",
+ "chunk_count": 1696,
+ "chunks_jsonl_sha256": "ee11755106409fd0d6ae8656453fc1ec70560593a9c25348572f01ec804a0003",
+ "counter": "tokenizer.json sha256:21106b6d7dab",
+ "d33_excluded_json_sha256": "a712d7b6cef25c9c5b0a0d932e45ef12e4088353640cdf60f20a251ee61b3041",
+ "drops_jsonl_sha256": "51fc0cd78423533c43a5f482d4d04ffc163e83dad80f2eb35304c2372046b2f9",
+ "frozen_at_utc": "2026-10-19T16:33:44Z",
+ "manifests_d33_excluded_json_sha256": "a712d7b6cef25c9c5b0a0d932e45ef12e4088353640cdf60f20a251ee61b3041",
+ "reference_date": "2026-10-18",
+ "reference_date_source": "EVAL_REFERENCE_DATE in .env",
+ "tokenizer_files_sha256": {
+  "tokenizer.json": "21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08"
+ },
+ "tokenizers_version": "0.22.2"
+}

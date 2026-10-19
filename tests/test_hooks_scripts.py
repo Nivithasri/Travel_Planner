@@ -303,6 +303,14 @@ def test_model_present_handles_latest_suffix():
 # ==== freeze tooling (D48): temp directories only, the real data/processed/FROZEN is never created
 
 REAL_FROZEN = HOOKS_ROOT / "data" / "processed" / "FROZEN"
+_REAL_FROZEN_AT_IMPORT = REAL_FROZEN.read_bytes() if REAL_FROZEN.exists() else None
+
+
+def _real_frozen_untouched():
+    """The tests run in temp directories: the real marker (absent before the freeze, written once
+    by the freeze, never again) must be exactly as it was when the test session started."""
+    now = REAL_FROZEN.read_bytes() if REAL_FROZEN.exists() else None
+    assert now == _REAL_FROZEN_AT_IMPORT
 
 
 def test_process_write_refuses_when_frozen_exists(tmp_path, monkeypatch):
@@ -312,7 +320,7 @@ def test_process_write_refuses_when_frozen_exists(tmp_path, monkeypatch):
     monkeypatch.setattr(sp, "PROCESSED", tmp_path)
     with pytest.raises(SystemExit, match="frozen"):
         sp.run_batch(True)
-    assert not REAL_FROZEN.exists()
+    _real_frozen_untouched()
 
 
 def _toy_tokenizer(d):
@@ -374,7 +382,8 @@ def test_freeze_refuses_the_proxy_counter(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "[FAIL] counter is the real bge-m3 tokenizer" in out and "proxy is refused" in out
     assert out.count("[FAIL]") == 1  # everything else in the fixture passes
-    assert not (root / "data" / "processed" / "FROZEN").exists() and not REAL_FROZEN.exists()
+    assert not (root / "data" / "processed" / "FROZEN").exists()
+    _real_frozen_untouched()
 
 
 def test_freeze_dry_run_writes_nothing_and_execute_writes_the_marker(tmp_path, monkeypatch,
@@ -409,7 +418,7 @@ def test_freeze_dry_run_writes_nothing_and_execute_writes_the_marker(tmp_path, m
     manifest = root / "data" / "manifests" / "frozen_manifest.json"
     assert json.loads(manifest.read_text(encoding="utf-8")) == doc  # same fields, no text
     assert fz.run(root, env, execute=True, apply_d33=False) == 2  # already frozen
-    assert not REAL_FROZEN.exists()
+    _real_frozen_untouched()
 
 
 def test_freeze_refuses_flag_date_unresolved_reddit_and_d33_without_decision(tmp_path,
@@ -445,7 +454,8 @@ def test_freeze_refuses_when_the_two_d33_copies_differ_or_one_is_missing(tmp_pat
     copy.unlink()
     assert fz.run(root, env, execute=True, apply_d33=False) == 2
     assert "manifests copy exists=False" in capsys.readouterr().out
-    assert not (root / "data" / "processed" / "FROZEN").exists() and not REAL_FROZEN.exists()
+    assert not (root / "data" / "processed" / "FROZEN").exists()
+    _real_frozen_untouched()
 
 
 def test_apply_d33_execute_writes_identical_processed_and_manifests_copies(tmp_path, monkeypatch):

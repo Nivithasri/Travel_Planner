@@ -494,3 +494,10 @@ D48 (amendment 2026-10-19, before the freeze)
    data/manifests (place names only, no text); the D33 precondition fails unless both copies exist and are byte-identical (tests in temp
    directories). drops.jsonl was already checked against processed_manifest.json. models/ (the owner's local TOKENIZER_DIR) is gitignored.
    Status: accepted.
+D48 (amendment 2026-10-19, freeze executed)
+   (xix) THE CORPUS IS FROZEN. `python scripts/freeze.py --execute` (owner's go-ahead "go ahead and freeze", all 8 preconditions PASS) wrote
+   data/processed/FROZEN and data/manifests/frozen_manifest.json at 2026-10-19T16:33:44Z: chunks.jsonl sha256 ee11755106409fd0d6ae8656453fc1ec70560593a9c25348572f01ec804a0003
+   (1,696 chunks), attribution.json 0b5b73bd..., drops.jsonl 51fc0cd7..., d33_excluded.json a712d7b6... (both copies), counter
+   tokenizer.json sha256:21106b6d7dab (full sha256 21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08, verified by the owner
+   against Hugging Face), tokenizers 0.22.2, reference date 2026-10-18 from .env. Files in data/processed never change again (CLAUDE.md
+   rule 2); the hook and process.py enforce it. Tagged phase-2-done (local). Status: accepted.
