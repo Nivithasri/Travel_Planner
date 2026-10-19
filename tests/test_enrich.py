@@ -34,6 +34,7 @@ from src.process.enrich import (
     rule_season_tags,
     select_pilot,
     template_note,
+    ungrounded_tokens,
 )
 
 MODEL = "gen-model"
@@ -305,11 +306,12 @@ def test_transport_failure_is_not_a_fallback(tmp_path):
 def test_leak_scan_disabled_would_let_a_hold_out_note_through(tmp_path, monkeypatch):
     """Mutation guard: if note_problem stopped scanning, the Thekkady note below would be kept."""
     note = "A post about Munnar and a trip onward to Thekkady for boating."
+    chunk = {**CHUNK, "text": CHUNK["text"] + " Some visitors go on to Thekkady for boating."}
     monkeypatch.setattr(enrich, "leak_scan", lambda text, holdout: None)
-    (_, prov), _ = run(tmp_path, {**GOOD, "context_note": note})
+    (_, prov), _ = run(tmp_path, {**GOOD, "context_note": note}, chunk=chunk)
     assert prov["source"] == "llm"  # proves the real scan, not something else, is what rejects it
     monkeypatch.undo()
-    (_, prov2), _ = run(tmp_path / "again", {**GOOD, "context_note": note})
+    (_, prov2), _ = run(tmp_path / "again", {**GOOD, "context_note": note}, chunk=chunk)
     assert prov2["reason"] == "note_leak"
 
 
@@ -602,8 +604,8 @@ def test_embed_is_cached_and_validated(tmp_path):
 
 # ---- prompt v2 and debug records (D58) -----------------------------------------------
 
-def test_prompt_v3_keeps_the_aspect_warning_and_place_type_rules_in_fewer_tokens():
-    assert PROMPT_VERSION == "enrich-v3"
+def test_prompt_v4_keeps_the_v3_rules_and_adds_the_grounding_rule():
+    assert PROMPT_VERSION == "enrich-v4"
     system = build_messages(CHUNK, TITLE)[0]["content"]
     for phrase in ("closure = states something is closed, shut, banned or under restoration",
                    "safety = warns of a danger, scam or risk",
@@ -612,7 +614,8 @@ def test_prompt_v3_keeps_the_aspect_warning_and_place_type_rules_in_fewer_tokens
                    "is_warning: true only for an explicit warning",
                    "A travel anecdote or tour narrative is region or other",
                    "city only if the text describes the city itself", "untrusted data",
-                   "JSON"):
+                   "JSON", "Describe only what THIS excerpt says",
+                   "add nothing you know about the place", "if the excerpt is minor"):
         assert phrase in system, phrase
     assert len(system) < 1300  # D59: the v2 text was 2,121 characters
 
@@ -733,3 +736,103 @@ def test_compare_runs_side_by_side():
     text = enrich.format_comparison(cmp)
     assert "chunks compared: 3" in text and "aspect changed for 1 of 3 chunks" in text
     assert "fallbacks:" in text and "repair-turn rate:" in text
+
+
+# ---- hold-out stems at word starts, with a benign allowlist (D63) ---------------------------
+
+@pytest.mark.parametrize("word", ["Gitanjali", "Thiruparakundram", "Mathukumilli", "Chikkadevaraja",
+                                  "Chikkadpally", "Thekkumbhagom", "Thekke", "Thekku",
+                                  "Thekkinkadu", "Anjaneya", "Sitanjali"])
+def test_benign_words_that_merely_contain_or_start_like_a_stem_are_not_leaks(word):
+    assert leak_scan(f"A visit to {word} was pleasant.", HOLDOUT) is None
+
+
+@pytest.mark.parametrize("word", ["Thanjavur", "Tanjore", "Tanjavur", "Thekkady", "Thekkadi",
+                                  "Thekkadee", "Araku", "Araku Valley", "Borra Caves", "Kumily",
+                                  "Chikmagalur", "Chikkamagaluru", "Chickmagalur",
+                                  "Brihadeeswara", "Brihadisvara", "Mullaperiyar"])
+def test_real_hold_out_names_and_spellings_still_leak(word):
+    assert leak_scan(f"A visit to {word} was pleasant.", HOLDOUT) is not None
+
+
+def test_a_gitanjali_mention_is_kept_as_unknown_not_dropped_as_a_hold_out():
+    kept, dropped = clean_mentioned(["Gitanjali", "Thanjavur", "Tanjore", "Thekkady"], "Munnar",
+                                    REGISTRY, HOLDOUT)
+    assert kept == [] and dropped == {"unknown": 1, "holdout": 3}
+
+
+def test_a_note_mentioning_gitanjali_is_not_rejected_as_a_leak():
+    text = "A chapter on Gitanjali and Tagore's poems about the town of Munnar."
+    assert note_problem(text, "Gitanjali Tagore poems Munnar town chapter", HOLDOUT) is None
+
+
+# ---- grounding: capitalised words and numbers must come from the chunk or metadata ----------
+
+CTX = ("The Church was closed after 1971. Dubare is an elephant camp. "
+       "Hampi A weekend in Hampi Karnataka Wikivoyage guide")
+
+
+def test_ungrounded_tokens_flag_names_and_numbers_the_context_does_not_have():
+    assert ungrounded_tokens("A camp at Dubare, closed in 1971.", CTX) == []
+    assert ungrounded_tokens("Hampi, a UNESCO World Heritage site in Karnataka.", CTX) == [
+        "UNESCO", "World", "Heritage"]
+    assert ungrounded_tokens("A camp at Dubare, opened in 1985.", CTX) == ["1985"]
+    assert ungrounded_tokens("The church of Saint Francis.", CTX) == ["Saint", "Francis"]
+
+
+def test_the_first_word_of_a_sentence_is_not_checked_but_later_words_are():
+    assert ungrounded_tokens("Notable camp. Beautiful scenery near Dubare.", CTX) == []
+    assert ungrounded_tokens("A note. Then Tamil Nadu appears.", CTX) == ["Tamil", "Nadu"]
+
+
+def test_lower_case_world_knowledge_is_not_caught_by_the_check_only_by_the_prompt_rule():
+    assert ungrounded_tokens("Known for its ancient rock-cut temples.", CTX) == []
+
+
+def test_compounds_possessives_plurals_and_abbreviations_are_handled():
+    ctx = "Sister cities in the U.S. 7th- and 8th-century monuments. Maharaja College. Kings."
+    assert ungrounded_tokens("Cities in the U.S. and 7th-8th century monuments.", ctx) == []
+    assert ungrounded_tokens("The Maharaja's College and the King's palace.", ctx) == []
+    assert ungrounded_tokens("A line about the U.K. only.", ctx) == ["U.K."]
+    # a stray single letter is never a finding
+    assert ungrounded_tokens("A city in the U. region", ctx) == []
+
+
+def test_mysuru_style_note_with_us_and_months_is_not_flagged():
+    ctx = "Mysuru sister cities in the U.S. A racing season runs from August to October."
+    note = ("Mysore, a city in Karnataka, is highlighted for its sports heritage. The excerpt "
+            "also notes sister cities in the U.S. and a racing season from August to October.")
+    assert ungrounded_tokens(note, ctx + " Mysore Karnataka") == []
+
+
+def test_the_registry_state_and_aliases_count_as_context_but_a_different_state_does_not():
+    entry = REGISTRY.get("Munnar")
+    ctx = enrich.grounding_context(CHUNK, TITLE, entry)
+    assert ungrounded_tokens("A guide to Munnar (Munar) in Kerala.", ctx) == []
+    assert ungrounded_tokens("A guide to Munnar in Tamil Nadu.", ctx) == ["Tamil", "Nadu"]
+
+
+def test_an_ungrounded_note_falls_back_with_the_offending_words_recorded(tmp_path):
+    note = "A blog post about Munnar, a UNESCO World Heritage hill station in Kerala."
+    (fields, prov), _ = run(tmp_path, {**GOOD, "context_note": note})
+    assert prov["source"] == "fallback" and prov["reason"] == "ungrounded"
+    assert prov["detail"] == ["UNESCO", "World", "Heritage"]
+    assert fields["context_note"] == template_note(CHUNK, TITLE)
+    assert fields["mentioned_places"] == []
+
+
+def test_a_grounded_note_is_kept_and_a_registry_alias_is_grounded(tmp_path):
+    note = "A blog post about Munnar (Munar), tea gardens in Kerala, with a Rs 30 garden ticket."
+    (fields, prov), _ = run(tmp_path, {**GOOD, "context_note": note})
+    assert prov["source"] == "llm" and fields["context_note"] == note
+
+
+def test_ungrounded_check_disabled_would_let_the_hampi_style_note_through(tmp_path, monkeypatch):
+    """Mutation guard for the grounding check (M15)."""
+    note = "A blog post about Munnar, a UNESCO World Heritage hill station in Kerala."
+    monkeypatch.setattr(enrich, "ungrounded_tokens", lambda note, ctx: [])
+    (_, prov), _ = run(tmp_path, {**GOOD, "context_note": note})
+    assert prov["source"] == "llm"
+    monkeypatch.undo()
+    (_, prov2), _ = run(tmp_path / "again", {**GOOD, "context_note": note})
+    assert prov2["reason"] == "ungrounded"

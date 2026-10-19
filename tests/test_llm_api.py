@@ -612,7 +612,7 @@ def test_checkpoint_files_are_per_prompt_version_and_model():
     script = load_script("enrich")
     a = script.checkpoint_path("openai/gpt-oss-20b")
     b = script.checkpoint_path("openai/gpt-oss-120b")
-    assert a != b and "enrich-v3" in a.name and "gpt-oss-20b" in a.name
+    assert a != b and "enrich-v4" in a.name and "gpt-oss-20b" in a.name
     assert "/" not in a.name
 
 

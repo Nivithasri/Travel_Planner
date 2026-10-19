@@ -642,3 +642,19 @@ D62 (2026-10-20) PROPOSED, NOT APPLIED: prompt enrich-v4 (grounding). Evidence f
    stray 'U' in the Mysuru sports note); it does NOT catch the lowercase Badami phrase, so (a) is still needed. Cost: the prompt grows by about 40 tokens per call (about 5% of the
    794 tokens a chunk costs). Also noted, not changed: three chunks used 295, 299 and 300 of the 300 completion tokens (reasoning is part of it), so a long reply can be cut off;
    mentioned_places raw values are not in the checkpoint (only in debug_raw.jsonl). Status: proposed.
+D62 (APPLIED 2026-10-20, owner decision; replaces "Status: proposed" above). PROMPT_VERSION is enrich-v4: the v3 text plus one rule in the context_note line, "Describe only what THIS excerpt says;
+   add nothing you know about the place (status, fame, location) unless the excerpt states it; if the excerpt is minor (a quote, a film), say so." (system prompt 1,252 characters; the
+   conservative worst case, the longest frozen chunk, is 1,290 of the 1,500-token budget). The deterministic check `ungrounded_tokens` runs in enrich_chunk beside note_problem: every
+   capitalised word and every number of the note, except the first word of each sentence and a few function words, must occur in the chunk text, the page title, the place and its registry aliases
+   and region_cluster, the state name or the source label; otherwise the note falls back to the template note with reason "ungrounded" (provenance fallback:ungrounded) and the offending words in
+   the provenance field `detail`. Rules fixed after the pilot: possessives are dropped, compounds are split at hyphens and dashes, dotted abbreviations count as one word ("U.S." was the 'U' false
+   positive of the offline trial: it was split at its dots), plurals match singulars, single letters are ignored. Known limit: lower-case world knowledge ("rock-cut temples") is not caught;
+   only the prompt rule addresses it. A grounded-looking but wrong note is still possible. Tests: the Hampi-style and Auroville-style notes fall back, a registry alias or the registry state
+   grounds a name, a different state does not. Mutation M15 (check disabled) fails 2 tests.
+D63 (2026-10-20) The independent hold-out scan in enrich.py no longer matches stems inside other words. It matched "tanj" inside "Gitanjali" (Tagore's poems; a Bhadrachalam chunk), so the pilot counted
+   a false "holdout" drop. The stems are now anchored at the start of a word and take the whole word (chikmagal, chikkamagal, chickmagal, araku, thekk, kumil, thanj/tanj, brihad, borra cave,
+   mullaperiyar), with an explicit allowlist of benign words that start with a stem (thekke, thekku, thekkumbhagom, thekkinkadu; from the corpus scans in D48). The primary filter, HoldoutFilter
+   (word-boundary names and aliases, the Periyar context rule), is unchanged. Tests: Gitanjali, Thiruparakundram, Mathukumilli, Chikkadevaraja, Chikkadpally and the allowlisted words are kept;
+   Thanjavur, Tanjore, Tanjavur, Thekkady, Thekkadi, Thekkadee, Araku, Araku Valley, Borra Caves, Kumily, Chikmagalur, Chikkamagaluru, Chickmagalur, Brihadeeswara, Brihadisvara and Mullaperiyar
+   are still dropped. Mutation M16 (stems inside words again) fails 6 tests. A spelling that puts a stem in the middle of a word ("xThekkady") is no longer caught by this second scan; the first filter
+   catches the names it knows. Status: accepted.
