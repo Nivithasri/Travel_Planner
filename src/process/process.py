@@ -30,6 +30,7 @@ TokenCounter = Callable[[str], int]
 
 _TOKEN_RE = re.compile(r"\w+|[^\w\s]")
 PROXY_COUNTER = "regex-proxy"
+TOKENIZER_FILES = ("tokenizer.json",)  # every file load_counter reads from TOKENIZER_DIR
 
 
 def proxy_count(text: str) -> int:
@@ -40,7 +41,7 @@ def load_counter(tokenizer_dir: Path | None) -> tuple[TokenCounter, str]:
     """(counter, name). Never downloads: a missing tokenizer.json is an error."""
     if tokenizer_dir is None:
         return proxy_count, PROXY_COUNTER
-    path = Path(tokenizer_dir) / "tokenizer.json"
+    path = Path(tokenizer_dir) / TOKENIZER_FILES[0]
     if not path.is_file():
         raise FileNotFoundError(
             f"TOKENIZER_DIR is set but {path} does not exist (nothing is downloaded, D48)")
@@ -548,6 +549,32 @@ def months_before(d: date, months: int) -> date:
 
 class ReconcileError(RuntimeError):
     pass
+
+
+FROZEN_FIELDS = ("chunk_id", "text", "url", "date", "date_kind", "revised_date", "state", "place",
+                 "source_type")
+
+
+def check_enriched_matches_frozen(enriched: list[dict], frozen: list[dict]) -> None:
+    """Phase 3 guard (D48 xi): data/enriched/chunks.jsonl may only ADD enrichment. Raises unless the
+    chunk_id sets are equal and every FROZEN_FIELDS value is identical per chunk_id."""
+    e = {c["chunk_id"]: c for c in enriched}
+    f = {c["chunk_id"]: c for c in frozen}
+    problems = []
+    if len(e) != len(enriched) or len(f) != len(frozen):
+        problems.append("duplicate chunk ids")
+    missing, extra = sorted(set(f) - set(e)), sorted(set(e) - set(f))
+    if missing:
+        problems.append(f"{len(missing)} frozen ids missing from enriched: {missing[:3]}")
+    if extra:
+        problems.append(f"{len(extra)} enriched ids not in the frozen corpus: {extra[:3]}")
+    changed = [(cid, k) for cid in sorted(set(e) & set(f)) for k in FROZEN_FIELDS
+               if e[cid].get(k) != f[cid].get(k)]
+    if changed:
+        problems.append(f"{len(changed)} changed frozen fields: {changed[:3]}")
+    if problems:
+        raise ReconcileError("enriched chunks do not match the frozen corpus: "
+                             + "; ".join(problems))
 
 
 def check_corpus(chunks: list[dict], holdout) -> None:

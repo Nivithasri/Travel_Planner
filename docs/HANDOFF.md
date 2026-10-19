@@ -8,7 +8,7 @@ that one tag; `git ls-remote --tags origin` shows 61f1355). Push only when asked
 Next: the owner decides the open Phase 2 items below, then runs the freeze procedure. Do not start Phase 3.
 
 ## Verified at the end of this session (commands and outputs in LOG.md, 2026-10-19 Phase 2 entries)
-`python -m pytest -q` 432 passed; `python -m ruff check .` clean; `python scripts/process.py --reference-date 2026-10-18 --write`
+`python -m pytest -q` 433 passed; `python -m ruff check .` clean; `python scripts/process.py --reference-date 2026-10-18 --write`
 run twice -> identical sha256 for every output (chunks.jsonl b3265a45...); request log 443 lines before and after (no network);
 mutations (a-f) on the pipeline, (g) on the freeze tokenizer check and the Phase 1 hold-out mutation (13 failures) caught, `git diff
 --stat` empty after each restore. Every review figure is reproducible with `python scripts/phase2_evidence.py all` (read-only).
@@ -52,6 +52,7 @@ dropped and O8 amended (D48 iii); reference date from .env (D48 iv).
 1. Review the build-time cleaning rules (D48 amendment a-e): evidence in `python scripts/phase2_evidence.py rejoin credits`.
 2. DECIDED: "Borra Caves" is an Araku Valley term (D48 viii); chunk 500b7e3d23575ed7 is dropped. Residual risk accepted: landmarks
    not on the term list can still leak; the scanned landmark list was the reviewer's and is unverified.
+Accepted cost (D48 xiv): the chunk-level hold-out rule removes 11 Munnar Wikivoyage chunks via the Thekkady terms.
 3. Set `config/freeze.json` reddit_resolved (after D45 is settled) and d33_mode ("sidecar" is the only implemented mode).
 4. `.env` keys (above). Reddit credentials (D45). O12 sharing (below). Wikimedia Terms of Use section 7 wording: not in the repo
    (no fetched copy); needed for the report and app attribution (Phase 8).
@@ -67,17 +68,23 @@ If new raw data arrives, rerun `learn`, review its lines, and redo the dry run.
 (c) REFERENCE DATE: EVAL_REFERENCE_DATE=2026-10-18 set in .env; the final --write must run WITHOUT --reference-date so corpus_stats
 `reference_date_source` reads "EVAL_REFERENCE_DATE in .env" and equals the .env value.
 (d) D33: owner sets `d33_mode: "sidecar"`; `python scripts/freeze.py --apply-d33` (dry run, prints the excluded places and the effects
-table) then `--apply-d33 --execute` writes data/processed/d33_excluded.json (chunks.jsonl unchanged; retrieval must filter the listed
-places; the planner must not recommend them; no Phase 4 query may target them). Expected today: 9 places, 17 kept, 1,143 retrievable
-chunks, 0 hidden_gem (D44).
+table) then `--apply-d33 --execute` writes data/processed/d33_excluded.json: a Phase 4 QUERY-ELIGIBILITY list (no dev/test query may
+target a listed place). chunks.jsonl is unchanged and retrieval is NOT filtered, unless the owner records otherwise in
+config/freeze.json (D48 xii). Expected today: 9 listed places, 17 eligible, 1,143 chunks of eligible places, 0 hidden_gem (D44).
 (e) check_corpus() passes and no source_type live (also run inside every --write); outputs match processed_manifest.json.
 Steps: 1. `python scripts/process.py --write` twice (no --reference-date); same sha256 both times. 2. Commit manifest and stats.
 3. `python scripts/freeze.py --apply-d33 --execute`. 4. `python scripts/freeze.py` (dry run) must show 8 PASS. 5. `python
-scripts/freeze.py --execute` writes data/processed/FROZEN (sha256 of chunks.jsonl and attribution.json, chunk count, counter,
-tokenizer directory name, reference date and source, UTC timestamp). After this the hook blocks Edit/Write on every data/processed
+scripts/freeze.py --execute` writes data/processed/FROZEN and data/manifests/frozen_manifest.json (same fields, no text: sha256
+of chunks.jsonl and attribution.json, chunk count, counter, sha256 of every tokenizer file the counter loads (tokenizer.json), the
+tokenizers version, reference date and source, UTC timestamp; D48 xiii); commit frozen_manifest.json. After this the hook blocks Edit/Write on every data/processed
 path and process --write refuses. 6. Record the FROZEN content in LOG.md, update phase-status, commit, `git tag phase-2-done`.
-Phase 3 consequence (D48 x): enriched chunks cannot be written into data/processed after the freeze; choose another location in
-Phase 3 through a contracts change.
+
+## Phase 3 notes (D48 xi)
+- Enriched chunks go to `data/enriched/chunks.jsonl` (gitignored), NEVER to data/processed (frozen as a whole, D48 x).
+- Before any Phase 3 output is used, run `check_enriched_matches_frozen(enriched, frozen)` (src/process/process.py): same chunk_id set,
+  identical chunk_id, text, url, date, date_kind, revised_date, state, place, source_type per id. Phase 3 only fills context_note,
+  place_type, season_tags, aspect, is_warning (EnrichedChunk). docs/contracts.md "Locations" records this.
+- Phase 3 also needs the Ollama keys in .env (currently absent) and `scripts/smoke_ollama.py` run once.
 
 ## How Valincia gets the chunks (O12 open)
 data/processed is gitignored, and O12 (what may be shared, given CC BY-SA, CC BY-NC-SA and the inditales "all rights reserved" text)

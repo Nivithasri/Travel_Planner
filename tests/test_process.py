@@ -16,6 +16,7 @@ from src.process.process import (
     ReconcileError,
     attribution,
     check_corpus,
+    check_enriched_matches_frozen,
     chunk_text,
     clean_record,
     dedupe_records,
@@ -430,3 +431,18 @@ def test_borra_caves_chunk_drops_and_visakhapatnam_text_without_it_is_kept():
     out, rep = run([rec(para(5) + " RK Beach and Rushikonda Beach are popular. "
                         + para(5, start=40), place="Visakhapatnam")], e=e)
     assert out and rep.chunk_drops == []
+
+
+def test_enriched_must_match_the_frozen_fields_and_ids():
+    frozen = [c for _, c in run([rec(para(60))])[0]]
+    assert len(frozen) >= 2
+    enriched = [{**c, "context_note": "Hampi blog note.", "aspect": "history", "is_warning": False}
+                for c in frozen]
+    check_enriched_matches_frozen(enriched, frozen)  # enrichment fields may change
+    changed = [dict(c) for c in enriched]
+    changed[0]["text"] = changed[0]["text"] + " edited"
+    for bad in (changed,  # changed text
+                enriched[1:],  # missing id
+                enriched + [{**enriched[0], "chunk_id": "extra000000000000"}]):  # extra id
+        with pytest.raises(ReconcileError):
+            check_enriched_matches_frozen(bad, frozen)

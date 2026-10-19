@@ -452,3 +452,23 @@ D48 (amendment 2026-10-19, owner decision on the landmark scan; freeze tooling)
    data/processed/FROZEN exists (was chunks*.jsonl only). Consequence for Phase 3: enriched chunks cannot be written into data/processed
    after the freeze; they need another location (e.g. index/ or a new data/enriched/), decided in Phase 3 via a contracts change.
    Status: accepted.
+D48 (amendment 2026-10-19, cleanup round)
+   (xi) PHASE 3 LOCATION: enriched chunks are written to data/enriched/chunks.jsonl (gitignored, like data/processed, while O12 is open),
+   never to data/processed. check_enriched_matches_frozen(enriched, frozen) (src/process/process.py) fails unless the chunk_id sets
+   are equal and chunk_id, text, url, date, date_kind, revised_date, state, place and source_type are identical per chunk_id; tests:
+   one passing case, three failing (changed text, missing id, extra id). docs/contracts.md "Locations" updated. Supersedes the open
+   question in (x).
+   (xii) D33 SIDECAR WORDING (corrects ix; behaviour unchanged): data/processed/d33_excluded.json is a Phase 4 QUERY-ELIGIBILITY list
+   (no dev or test query may target a listed place). chunks.jsonl is unchanged and retrieval is NOT filtered, unless the owner records
+   otherwise in config/freeze.json. The freeze.py dry-run table and help text say so; "chunks retrievable" was the wrong label.
+   (xiii) FROZEN contents (replaces the tokenizer directory name in ix): sha256 of chunks.jsonl and attribution.json, chunk count, counter,
+   sha256 of every file the counter loads from TOKENIZER_DIR (TOKENIZER_FILES = tokenizer.json only: Tokenizer.from_file reads no other
+   file), the tokenizers library version, the reference date and its source, and the UTC timestamp. The same fields (no text) are
+   written to data/manifests/frozen_manifest.json, which is committed at the freeze.
+   (xiv) ACCEPTED COST: the chunk-level hold-out rule removes 11 Wikivoyage chunks from Munnar (a D23-failing place) through the Thekkady
+   terms (Thekkady 8 incl. one lower-case, Kumily 2, Thekkadi 1); Munnar keeps 28 chunks. Accepted by the owner.
+   (xv) Attribution rule for a chunk that names two hold-outs: HoldoutFilter.text_match returns the LEFTMOST name match in the chunk text
+   (regex search over all names); the Periyar context rule applies only when no name matches. Only one dropped chunk names two hold-outs
+   on the snapshot: 941f36c8ed383169 (Kanniyakumari Wikipedia), Thanjavur at offset 775 and Kumily at 824, attributed to Thanjavur.
+   The Madurai Wikipedia and Wikivoyage records each have separate chunks for different hold-outs, not a chunk naming two
+   (`python scripts/phase2_evidence.py holdoutdrops`).

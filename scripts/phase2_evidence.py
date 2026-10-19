@@ -436,7 +436,48 @@ def rawholdout() -> None:
     print(f"hold-out chunk drops in drops.jsonl: {total}; on the records listed above: {on_listed}")
 
 
-SECTIONS = {"periyar": periyar, "rawholdout": rawholdout,
+def holdoutdrops() -> None:
+    """Per-record table from drops.jsonl. Dropped text is not stored, so each dropped chunk is
+    rebuilt from its record with the same pure cleaning and chunking code."""
+    from src.facts.facts import _PERIYAR, HOLDOUT_OF
+
+    rl = rules()
+    drops = [d for d in (json.loads(x) for x in open(PROCESSED / "drops.jsonl", encoding="utf-8"))
+             if d["level"] == "chunk"]
+    texts = {}
+    for r in records():
+        c = P.clean_record(r, rl)
+        for s, e in P.chunk_text(c.text, c.header_offsets, P.proxy_count)[0]:
+            texts[P.make_chunk_id(r["url"], s)] = c.text[s:e]
+    rows: dict[tuple, int] = collections.Counter()
+    multi = []
+    for d in sorted(drops, key=lambda d: (d["place"], d["url"], d["chunk_id"])):
+        rows[(d["url"], d["place"], d["holdout"], d["term"])] += 1
+        t = texts[d["chunk_id"]]
+        found = collections.defaultdict(list)
+        for term, h in HOLDOUT_OF.items():
+            m = re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", t, re.IGNORECASE)
+            if m:
+                found[h].append((m.start(), m.group(0)))
+        for m in _PERIYAR.finditer(t):
+            found["Thekkady"].append((m.start(), m.group(0)))
+        if len(found) > 1:
+            multi.append((d, {h: sorted(v) for h, v in found.items()}))
+    print("| record url | place | canonical hold-out | matched term | chunks |")
+    print("|---|---|---|---|---|")
+    for (u, p, h, t), n in rows.items():
+        print(f"| {u} | {p} | {h} | {t} | {n} |")
+    print(f"total chunk drops: {sum(rows.values())}")
+    print("chunks naming two or more hold-outs (attribution = the leftmost name match in the "
+          "chunk; the Periyar context rule only when no name matches):")
+    for d, found in multi:
+        print(f"  {d['chunk_id']} {d['place']} {d['source']} -> {d['holdout']} via "
+              f"'{d['term']}'; all (offset, term): {found}")
+    if not multi:
+        print("  none")
+
+
+SECTIONS = {"periyar": periyar, "rawholdout": rawholdout, "holdoutdrops": holdoutdrops,
             "manifest": manifest, "holdout": holdout, "blogdates": blogdates, "rejoin": rejoin,
             "credits": credits, "splitter": splitter, "short": short, "neardup": neardup,
             "d23": d23, "attribution": attribution}

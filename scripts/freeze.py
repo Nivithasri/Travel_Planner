@@ -6,6 +6,8 @@ written. Offline.
     python scripts/freeze.py --apply-d33 --execute   # write data/processed/d33_excluded.json
     python scripts/freeze.py --execute            # write data/processed/FROZEN (all must pass)
 
+The D33 sidecar is a Phase 4 query-eligibility list: chunks.jsonl is unchanged and retrieval is NOT
+filtered, unless the owner records otherwise in config/freeze.json.
 Owner decisions come from config/freeze.json (reddit_resolved, d33_mode). Run --apply-d33 --execute
 BEFORE the freeze: once FROZEN exists nothing in data/processed may change.
 """
@@ -24,7 +26,7 @@ from src.collect.run import CORE_REGISTRY, passes_rule  # noqa: E402
 from src.common.schemas import REPO_ROOT, load_reference_date, load_tokenizer_dir  # noqa: E402
 from src.facts.facts import HoldoutFilter  # noqa: E402
 from src.places.places import Registry  # noqa: E402
-from src.process.process import ReconcileError, check_corpus  # noqa: E402
+from src.process.process import TOKENIZER_FILES, ReconcileError, check_corpus  # noqa: E402
 
 REAL_COUNTER_PREFIX = "tokenizer.json sha256:"
 ENV_SOURCE = "EVAL_REFERENCE_DATE in .env"
@@ -67,6 +69,17 @@ def tokenizer_check(ctx: Ctx) -> tuple[bool, str]:
     if counter != REAL_COUNTER_PREFIX + digest:
         return False, f"counter {counter!r} does not match {tj} (sha256:{digest})"
     return True, f"{counter} from {tdir.name}"
+
+
+def tokenizer_files(tdir: Path) -> dict[str, str]:
+    """sha256 of every file the counter loads from TOKENIZER_DIR (TOKENIZER_FILES)."""
+    return {name: sha256(tdir / name) for name in TOKENIZER_FILES}
+
+
+def tokenizers_version() -> str:
+    import tokenizers
+
+    return tokenizers.__version__
 
 
 def preconditions(ctx: Ctx) -> list[tuple[str, bool, str]]:
@@ -125,11 +138,13 @@ def d33_table(ctx: Ctx) -> tuple[list[str], list[str]]:
     n_keep = sum(count.get(e.name, 0) for e in keep)
     hid = sum(e.popularity == "hidden_gem" for e in keep)
     rows = [
-        "| behaviour | places | chunks retrievable | chunks in chunks.jsonl | hidden_gem places |",
+        "| behaviour | Phase 4 query-eligible places | chunks of eligible places | chunks in "
+        "chunks.jsonl (all retrievable) | hidden_gem eligible |",
         "|---|---|---|---|---|",
         f"| no D33 (today) | {len(places)} | {len(ctx.chunks)} | {len(ctx.chunks)} | "
         f"{sum(e.popularity == 'hidden_gem' for e in places)} |",
-        f"| sidecar (implemented): chunks.jsonl unchanged, retrieval filters the listed places | "
+        f"| sidecar (implemented): Phase 4 query-eligibility list; chunks.jsonl unchanged; "
+        f"retrieval NOT filtered | "
         f"{len(keep)} | {n_keep} | {len(ctx.chunks)} | {hid} |",
         f"| exclude (NOT implemented): chunks.jsonl rewritten | {len(keep)} | {n_keep} | "
         f"{n_keep} | {hid} |",
@@ -183,14 +198,17 @@ def run(root: Path, env_file: Path | None, execute: bool, apply_d33: bool) -> in
         "attribution_json_sha256": sha256(ctx.processed / "attribution.json"),
         "chunk_count": len(ctx.chunks),
         "counter": ctx.manifest["counter"],
-        "tokenizer_dir": load_tokenizer_dir(env_file).name,
+        "tokenizer_files_sha256": tokenizer_files(load_tokenizer_dir(env_file)),
+        "tokenizers_version": tokenizers_version(),
         "reference_date": fresh["reference_date"],
         "reference_date_source": fresh["reference_date_source"],
         "frozen_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-    (ctx.processed / "FROZEN").write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n",
-                                          encoding="utf-8", newline="\n")
-    print("wrote data/processed/FROZEN:", json.dumps(doc, sort_keys=True))
+    text = json.dumps(doc, indent=1, sort_keys=True) + "\n"
+    (ctx.processed / "FROZEN").write_text(text, encoding="utf-8", newline="\n")
+    (ctx.manifests / "frozen_manifest.json").write_text(text, encoding="utf-8", newline="\n")
+    print("wrote data/processed/FROZEN and data/manifests/frozen_manifest.json:",
+          json.dumps(doc, sort_keys=True))
     return 0
 
 
@@ -199,7 +217,11 @@ def main() -> int:
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--dry-run", action="store_true", help="default")
     g.add_argument("--execute", action="store_true")
-    ap.add_argument("--apply-d33", action="store_true")
+    ap.add_argument("--apply-d33", action="store_true",
+                    help="D33 sidecar: write data/processed/d33_excluded.json, the Phase 4 "
+                         "query-eligibility list (no dev/test query may target a listed place). "
+                         "chunks.jsonl is unchanged and retrieval is NOT filtered unless the "
+                         "owner records otherwise in config/freeze.json")
     ap.add_argument("--root", type=Path, default=REPO_ROOT, help="tests only")
     ap.add_argument("--env-file", type=Path, default=None, help="tests only (default: .env)")
     a = ap.parse_args()

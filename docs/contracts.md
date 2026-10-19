@@ -40,8 +40,13 @@ live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type
 - Cached: downloads, LLM calls (including expanded queries for eval), embeddings, fallback searches.
 
 ## Locations
-data/raw/<source>/, data/processed/chunks.jsonl, index/{bm25,dense_plain,dense_ctx}/, index/travel_matrix.json,
-index/place_cards.json, eval/, kaggle/.
+data/raw/<source>/, data/processed/chunks.jsonl, data/enriched/chunks.jsonl, index/{bm25,dense_plain,dense_ctx}/,
+index/travel_matrix.json, index/place_cards.json, eval/, kaggle/.
+- data/processed/ is frozen as a whole once data/processed/FROZEN exists (D48 x): nothing in it is written again.
+- Phase 3 writes enriched chunks ONLY to data/enriched/chunks.jsonl (D48 xi), never to data/processed. The enriched file must have
+  exactly the frozen chunk_id set, and per chunk_id identical chunk_id, text, url, date, date_kind, revised_date, state, place and
+  source_type; it may only fill context_note, place_type, season_tags, aspect, is_warning (EnrichedChunk). Checked by
+  src/process/process.py check_enriched_matches_frozen().
 
 ## On-demand ingestion (D17, Phase 1)
 ```python

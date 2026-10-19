@@ -385,11 +385,21 @@ def test_freeze_dry_run_writes_nothing_and_execute_writes_the_marker(tmp_path, m
     assert fz.run(root, env, execute=False, apply_d33=False) == 0 and not frozen.exists()
     assert "[FAIL]" not in capsys.readouterr().out
     assert fz.run(root, env, execute=True, apply_d33=False) == 0
+    import hashlib
+
+    import tokenizers
+
     doc = json.loads(frozen.read_text(encoding="utf-8"))
     assert set(doc) == {"chunks_jsonl_sha256", "attribution_json_sha256", "chunk_count", "counter",
-                        "tokenizer_dir", "reference_date", "reference_date_source",
-                        "frozen_at_utc"}
-    assert doc["tokenizer_dir"] == "bge-m3" and doc["reference_date_source"].endswith(".env")
+                        "tokenizer_files_sha256", "tokenizers_version", "reference_date",
+                        "reference_date_source", "frozen_at_utc"}
+    tj = tmp_path / "bge-m3" / "tokenizer.json"
+    assert doc["tokenizer_files_sha256"] == {"tokenizer.json":
+                                             hashlib.sha256(tj.read_bytes()).hexdigest()}
+    assert doc["tokenizers_version"] == tokenizers.__version__
+    assert doc["reference_date_source"].endswith(".env")
+    manifest = root / "data" / "manifests" / "frozen_manifest.json"
+    assert json.loads(manifest.read_text(encoding="utf-8")) == doc  # same fields, no text
     assert fz.run(root, env, execute=True, apply_d33=False) == 2  # already frozen
     assert not REAL_FROZEN.exists()
 
