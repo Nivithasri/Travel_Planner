@@ -62,6 +62,16 @@ class AuthError(LLMError):
     """401/403: the key is wrong or lacks access. Never retried."""
 
 
+class InvalidGeneration(LLMError):
+    """The API itself rejected a JSON-mode reply as not valid JSON (HTTP 400, e.g. "Failed to
+    generate JSON", with the text it produced). The reply is bad, the transport is fine: chat_json
+    treats it like any invalid reply (repair turn, then give up), never as an outage."""
+
+    def __init__(self, text: str):
+        super().__init__("the API rejected the reply as invalid JSON")
+        self.text = text
+
+
 class QuotaExhausted(LLMError):
     """A daily budget is used up (or the server asked for a long wait). Not a transport failure,
     never a fallback: stop, and resume after the reset."""
@@ -392,7 +402,19 @@ class OllamaClient:
         convo = list(messages)
         last_error = ""
         for attempt in range(1, self.max_json_attempts + 1):
-            raw = self._request({**payload, "messages": convo})
+            try:
+                raw = self._request({**payload, "messages": convo})
+            except InvalidGeneration as bad:
+                raw = self._scrub(bad.text)[:2000] or "(the API returned no text)"
+                last_error = "the API rejected the reply as invalid JSON (JSON mode)"
+                if on_attempt:
+                    on_attempt(attempt, raw, last_error)
+                convo = convo + [
+                    {"role": "assistant", "content": raw},
+                    {"role": "user", "content": "That reply was not valid JSON. Reply with "
+                     "one complete, valid JSON object only."},
+                ]
+                continue
             try:
                 parsed = schema.model_validate_json(raw)
             except ValidationError as exc:
@@ -622,10 +644,12 @@ class RateLimiter:
                 self._tpm_hint = (info.tpm_remaining, info.tpm_reset_s)
         self._save()
 
-    def failed(self, entry: list) -> None:
-        """A call that errored: the request counts, the estimate stays in the minute window, no
-        tokens are added to the day (the API reported none)."""
+    def failed(self, entry: list, charged_tokens: int = 0) -> None:
+        """A call that errored: the request counts and the estimate stays in the minute window. No
+        tokens are added to the day (the API reported none) unless the caller knows the call was
+        billed (`charged_tokens`, e.g. a reply the API rejected as invalid JSON)."""
         self.day_requests += 1
+        self.day_tokens += charged_tokens
         self._save()
 
     def snapshot(self) -> dict:
@@ -752,6 +776,13 @@ class OpenAICompatClient(OllamaClient):
             raise _RetryAfter(f"HTTP 429, retry after {wait:g} s", wait)
         if status >= 500:
             raise _Retryable(f"HTTP {status}")
+        if status == 400:
+            try:
+                err = (resp.json() or {}).get("error") or {}
+            except (ValueError, AttributeError):
+                err = {}
+            if isinstance(err, dict) and "failed_generation" in err:
+                raise InvalidGeneration(str(err.get("failed_generation") or ""))
         if status != 200:
             raise LLMError(f"HTTP {status} from the API: {self._scrub(resp.text[:300])!r}")
         try:
@@ -789,9 +820,10 @@ class OpenAICompatClient(OllamaClient):
                     lambda: self._post(self.base_url + self.chat_path, json=payload,
                                        headers=self._headers(), timeout=timeout),
                     f"model {payload['model']!r}")
-            except BaseException:
+            except BaseException as exc:
                 if entry is not None:
-                    self.limiter.failed(entry)
+                    self.limiter.failed(entry, entry[1] if isinstance(exc, InvalidGeneration)
+                                        else 0)
                 raise
             actual = self._record_usage(body, est)
             if entry is not None:

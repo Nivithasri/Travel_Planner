@@ -617,3 +617,28 @@ D60 (2026-10-20) Prompt enrich-v3, scope gating and the pilot (owner decision; f
    measured on the frozen corpus (python, data/manifests/d33_excluded.json against data/processed/chunks.jsonl): 1,383 chunks belong to the 17
    eligible places (wikivoyage 560, reference 540, blog 283; all 283 blog chunks are in eligible places), 1,100 without blog; all 1,696 chunks
    include 313 in the 9 excluded places. The report's projection uses these counts. Status: accepted.
+D61 (2026-10-20) Installs, downloads and the JSON-mode rejection (follows D59). (1) Installed from PyPI by the assistant on the owner's permission: bm25s 0.3.14 and
+   PyStemmer 3.1.0; sentence-transformers 5.3.0, torch 2.6.0+cpu, numpy 2.2.6, transformers 4.57.6, huggingface-hub 0.36.2 and tokenizers 0.22.2 were already present.
+   `import sentence_transformers` FAILS in this environment unless TensorFlow is switched off (the preinstalled tensorflow 2.21 was built against protobuf 6.31.1, the
+   runtime is 5.29.6: "Detected incompatible Protobuf Gencode/Runtime versions"); the index code sets USE_TF=0, USE_FLAX=0 and TRANSFORMERS_NO_TF=1 before the import. Nothing
+   else in the environment was changed. (2) bge-m3 is downloaded from Hugging Face (BAAI/bge-m3, pinned revision 5617a9f61b028005a4858fdac845db406aefb181, without onnx/
+   and images) into models/bge-m3-full (gitignored); its tokenizer.json sha256 equals the frozen-corpus tokenizer 21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08
+   and scripts/build_index.py refuses any model folder where it differs. pip, Hugging Face and the hosted API are not HttpClient calls, so data/manifests/request_log.jsonl
+   stays at 443 lines. (3) The hosted API can answer HTTP 400 "Failed to generate JSON" with a `failed_generation` field when JSON mode produces invalid JSON (seen once in
+   79 chunks, chunk 466a6b8c7e8d5836; the 400 body was not kept, but the retried reply used 274 of the 300 completion tokens with 15 mentioned places, so a reply cut at the cap is the likely cause). That is an invalid REPLY, not an outage: OpenAICompatClient raises
+   InvalidGeneration, chat_json feeds the rejected text back as a repair turn (up to 3 attempts), then enrich_chunk falls back (json_invalid); the call is billed against the
+   day with its estimate; the text goes to the debug record scrubbed. Before this fix the 400 counted as a transport failure and left the chunk undone. Status: accepted.
+D62 (2026-10-20) PROPOSED, NOT APPLIED: prompt enrich-v4 (grounding). Evidence from the 79-chunk pilot of enrich-v3 on openai/gpt-oss-20b (LOG 2026-10-20): the notes are
+   copy-free (largest note-vs-chunk 5-gram share 0.231, none over 0.3, 0 rejected) and the metadata is plausible, but at least 3 of 79 notes (3.8%) state facts that are in neither the
+   chunk, the page title nor the registry fields, which breaks "facts in a note must come from the chunk or registry fields" (D54): Badami 'known for its ancient rock-cut
+   temples' (chunk fce34372345088b8 is about literature, film and geography), Hampi 'UNESCO World Heritage site ... former capital of the Vijayanagara Empire' (chunk
+   4bc845ba68d1f496 is a Will Durant quotation and a film shoot), Auroville 'township in Tamil Nadu' (chunk 5c191c9e3e0f31dc; the registry state is Puducherry). The pattern: when
+   a chunk is thin or off-topic for the place, the model fills the note with what it knows about the place. The facts happen to be true; they are still not grounded. Proposed
+   changes, to be applied only on the owner's approval, which bumps PROMPT_VERSION to enrich-v4 and changes every cache key: (a) one added rule in the system prompt: "Describe only
+   what THIS excerpt says. Do not add what you know about the place (status, fame, location) unless the excerpt states it; if the excerpt is minor (a quotation, a film), say so."
+   (b) a deterministic check `note_ungrounded` beside the copy rule: after removing possessives and splitting compounds, every capitalised word that is not sentence-initial and every
+   number in the note must occur in the chunk text, the page title, the place, the state name or the source label; otherwise the note falls back to the template note and is counted.
+   Measured offline on the 79 pilot notes (no API call): it flags 3, of which 2 are true ungrounded notes (Auroville, Hampi 4bc845...) and 1 is a tokenisation false positive (a
+   stray 'U' in the Mysuru sports note); it does NOT catch the lowercase Badami phrase, so (a) is still needed. Cost: the prompt grows by about 40 tokens per call (about 5% of the
+   794 tokens a chunk costs). Also noted, not changed: three chunks used 295, 299 and 300 of the 300 completion tokens (reasoning is part of it), so a long reply can be cut off;
+   mentioned_places raw values are not in the checkpoint (only in debug_raw.jsonl). Status: proposed.

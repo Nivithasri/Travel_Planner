@@ -762,3 +762,65 @@ def test_projection_is_limited_by_the_tighter_daily_budget():
     assert pr["days_by_requests"] == pytest.approx(2035.2 / 800)
     assert pr["days"] == pr["days_by_tokens"] and pr["limited_by"] == "tokens (TPD)"
     assert "PROJECTION" in enrich.format_projection("all", pr)
+
+
+# ---- the API rejecting a JSON-mode reply (HTTP 400 "Failed to generate JSON") -------------
+
+def json_mode_400(text='{"ok": tr'):
+    return HTTP(400, {"error": {"message": "Failed to generate JSON. Please adjust your prompt.",
+                                "type": "invalid_request_error", "code": "json_validate_failed",
+                                "failed_generation": text}})
+
+
+def test_a_json_mode_rejection_is_a_repair_turn_not_an_outage(tmp_path):
+    clk = Clock()
+    lim = limiter(clk)
+    client, post, _ = make(tmp_path, [json_mode_400('{"ok": tr'), completion(GOOD_JSON)],
+                           limiter=lim, clk=clk)
+    seen = []
+    out = client.chat_json(MESSAGES, MODEL, Pong, options=OPTIONS,
+                           on_attempt=lambda n, raw, err: seen.append((n, raw, err)))
+    assert out.ok is True and len(post.calls) == 2
+    repair = post.calls[1]["json"]["messages"]
+    assert repair[-2] == {"role": "assistant", "content": '{"ok": tr'}  # what the model produced
+    assert "not valid JSON" in repair[-1]["content"]
+    assert seen[0][0] == 1 and seen[0][1] == '{"ok": tr' and "invalid JSON" in seen[0][2]
+    assert seen[1] == (2, GOOD_JSON, None)
+    # the rejected call was billed as far as we can tell: its estimate counts against the day
+    assert lim.day_requests == 2 and lim.day_tokens > 0
+
+
+def test_a_json_mode_rejection_that_repeats_gives_up_as_invalid_json_not_a_transport_failure(
+        tmp_path):
+    client, post, _ = make(tmp_path, [json_mode_400()])
+    with pytest.raises(JSONValidationError):
+        client.chat_json(MESSAGES, MODEL, Pong, options=OPTIONS)
+    assert len(post.calls) == 3  # max_json_attempts
+    assert not list((tmp_path / "cache").rglob("*.json"))  # nothing cached
+
+
+def test_the_rejected_text_is_scrubbed_and_other_400s_stay_errors(tmp_path):
+    seen = []
+    client, _, _ = make(tmp_path, [json_mode_400(f"see https://{HOST}/x {KEY}"),
+                                   completion(GOOD_JSON)])
+    client.chat_json(MESSAGES, MODEL, Pong, options=OPTIONS,
+                     on_attempt=lambda n, raw, err: seen.append(raw))
+    assert KEY not in seen[0] and HOST not in seen[0] and "https://" not in seen[0]
+    client, post, _ = make(tmp_path / "b", [HTTP(400, {"error": {"message": "bad model"}})])
+    with pytest.raises(LLMError, match="HTTP 400") as exc:
+        client.chat_json(MESSAGES, MODEL, Pong, options=OPTIONS)
+    assert not isinstance(exc.value, JSONValidationError) and len(post.calls) == 1
+
+
+def test_enrich_chunk_falls_back_when_the_api_keeps_rejecting_the_json(tmp_path):
+    from src.process.enrich import enrich_chunk, rule_based
+    from tests.test_enrich import CHUNK, HOLDOUT, REGISTRY, TITLE
+
+    client, _, _ = make(tmp_path, [json_mode_400('{"context_note": "cut off')])
+    records = []
+    fields, prov = enrich_chunk(client, MODEL, CHUNK, TITLE, REGISTRY, HOLDOUT,
+                                debug=records.append)
+    assert prov["source"] == "fallback" and prov["reason"] == "json_invalid"
+    assert fields == rule_based(CHUNK, TITLE)
+    assert [r["kind"] for r in records] == ["attempt", "attempt", "attempt", "final"]
+    assert records[0]["raw"] == '{"context_note": "cut off'  # kept for diagnosis (untrusted)
