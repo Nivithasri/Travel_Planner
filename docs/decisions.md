@@ -433,3 +433,22 @@ D48 (amendment 2026-10-19, owner review of the Phase 2 draft)
    proxy counter; 1.70 M raw characters over 97 records); source diversity is 3 source types (blog, reference, wikivoyage) with ONE
    blog host (inditales.com) and 0 official, 0 Reddit, 0 YouTube; 0 published chunks fall in the 18-month window 2025-04-18 to
    2026-10-18 (newest blog 2025-01-30). Each is accepted and stated in the report as measured. Status: accepted.
+D48 (amendment 2026-10-19, owner decision on the landmark scan; freeze tooling)
+   (viii) "Borra Caves" is a hold-out term of Araku Valley (DROP_NAMES and HOLDOUT_OF in src/facts/facts.py). The one chunk that named it,
+   500b7e3d23575ed7 (Visakhapatnam Wikipedia), is now dropped; tests: "Borra Caves" drops, a Visakhapatnam sentence without it is kept.
+   RESIDUAL RISK: hold-out content can leak through landmark names that are not on the term list (a chunk about a hold-out's sights that
+   never names the hold-out). The landmark list used in the scan (Mullayanagiri, Baba Budan, Kemmangundi, Kudremukh, Borra Caves,
+   Saraswathi Mahal, Big Temple) was supplied by the owner's reviewer and is UNVERIFIED; it is not a complete gazetteer, and only Borra
+   Caves had a hit. The residual risk is accepted and stated in the report.
+   (ix) Freeze tooling: scripts/freeze.py (default dry run) checks, with pass/fail: FROZEN absent; outputs match processed_manifest.json;
+   check_corpus(); no source_type live; the counter is the real bge-m3 tokenizer (processed_manifest counter "tokenizer.json sha256:<12>"
+   equal to the file under TOKENIZER_DIR; the proxy is refused); the reference date came from .env (corpus_stats reference_date_source
+   "EVAL_REFERENCE_DATE in .env" and equal to .env); Reddit recorded as resolved; D33 applied. Owner decisions live in config/freeze.json
+   (reddit_resolved, d33_mode). --execute writes data/processed/FROZEN (sha256 of chunks.jsonl and attribution.json, chunk count, counter,
+   tokenizer directory name, reference date and source, UTC timestamp). D33 is implemented as a SIDECAR only (d33_mode "sidecar":
+   data/processed/d33_excluded.json lists the excluded places, chunks.jsonl unchanged, retrieval must filter them); "exclude" (rewriting
+   chunks.jsonl) is not implemented; both have the same retrievable effect (17 places, 1,143 chunks, 0 hidden_gem).
+   (x) The frozen-file hook (scripts/hooks/guard_frozen.py) now blocks Edit/Write on every path under data/processed/ once
+   data/processed/FROZEN exists (was chunks*.jsonl only). Consequence for Phase 3: enriched chunks cannot be written into data/processed
+   after the freeze; they need another location (e.g. index/ or a new data/enriched/), decided in Phase 3 via a contracts change.
+   Status: accepted.

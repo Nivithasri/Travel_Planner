@@ -8,17 +8,21 @@ that one tag; `git ls-remote --tags origin` shows 61f1355). Push only when asked
 Next: the owner decides the open Phase 2 items below, then runs the freeze procedure. Do not start Phase 3.
 
 ## Verified at the end of this session (commands and outputs in LOG.md, 2026-10-19 Phase 2 entries)
-`python -m pytest -q` 424 passed; `python -m ruff check .` clean; `python scripts/process.py --reference-date 2026-10-18 --write`
-run twice -> identical sha256 for every output (chunks.jsonl ebfdbd51...); request log 443 lines before and after (no network);
-6 Phase 2 mutations (a-f) and the Phase 1 hold-out mutation (13 failures) caught, `git diff --stat` empty after each restore.
-Every review figure is reproducible with `python scripts/phase2_evidence.py all` (read-only).
+`python -m pytest -q` 432 passed; `python -m ruff check .` clean; `python scripts/process.py --reference-date 2026-10-18 --write`
+run twice -> identical sha256 for every output (chunks.jsonl b3265a45...); request log 443 lines before and after (no network);
+mutations (a-f) on the pipeline, (g) on the freeze tokenizer check and the Phase 1 hold-out mutation (13 failures) caught, `git diff
+--stat` empty after each restore. Every review figure is reproducible with `python scripts/phase2_evidence.py all` (read-only).
+`python scripts/freeze.py --dry-run` on the real corpus: exit 2, 4 FAIL (proxy counter, reference date not from .env, Reddit
+unresolved, D33 not applied), 4 PASS.
 
 ## What exists
 - Code: `src/process/process.py` (clean, chunk, hold-out, dedupe, attribution, stats; `process_place()` is pure and is reused by
   the live path), `scripts/process.py` (`learn` | dry run | `--write` | `--live <slug>`, `--reference-date`).
-  `HoldoutFilter.text_match` in src/facts/facts.py. Schema: `date_kind`, `revised_date` (D48). Tests: tests/test_process.py (36).
+  `HoldoutFilter.text_match` in src/facts/facts.py. Schema: `date_kind`, `revised_date` (D48). Tests: tests/test_process.py.
+  `scripts/freeze.py` (dry run by default; `--apply-d33`; `--execute`), owner decisions in `config/freeze.json`
+  (reddit_resolved false, d33_mode null). `scripts/phase2_evidence.py` (read-only evidence).
 - Rule file: `config/boilerplate.json` (inditales.com: 0 applied lines, 2 rejected by review: "Travel Tips", "Meditation Hall").
-- Outputs (gitignored, NOT frozen): `data/processed/chunks.jsonl` (1,388), `drops.jsonl` (32: 31 hold-out chunks, 1 exact
+- Outputs (gitignored, NOT frozen): `data/processed/chunks.jsonl` (1,387), `drops.jsonl` (33: 32 hold-out chunks, 1 exact
   duplicate), `attribution.json` (96 urls: title, source, licence, revid, lastmod). Live: `data/live/processed/yercaud.jsonl` (18).
 - Committed: `data/manifests/corpus_stats.{md,json}` (per source, state, place, year, date_kind, tokens, drops, D23 dry run,
   comparison with the 1,943 estimate) and `data/manifests/processed_manifest.json` (sha256, bytes, lines; no content).
@@ -35,10 +39,10 @@ Every review figure is reproducible with `python scripts/phase2_evidence.py all`
 - Optional `TOKENIZER_DIR` (local folder with the bge-m3 tokenizer.json; never downloaded). Unset = regex proxy counter.
 
 ## Phase 2 numbers (regex proxy counter; recompute with the real tokenizer)
-1,388 chunks (estimate 1,943, range 1,619-2,429). Measured: 5.036 characters per proxy token vs the estimate's 4; cleaning removed
-3.2% of characters. Whether bge-m3 gives more chunks is a HYPOTHESIS, not measured. Hold-out drops (all chunk level): Araku Valley 8,
-Thanjavur 8, Thekkady 15, Chikmagalur 0; record-level (url/title) 0. D23 dry run: 17 of 26 at chunk level (Kodaikanal fails at
-chunk level only), 18 at raw level; if D33 were applied: 17 places, 1,144 chunks, 0 hidden_gem places. Near-dup threshold removes
+1,387 chunks (estimate 1,943, range 1,619-2,429). Measured: 5.036 characters per proxy token vs the estimate's 4; cleaning removed
+3.2% of characters. Whether bge-m3 gives more chunks is a HYPOTHESIS, not measured. Hold-out drops (all chunk level): Araku Valley 9
+(incl. Borra Caves), Thanjavur 8, Thekkady 15, Chikmagalur 0; record-level (url/title) 0. D23 dry run: 17 of 26 at chunk level (Kodaikanal fails at
+chunk level only), 18 at raw level; if D33 were applied: 17 places, 1,143 chunks, 0 hidden_gem places. Near-dup threshold removes
 nothing (max Jaccard 0.2155). Accepted deviations (D48 vii): 10k-20k chunks unreachable; 3 source types, one blog host; 0
 published chunks in the 18-month window.
 
@@ -46,30 +50,34 @@ published chunks in the 18-month window.
 DECIDED in the review round: Kodaikanal stays a chunk-level D23 fail (D48 i); Thekkadi/Brihadeeswara accepted (D48 ii); Periyar Dam
 dropped and O8 amended (D48 iii); reference date from .env (D48 iv).
 1. Review the build-time cleaning rules (D48 amendment a-e): evidence in `python scripts/phase2_evidence.py rejoin credits`.
-2. Landmark scan (owner list, UNVERIFIED): "Borra Caves" appears once (Visakhapatnam Wikipedia chunk 500b7e3d23575ed7); Borra
-   Caves are in the Araku hills. Reported only, nothing dropped: decide whether landmark names join the hold-out list.
-3. `.env` keys (above). Reddit credentials (D45). O12 sharing (below). Wikimedia Terms of Use section 7 wording: not in the repo
+2. DECIDED: "Borra Caves" is an Araku Valley term (D48 viii); chunk 500b7e3d23575ed7 is dropped. Residual risk accepted: landmarks
+   not on the term list can still leak; the scanned landmark list was the reviewer's and is unverified.
+3. Set `config/freeze.json` reddit_resolved (after D45 is settled) and d33_mode ("sidecar" is the only implemented mode).
+4. `.env` keys (above). Reddit credentials (D45). O12 sharing (below). Wikimedia Terms of Use section 7 wording: not in the repo
    (no fetched copy); needed for the report and app attribution (Phase 8).
 Phase 1 items still open: terms quotes and the wiki robots gap (D36/D43), O12, the pre-squash bundle location, D24 review, outreach
 emails unsent, O13 airport allowlist file (Phase 5), attribution in the report and app (Open-Meteo, OSM, Wikimedia).
 
-## FREEZE PROCEDURE (not executed; run only on the owner's explicit go-ahead)
-Preconditions: (a) Reddit resolved (credentials arrived and the collector ran, or absence accepted; D45); if new raw data arrives,
-rerun `learn`, review its lines, and redo the dry run. (b) TOKENIZER: the real bge-m3 tokenizer.json available locally and
-TOKENIZER_DIR set in .env; processed_manifest.json `counter` must read "tokenizer.json sha256:..."; a freeze with the regex proxy
-is not allowed (D48 2). All chunk counts above are then recomputed. (c) REFERENCE DATE: EVAL_REFERENCE_DATE=2026-10-18 set in
-.env, and corpus_stats `reference_date_source` must read "EVAL_REFERENCE_DATE in .env" (no --reference-date override at the freeze).
-(d) D33: applied ONCE at chunk level (step 2), with the excluded list and the hidden_gem consequence (0 left, D44) in LOG.md.
-(e) Owner decisions on the open items above. (f) check_corpus() passes on the final file (it runs inside --write).
-Steps: 1. `python scripts/process.py --reference-date <EVAL_REFERENCE_DATE> --write` twice; both runs must give the same sha256 in
-data/manifests/processed_manifest.json, whose `counter` must name tokenizer.json. 2. Apply D33 ONCE: exclude the places that fail
-D23 at chunk level from chunks.jsonl (record the list and reasons in LOG.md; raw data and registry entries are kept; the planner must
-not recommend them; no Phase 4 query may target them). This needs a small `--apply-d33` step, which is not written yet; write and test
-it first. 3. Rewrite the stats and manifest for the final file; assert no hold-out hits and no source_type live (the scan command in
-LOG.md). 4. Create `data/processed/FROZEN` holding the sha256 of chunks.jsonl, drops.jsonl and attribution.json; commit the manifest
-and stats. 5. Extend scripts/hooks/guard_frozen.py RULES to `data/processed/*.jsonl` and `data/processed/attribution.json` (today it
-covers chunks*.jsonl only), and add a test that a write to a frozen file is blocked and that `scripts/process.py --write` refuses
-(it already exits when FROZEN exists; there is no test for it yet). 6. Update LOG.md and phase-status, commit, `git tag phase-2-done`.
+## FREEZE PROCEDURE (tooling built and tested in temp directories; NOT executed on the real corpus)
+Preconditions, all checked by `python scripts/freeze.py` (dry run, pass/fail per line):
+(a) REDDIT: resolved (collected, or absence accepted, D45) and recorded by the owner as `reddit_resolved: true` in config/freeze.json.
+If new raw data arrives, rerun `learn`, review its lines, and redo the dry run.
+(b) TOKENIZER: the real bge-m3 tokenizer.json available locally, TOKENIZER_DIR set in .env; processed_manifest.json `counter` must be
+"tokenizer.json sha256:<first 12 hex of that file>"; the proxy is refused (D48 2). All chunk counts above are then recomputed.
+(c) REFERENCE DATE: EVAL_REFERENCE_DATE=2026-10-18 set in .env; the final --write must run WITHOUT --reference-date so corpus_stats
+`reference_date_source` reads "EVAL_REFERENCE_DATE in .env" and equals the .env value.
+(d) D33: owner sets `d33_mode: "sidecar"`; `python scripts/freeze.py --apply-d33` (dry run, prints the excluded places and the effects
+table) then `--apply-d33 --execute` writes data/processed/d33_excluded.json (chunks.jsonl unchanged; retrieval must filter the listed
+places; the planner must not recommend them; no Phase 4 query may target them). Expected today: 9 places, 17 kept, 1,143 retrievable
+chunks, 0 hidden_gem (D44).
+(e) check_corpus() passes and no source_type live (also run inside every --write); outputs match processed_manifest.json.
+Steps: 1. `python scripts/process.py --write` twice (no --reference-date); same sha256 both times. 2. Commit manifest and stats.
+3. `python scripts/freeze.py --apply-d33 --execute`. 4. `python scripts/freeze.py` (dry run) must show 8 PASS. 5. `python
+scripts/freeze.py --execute` writes data/processed/FROZEN (sha256 of chunks.jsonl and attribution.json, chunk count, counter,
+tokenizer directory name, reference date and source, UTC timestamp). After this the hook blocks Edit/Write on every data/processed
+path and process --write refuses. 6. Record the FROZEN content in LOG.md, update phase-status, commit, `git tag phase-2-done`.
+Phase 3 consequence (D48 x): enriched chunks cannot be written into data/processed after the freeze; choose another location in
+Phase 3 through a contracts change.
 
 ## How Valincia gets the chunks (O12 open)
 data/processed is gitignored, and O12 (what may be shared, given CC BY-SA, CC BY-NC-SA and the inditales "all rights reserved" text)
