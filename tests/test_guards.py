@@ -616,3 +616,55 @@ def test_features_within_10_km_of_a_holdout_centre_are_dropped_and_others_kept()
 def test_filter_uses_center_for_ways_and_alternate_name_tags():
     way = {"center": {"lat": 12.0, "lon": 78.0}, "tags": {"name": "Okay", "alt_name": "Kumily"}}
     assert flt().reason(way) == "name (alt_name)"
+
+
+# ==== hold-out text drop (Phase 2, D48; the mutation check relies on these)
+
+
+@pytest.mark.parametrize("text,holdout", [
+    ("We drove on to Thanjavur next morning.", "Thanjavur"),
+    ("the old name TANJORE is still used", "Thanjavur"),
+    ("Thanjai is a short form", "Thanjavur"),
+    ("the Brihadisvara temple", "Thanjavur"),
+    ("Brihadeeswarar temple towers", "Thanjavur"),
+    ("coffee estates of chikmagalur", "Chikmagalur"),
+    ("Chikkamagaluru district", "Chikmagalur"),
+    ("Araku Valley coffee", "Araku Valley"),
+    ("the Araku train", "Araku Valley"),
+    ("Thekkady spice gardens", "Thekkady"),
+    ("buses to Kumily", "Thekkady"),
+    ("a boat in Periyar Tiger Reserve", "Thekkady"),
+    ("Periyar Lake boating", "Thekkady"),
+    ("Periyar Wildlife Sanctuary is near", "Thekkady"),
+    ("the national park, Periyar, has elephants", "Thekkady"),
+    ("Thekkady/Periyar is a day away", "Thekkady"),
+])
+def test_text_naming_a_holdout_matches_with_its_canonical_name(text, holdout):
+    hit = HoldoutFilter().text_match(text)
+    assert hit is not None and hit[0] == holdout
+    assert HoldoutFilter().name_matches(text)
+
+
+@pytest.mark.parametrize("text", [
+    "The Periyar river flows past Aluva.",
+    "Periyar (E. V. Ramasamy), the social reformer, spoke here.",
+    "Periyar University in Salem",
+    "Arakuvalley as one word",  # concatenated token: no match by design (word boundaries, D48)
+    "Karaku Road and Tanjoreans",  # substrings inside other words do not match
+    "Munnar tea estates",
+])
+def test_text_without_a_holdout_mention_does_not_match(text):
+    assert HoldoutFilter().text_match(text) is None
+
+
+def test_registry_aliases_map_to_their_holdout():
+    class E:
+        def __init__(self, name, aliases, holdout):
+            self.name, self.aliases, self.holdout, self.lat, self.lon = name, aliases, holdout, 1, 1
+
+    class R:
+        entries = [E("Thanjavur", ["Tanjore"], True), E("Mysuru", ["Mysore"], False),
+                   E("Chikmagalur", ["Chickmagalur"], True)]
+    f = HoldoutFilter.from_registry(R())
+    assert f.text_match("via Chickmagalur town") == ("Chikmagalur", "Chickmagalur")
+    assert f.text_match("Mysore palace") is None

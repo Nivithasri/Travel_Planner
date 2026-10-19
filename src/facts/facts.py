@@ -105,6 +105,14 @@ DROP_NAMES = (
     "Thanjavur", "Tanjore", "Thanjai", "Chikmagalur", "Chikkamagaluru", "Araku Valley", "Araku",
     "Thekkady", "Kumily", "Brihadisvara", "Brihadeeswarar",
 )
+# term -> canonical hold-out (registry name), so drops can be counted per hold-out (D48)
+HOLDOUT_OF = {
+    "thanjavur": "Thanjavur", "tanjore": "Thanjavur", "thanjai": "Thanjavur",
+    "brihadisvara": "Thanjavur", "brihadeeswarar": "Thanjavur",
+    "chikmagalur": "Chikmagalur", "chikkamagaluru": "Chikmagalur",
+    "araku valley": "Araku Valley", "araku": "Araku Valley",
+    "thekkady": "Thekkady", "kumily": "Thekkady",
+}
 NAME_TAGS = ("name", "name:en", "alt_name", "old_name", "official_name", "short_name")
 _PERIYAR = re.compile(
     r"Periyar\s+(?:Lake|Tiger\s+Reserve|National\s+Park|Wildlife\s+Sanctuary)"
@@ -119,19 +127,31 @@ def _word_re(terms: Iterable[str]) -> re.Pattern:
 
 class HoldoutFilter:
     def __init__(self, centres: Iterable[tuple[float, float]] = (),
-                 extra_terms: Iterable[str] = (), radius_km: float = 10.0):
+                 extra_terms: Iterable[str] | dict[str, str] = (), radius_km: float = 10.0):
         self.centres = list(centres)
         self.radius_km = radius_km
-        self._names = _word_re(list(DROP_NAMES) + list(extra_terms))
+        extra = extra_terms if isinstance(extra_terms, dict) else {t: t for t in extra_terms}
+        self._canon = {**HOLDOUT_OF, **{t.strip().lower(): h for t, h in extra.items()}}
+        self._names = _word_re(list(DROP_NAMES) + list(extra))
 
     @classmethod
     def from_registry(cls, registry, radius_km: float = 10.0) -> HoldoutFilter:
         held = [e for e in registry.entries if e.holdout]
-        terms = [t for e in held for t in [e.name, *e.aliases] if len(t) > 3]
+        terms = {t: e.name for e in held for t in [e.name, *e.aliases] if len(t) > 3}
         return cls([(e.lat, e.lon) for e in held], terms, radius_km)
 
+    def text_match(self, text: str) -> tuple[str, str] | None:
+        """(canonical hold-out, matched term) for the first hold-out mention in `text`, else None.
+        Word boundaries apply: "Arakuvalley" does not match "Araku" (D48)."""
+        m = self._names.search(text)
+        if m:
+            term = m.group(0)
+            return self._canon.get(term.lower(), term), term
+        p = _PERIYAR.search(text)
+        return ("Thekkady", p.group(0)) if p else None
+
     def name_matches(self, text: str) -> bool:
-        return bool(self._names.search(text) or _PERIYAR.search(text))
+        return self.text_match(text) is not None
 
     def near_holdout(self, lat: float, lon: float) -> bool:
         return any(haversine_km(lat, lon, c[0], c[1]) < self.radius_km for c in self.centres)
