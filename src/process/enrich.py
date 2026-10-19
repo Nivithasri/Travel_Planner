@@ -9,6 +9,7 @@ fallback: the exception propagates so the chunk stays unprocessed and a resume r
 from __future__ import annotations
 
 import hashlib
+import json
 import random
 import re
 import time
@@ -18,7 +19,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, field_validator
 
-from src.common.cache import append_jsonl, read_jsonl
+from src.common.cache import append_jsonl, atomic_write_text, read_jsonl
 from src.common.llm import (
     AuthError,
     JSONValidationError,
@@ -38,8 +39,8 @@ from src.facts.facts import HoldoutFilter
 from src.places.places import Registry
 
 PROMPT_VERSION = "enrich-v4"  # D62: v3 (shrunk, D60) + "describe only what this excerpt says"
-# Part of the LLM cache key. max_tokens <= 300 is enforced by the client (D59).
-ENRICH_OPTIONS = {"max_tokens": 300, "reasoning_effort": "low"}
+# Part of the LLM cache key. max_tokens <= 400 is enforced by the client (D59, D64).
+ENRICH_OPTIONS = {"max_tokens": 400, "reasoning_effort": "low"}  # D64: 300 cut off 5% of replies
 CTX_BUDGET_TOKENS = 1500  # prompt + chunk + max_tokens must stay under this (conservative count)
 NOTE_MIN_CHARS, NOTE_MAX_CHARS = 20, 300
 COPY_SHINGLE, COPY_MAX_SHARE = 5, 0.60  # D54: reject when > 60% of note 5-grams occur in the chunk
@@ -385,7 +386,8 @@ def enrich_chunk(client: OllamaClient, model: str, chunk: dict, title: str, regi
     entry = registry.get(chunk["place"])
     rule = rule_based(chunk, title, entry.place_type if entry else None)
     prov: dict = {"prompt_version": PROMPT_VERSION, "rule_aspect": rule["aspect"],
-                  "rule_is_warning": rule["is_warning"], "dropped": {}}
+                  "rule_is_warning": rule["is_warning"], "dropped": {},
+                  "max_tokens": ENRICH_OPTIONS["max_tokens"]}  # records without it used 300
     base = {"chunk_id": chunk["chunk_id"], "prompt_version": PROMPT_VERSION,
             "untrusted_llm_output": True}
     attempts = 0
@@ -527,6 +529,22 @@ def load_checkpoint(path: Path, model: str) -> dict[str, dict]:
                 "Move the file away or restore the matching settings.")
         done[rec["chunk_id"]] = rec
     return done
+
+
+def supersede_records(checkpoint: Path, ids: Iterable[str]) -> int:
+    """Move the records of `ids` out of the checkpoint into `<name>.superseded.jsonl` (append-only,
+    nothing is deleted) so the next run recomputes exactly those chunks. Returns how many moved."""
+    checkpoint, ids = Path(checkpoint), set(ids)
+    if not checkpoint.exists():
+        return 0
+    keep, moved = [], []
+    for rec in read_jsonl(checkpoint):
+        (moved if rec["chunk_id"] in ids else keep).append(rec)
+    if moved:
+        append_jsonl(checkpoint.with_name(checkpoint.stem + ".superseded.jsonl"), moved)
+        text = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in keep)
+        atomic_write_text(checkpoint, text)
+    return len(moved)
 
 
 def load_checkpoint_fields(path: Path) -> dict[str, dict]:

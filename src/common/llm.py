@@ -447,7 +447,7 @@ class OllamaClient:
 
 CHAT_COMPLETIONS_PATH = "/chat/completions"
 MODELS_PATH = "/models"
-MAX_COMPLETION_TOKENS_CAP = 300  # D59: enrichment replies are short; also bounds token spend
+MAX_COMPLETION_TOKENS_CAP = 400  # D59 set 300; D64 raised it: 5% of replies were cut off at 300
 REASONING_EFFORTS = ("low", "medium", "high")
 MAX_RETRY_AFTER_S = 120.0  # a longer Retry-After is a quota stop, not a wait
 _DURATION = re.compile(r"(\d+(?:\.\d+)?)(ms|d|h|m|s)")

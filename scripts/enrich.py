@@ -68,6 +68,7 @@ from src.process.enrich import (  # noqa: E402
     run_batch,
     select_pilot,
     summarize,
+    supersede_records,
 )
 from src.process.process import check_enriched_matches_frozen, load_counter  # noqa: E402
 
@@ -268,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--eligible-only", action="store_true", help="only the 17 D33-eligible places")
     ap.add_argument("--include-blog", action="store_true",
                     help="also send blog chunks (only after the data-use terms are confirmed)")
+    ap.add_argument("--redo", nargs="+", metavar="CHUNK_ID",
+                    help="recompute these chunks (their records move to *.superseded.jsonl)")
     ap.add_argument("--max-failures", type=int, default=5,
                     help="stop after this many consecutive transport failures (default 5)")
     args = ap.parse_args(argv)
@@ -335,6 +338,10 @@ def main(argv: list[str] | None = None) -> int:
         return {k: client.usage.get(k, 0) for k in ("prompt", "completion", "reasoning", "total")}
 
     ENRICHED.mkdir(parents=True, exist_ok=True)
+    if args.redo:
+        moved = supersede_records(ckpt, args.redo)
+        print(f"--redo: {moved} of {len(args.redo)} checkpoint records moved to "
+              f"{ckpt.stem}.superseded.jsonl; they are recomputed now")
     resume = "re-run the same command to resume"
     try:
         stats = run_batch(ids, by_id, process, ckpt, model,

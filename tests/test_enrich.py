@@ -249,7 +249,7 @@ def test_llm_success_returns_the_model_fields(tmp_path):
     assert prov["prompt_version"] == PROMPT_VERSION
     assert prov["rule_aspect"] in {a.value for a in enrich.Aspect}
     p = post.calls[0]
-    assert p["options"]["max_tokens"] == 300 and p["options"]["temperature"] == 0
+    assert p["options"]["max_tokens"] == 400 and p["options"]["temperature"] == 0
     assert "seed" in p["options"] and p["model"] == MODEL
 
 
@@ -836,3 +836,33 @@ def test_ungrounded_check_disabled_would_let_the_hampi_style_note_through(tmp_pa
     monkeypatch.undo()
     (_, prov2), _ = run(tmp_path / "again", {**GOOD, "context_note": note})
     assert prov2["reason"] == "ungrounded"
+
+
+# ---- max_tokens 400 and --redo (D64) -----------------------------------------------------
+
+def test_the_reply_cap_is_400_and_each_new_record_says_which_cap_it_used(tmp_path):
+    from src.common.llm import MAX_COMPLETION_TOKENS_CAP
+
+    assert enrich.ENRICH_OPTIONS["max_tokens"] == 400 == MAX_COMPLETION_TOKENS_CAP
+    (_, prov), _ = run(tmp_path, GOOD)
+    assert prov["max_tokens"] == 400
+
+
+def test_supersede_moves_only_the_named_records_and_keeps_them(tmp_path):
+    ck = tmp_path / "ck.jsonl"
+    chunks = make_chunks(4)
+    enrich.run_batch(list(chunks), chunks, ok_process, ck, MODEL, log=lambda m: None)
+    moved = enrich.supersede_records(ck, ["c1", "c3", "nope"])
+    assert moved == 2
+    assert [r["chunk_id"] for r in enrich.read_jsonl(ck)] == ["c0", "c2"]
+    old = ck.with_name("ck.superseded.jsonl")
+    assert [r["chunk_id"] for r in enrich.read_jsonl(old)] == ["c1", "c3"]  # nothing is lost
+    seen = []
+
+    def healthy(chunk):
+        seen.append(chunk["chunk_id"])
+        return ok_process(chunk)
+
+    stats = enrich.run_batch(list(chunks), chunks, healthy, ck, MODEL, log=lambda m: None)
+    assert seen == ["c1", "c3"] and stats["processed"] == 2  # exactly those are recomputed
+    assert enrich.supersede_records(tmp_path / "missing.jsonl", ["c1"]) == 0

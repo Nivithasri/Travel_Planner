@@ -658,3 +658,12 @@ D63 (2026-10-20) The independent hold-out scan in enrich.py no longer matches st
    Thanjavur, Tanjore, Tanjavur, Thekkady, Thekkadi, Thekkadee, Araku, Araku Valley, Borra Caves, Kumily, Chikmagalur, Chikkamagaluru, Chickmagalur, Brihadeeswara, Brihadisvara and Mullaperiyar
    are still dropped. Mutation M16 (stems inside words again) fails 6 tests. A spelling that puts a stem in the middle of a word ("xThekkady") is no longer caught by this second scan; the first filter
    catches the names it knows. Status: accepted.
+D64 (2026-10-20) max_tokens 300 -> 400 (owner rule: raise it if cut-off replies or repair turns exceed 2%). Evidence, enrich-v4 pilot of 79 chunks (`python scripts/enrich.py --pilot`, LOG 2026-10-20): 84 POSTs for
+   79 chunks; 4 chunks (5.1%) needed more than one call (3 with 2 calls, 1 with 3), 5 of 84 calls (6.0%) were rejected by the API, and every rejection's `failed_generation` text read "max completion
+   tokens reached before generating a valid document", i.e. the reply (reasoning tokens included) hit the 300-token cap in JSON mode. No successful reply reached 295 (largest 291), so the cap
+   cuts off the long tail only; the v3 pilot had the same failure once (1 in 80 calls, D61), the grounding rule of v4 lengthens the reasoning. Change: ENRICH_OPTIONS max_tokens 400 and the client
+   guard MAX_COMPLETION_TOKENS_CAP 400 (D59 said 300). The worst-case prompt budget stays under 1,500 estimated tokens (990 prompt + 400 reply = 1,390). Cost: a call may use up to 100 more tokens
+   than before; the measured mean is 805 tokens a chunk and rises by the share of long replies, so the projection stays about 8 days. The options are part of the cache key, so calls made with 300 are
+   not reused. Only the affected chunks are recomputed (`--redo`, which moves their records to checkpoint_*.superseded.jsonl, nothing deleted): c2589f18a98effcb, 9847299a648d79e9,
+   37c55b7e0d72a447, 13ad42890b52af0e; the other 75 pilot records stay as produced under 300. Records now carry prov.max_tokens; a record without it was made under 300. The 75 records
+   are not recomputed because a reply that finished under 300 was not truncated; whether it would be word-for-word the same under 400 is not claimed. Status: accepted.

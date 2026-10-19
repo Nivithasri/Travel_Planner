@@ -139,9 +139,9 @@ def test_reasoning_effort_is_sent_only_to_reasoning_models_and_only_valid_values
         client.chat(MESSAGES, MODEL, options={"max_tokens": 300, "reasoning_effort": "extreme"})
 
 
-@pytest.mark.parametrize("opts", [{}, {"max_tokens": 301}, {"max_tokens": 0},
+@pytest.mark.parametrize("opts", [{}, {"max_tokens": 401}, {"max_tokens": 0},
                                   {"max_tokens": "300"}, {"max_tokens": True}])
-def test_max_tokens_is_required_and_capped_at_300(tmp_path, opts):
+def test_max_tokens_is_required_and_capped_at_400(tmp_path, opts):
     client, post, _ = make(tmp_path, [completion("hi")])
     with pytest.raises(ValueError, match="max_tokens"):
         client.chat(MESSAGES, MODEL, options=opts)
@@ -683,7 +683,7 @@ def test_prompt_plus_longest_chunk_plus_max_tokens_stays_under_1500_tokens():
     longest = {**enrich_chunk_stub(), "text": "w" * 1600}  # longer than any frozen chunk (1,507)
     msgs = enrich.build_messages(longest, "T" * 120)
     assert enrich.estimate_tokens(msgs) + enrich.ENRICH_OPTIONS["max_tokens"] < 1500
-    assert enrich.ENRICH_OPTIONS["max_tokens"] <= 300
+    assert enrich.ENRICH_OPTIONS["max_tokens"] <= 400
 
 
 def enrich_chunk_stub():
