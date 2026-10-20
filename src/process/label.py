@@ -54,6 +54,35 @@ def select_gold(chunks: list[dict], exclude_ids: Iterable[str], short_ids: Itera
     return sorted(picked, key=lambda cid: _key(seed, cid))
 
 
+def select_gold_unseen(chunks: list[dict], candidate_ids: Iterable[str],
+                       exclude_ids: Iterable[str], seed: int, n: int = 30) -> list[str]:
+    """Gold sample of chunks the prompt work never touched (D68 fix round): drawn from
+    `candidate_ids` (model-written, non-blog, eligible-place chunks) minus `exclude_ids` (every
+    chunk that was in a pilot or an earlier gold sheet). Seeded and stratified: places are visited
+    round-robin in a seeded order and each pick takes the source type that has the fewest picks so
+    far, so all eligible places and both source types are covered as evenly as the pool allows.
+    Returned in a seeded mixed order."""
+    cand, banned = set(candidate_ids), set(exclude_ids)
+    pool: dict[str, dict[str, list[str]]] = {}
+    for c in sorted(chunks, key=lambda c: _key(seed, c["chunk_id"])):
+        if c["chunk_id"] in cand and c["chunk_id"] not in banned:
+            pool.setdefault(c["place"], {}).setdefault(c["source_type"], []).append(c["chunk_id"])
+    places = sorted(pool, key=lambda p: _key(seed, p))
+    by_type: dict[str, int] = {}
+    picked: list[str] = []
+    while len(picked) < n and any(v for p in pool.values() for v in p.values()):
+        for place in places:
+            if len(picked) >= n:
+                break
+            options = [t for t, ids in pool[place].items() if ids]
+            if not options:
+                continue
+            t = min(options, key=lambda t: (by_type.get(t, 0), _key(seed, t)))
+            picked.append(pool[place][t].pop(0))
+            by_type[t] = by_type.get(t, 0) + 1
+    return sorted(picked, key=lambda cid: _key(seed, cid))
+
+
 def gold_rows(chunks: list[dict], ids: list[str]) -> list[dict]:
     by_id = {c["chunk_id"]: c for c in chunks}
     return [{"chunk_id": i, "place": by_id[i]["place"], "source_type": by_id[i]["source_type"],
@@ -131,7 +160,7 @@ def _system(pairs_a: list[tuple[str, str]], pairs_w: list[tuple[bool, bool]]) ->
     }
 
 
-def score(gold: list[dict], llm_by_id: dict[str, dict]) -> dict:
+def score(gold: list[dict], llm_by_id: dict[str, dict], seen: set[str] | None = None) -> dict:
     """Compare LLM labels (`llm_by_id`: chunk_id -> fields) and the rule-based labels with `gold`.
     Chunks the LLM has not labelled yet are left out of the LLM score only."""
     have = [g for g in gold if g["chunk_id"] in llm_by_id]
@@ -139,7 +168,13 @@ def score(gold: list[dict], llm_by_id: dict[str, dict]) -> dict:
                   [(g["is_warning"], llm_by_id[g["chunk_id"]]["is_warning"]) for g in have])
     rule = _system([(g["aspect"], rule_aspect(g["text"]).value) for g in gold],
                    [(g["is_warning"], rule_is_warning(g["text"])) for g in gold])
-    return {"labelled": len(gold), "llm_missing": len(gold) - len(have), "llm": llm, "rule": rule}
+    res = {"labelled": len(gold), "llm_missing": len(gold) - len(have), "llm": llm, "rule": rule}
+    if seen is not None:  # chunks the prompt was developed on score optimistically: split them off
+        res["split"] = {
+            name: score([g for g in gold if (g["chunk_id"] in seen) == (name == "seen")],
+                        llm_by_id)
+            for name in ("seen", "unseen")}
+    return res
 
 
 def format_score(res: dict) -> str:
@@ -165,4 +200,13 @@ def format_score(res: dict) -> str:
         lines += ["aspect confusion (rows = gold):", *table(s["aspect_confusion"], ASPECTS),
                   "is_warning confusion (rows = gold):",
                   *table(s["is_warning_confusion"], ["false", "true"])]
+    for name, part in (res.get("split") or {}).items():
+        lines += ["", f"-- {name} in the prompt work: {part['labelled']} rows; LLM aspect accuracy "
+                  f"{pct(part['llm']['aspect_accuracy'])} (n={part['llm']['n']}), is_warning "
+                  f"{pct(part['llm']['is_warning_accuracy'])}; rule-based aspect "
+                  f"{pct(part['rule']['aspect_accuracy'])}, is_warning "
+                  f"{pct(part['rule']['is_warning_accuracy'])}"]
+        if name == "seen" and part["labelled"]:
+            lines.append("   (seen = the chunk was in a pilot the prompt was read against; "
+                         "optimistic for the prompt)")
     return "\n".join(lines)

@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.common.cache import DiskCache  # noqa: E402
 from src.common.schemas import REPO_ROOT, load_embed_local_dir  # noqa: E402
 from src.retrieval.build_index import load_encoder  # noqa: E402
-from src.retrieval.search import TABLES, Index, model_id_for  # noqa: E402
+from src.retrieval.search import TABLES, Index, model_id_from_manifest  # noqa: E402
 
 
 def format_table(name: str, rows: list[dict]) -> str:
@@ -31,7 +31,16 @@ def format_table(name: str, rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def utf8_output() -> None:
+    """Chunk text holds characters (a phone sign, Tamil letters) that the default Windows console
+    encoding cannot print; replace what cannot be shown instead of crashing mid-table."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    utf8_output()
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("query")
     ap.add_argument("--k", type=int, default=10)
@@ -49,7 +58,8 @@ def main(argv: list[str] | None = None) -> int:
         print("EMBED_LOCAL_DIR is not set in .env and --model-dir was not given")
         return 2
     index = Index(args.index_dir, args.enriched, encode=load_encoder(Path(d)),
-                  cache=DiskCache(REPO_ROOT / ".cache"), model_id=model_id_for(Path(d)))
+                  cache=DiskCache(REPO_ROOT / ".cache"),
+                  model_id=model_id_from_manifest(args.index_dir))
     print(f"query: {args.query!r}  (top {args.k})")
     for name, _, _ in TABLES:
         print(format_table(name, index.table(name, args.query, args.k)))

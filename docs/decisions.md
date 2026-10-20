@@ -501,7 +501,7 @@ D48 (amendment 2026-10-19, freeze executed)
    tokenizer.json sha256:21106b6d7dab (full sha256 21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08, verified by the owner
    against Hugging Face), tokenizers 0.22.2, reference date 2026-10-18 from .env. Files in data/processed never change again (CLAUDE.md
    rule 2); the hook and process.py enforce it. Tagged phase-2-done (local). Status: accepted.
-D49 (2026-10-19) O12, PROCESSING ONLY (owner decision). All 1,696 chunks, and the enriched output derived from them, may be sent to the
+D49 (2026-10-19; Kaggle part SUPERSEDED by D59: no Kaggle is used; the O12 restriction on sharing with the partner still stands) O12, PROCESSING ONLY (owner decision). All 1,696 chunks, and the enriched output derived from them, may be sent to the
    owner's PRIVATE Kaggle notebook and PRIVATE Kaggle dataset. Nothing enriched or processed is shared with the partner or made public
    until the owner resolves O12. The notebook and dataset must stay private. data/enriched/ and index/ stay gitignored; only hash
    manifests (no text) are committed. smoke_ollama.py: the owner ran it against the Kaggle/ngrok Ollama on 2026-10-19, 6/6 PASS
@@ -583,7 +583,7 @@ D59 (2026-10-20) Enrichment moves from Ollama to a hosted OpenAI-compatible LLM 
    chunk, GET /models for the listing; the same DiskCache, retry budget and chat_json repair loop as the Ollama client. Keys in .env:
    LLM_API_BASE_URL (LLM_API_URL accepted as an alias), LLM_API_KEY, GENERATOR_MODEL, JUDGE_MODEL (must differ; the judge is unused in Phase 3),
    LLM_RPM, LLM_TPM, LLM_RPD, LLM_TPD (ANY unset means refuse to run). Models: GENERATOR_MODEL openai/gpt-oss-20b, JUDGE_MODEL
-   openai/gpt-oss-120b. Request shape: temperature 0, seed, max_tokens at most 300 (enforced), reasoning_effort low sent only to a gpt-oss model
+   openai/gpt-oss-120b. Request shape: temperature 0, seed, max_tokens at most 300 (enforced; superseded by D64: 400), reasoning_effort low sent only to a gpt-oss model
    and only with a valid value; reasoning text is never read, cached or stored (only message.content). Rate limiting (never relies on 429s,
    sequential only): a 60 s sliding window for RPM and TPM and persisted daily counters (data/enriched/quota_state.json, UTC date) for RPD and TPD;
    effective limits are 80% of RPM, TPM and RPD and 85% of TPD; a call is reserved with a conservative estimate (3 characters per token plus
@@ -681,9 +681,18 @@ D66 (2026-10-20) A 429 is waited out up to 290 s, and its reason is kept. Eviden
    stop, as for a daily reset); the server's wait is no longer counted against the retry budget (otherwise the call after a 275 s wait would get a squeezed read timeout); the scrubbed first 300
    characters of every 429 body are kept in the message, so the next stop names its limit. Not claimed: why the limit was reached at 75k tokens (a limit shared by the two accounts, a rolling
    window, or another use of the same key are all possible; none was checked). Status: accepted.
-D67 (2026-10-20) The full run was finished with several API keys (owner's instruction; follows D65). The owner supplied the keys (per-key spend in data/enriched/quota_state.json under 12-character hashes; five keys were used,
-   two of them accounts of other people, which the owner described as theirs to use). Every chunk of the corpus was written by the same model (openai/gpt-oss-20b) with the same prompt (enrich-v4) and options, so
+D67 (2026-10-20) The full run was finished with several API keys (owner's instruction; follows D65). Owner statement: the extra keys belong to friends who approved their use and who contribute to the project (per-key spend in
+   data/enriched/quota_state.json under 12-character hashes; five keys were used). Every chunk of the corpus was written by the same model (openai/gpt-oss-20b) with the same prompt (enrich-v4) and options, so
    the key does not change the result and nothing records which key wrote which chunk. Observed provider behaviour, recorded as measured: the free tier's "tokens per day" limit (200,000 per model and organisation) behaves
    as a sliding window; a key that sits at its limit still gets a few chunks per ten minutes, and a fresh key gets a burst of 40 to 70 chunks per ten minutes until its window fills. Modes added for this: `--tpd-share` (up to 1.0),
    `--trust-provider` (skip the local daily count; the API's 429 decides), `--max-wait` (wait out a 429 of up to 1,800 s). Outcome: 1,100 of 1,100 eligible chunks, 1,062 model-written and 38 fallbacks, 919,711 tokens.
    Caveats unchanged from D65, not checked by the assistant: the provider's terms on using several accounts, and the data-use agreement of each account holder; O12 (sharing) is untouched. Status: accepted by the owner's instruction.
+D68 (2026-10-20) Phase 4 scope over the enriched corpus (owner decision, from the Phase 3 review). Pooling and judging cover ALL 1,696 chunks, not only the 1,100 enriched by the model:
+   the 288 chunks of the 9 D33-excluded places and the 283 blog chunks have rule-based fields (provenance rule_only) and are retrievable. No dev or test query may name any of the 9
+   excluded places (Alappuzha, Auroville, Bhadrachalam, Kodaikanal, Munnar, Rameswaram, Srisailam, Varkala, Wayanad). Every evaluation table reports the share of the top 10 that comes from
+   excluded places, so a gain cannot hide in chunks that no query is meant to target. Status: accepted.
+D69 (2026-10-20) Phase 6 ablation design for enrichment (owner decision, from the Phase 3 review). (1) Plain versus contextual is reported SEPARATELY for place-named queries and place-free
+   queries, because a note that repeats the place name helps only the first kind. (2) A control variant prepends only "about <place>, <state>" to the plain text, so the effect of the
+   model-written note can be separated from the effect of the place name alone. (3) Results are stratified by provenance: model-written rows only versus all rows. (4) aspect and place_type
+   filters and freshness decay (which use the aspect) must not be applied to rule_only or fallback rows without flagging it in the table. (5) `mentioned_places` (D50) is not acknowledged by the
+   partner and must not be used as a ranking or filter signal until she acknowledges it. Status: accepted.

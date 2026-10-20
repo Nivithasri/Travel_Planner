@@ -26,7 +26,7 @@ Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source
 
 ## Phase 3 state (2026-10-20: ENRICHMENT AND INDEXES BUILT; waiting for the owner's confirmation before the phase-3-done tag)
 What was done (details and commands in LOG.md; decisions D49 to D67): all 1,100 chunks of the 17 D33-eligible places (blog off) were enriched with prompt enrich-v4 on openai/gpt-oss-20b
-(hosted free tier, D59): 1,062 model-written, 38 fallbacks (37 `ungrounded`, 1 `note_long`), JSON-valid 100%, leak hits 0, 836 tokens a chunk (919,711 in all, 1,180 POSTs). The
+(hosted free tier, D59): 1,062 model-written, 38 fallbacks (37 `ungrounded`, 1 `note_long`). "Passed its gate" means JSON validity 100%, fallback rate, leak hits 0 and exact call reconciliation; it says nothing about retrieval quality, which is measured in Phase 4/6. Tokens: 836 tokens a chunk (919,711 in all, 1,180 POSTs). The
 assembled corpus is data/enriched/chunks.jsonl (1,696 rows, sha256 e4885c84031e871a2765b706dbdd9f4c0780c1b6f8ee1fb98479e9be18185135; gitignored) with data/enriched/provenance.jsonl
 (1,087 llm incl. 25 pilot chunks of excluded places, 37 + 1 fallback, 288 rule_only:excluded_place, 283 rule_only:blog_not_sent). `check_enriched_matches_frozen` passes. The indexes are in
 index/ (gitignored): bm25_contextual, bm25_plain, dense_plain.npy, dense_contextual.npy (1,696 x 1,024 float32, normalised), ids.json, index_manifest.json; `python scripts/build_index.py
@@ -34,13 +34,13 @@ index/ (gitignored): bm25_contextual, bm25_plain, dense_plain.npy, dense_context
 Build time on CPU: dense_plain 2,171 s (0.781 rows/s), dense_contextual 2,344 s (0.724 rows/s), BM25 under 1 s each.
 1. OWNER ACTIONS. (a) Confirm that Phase 3 can be tagged (`git tag phase-3-done` is NOT done). (b) Add `EMBED_LOCAL_DIR=models/bge-m3-full` to .env (still missing; until then
    `scripts/query_index.py` and `build_index.py` need `--model-dir models/bge-m3-full`). (c) Remove the duplicate old GENERATOR_MODEL/JUDGE_MODEL lines in .env. (d) Fill
-   data/enriched/gold_sample.csv (30 chunks, labels empty) and run `python scripts/label_sample.py --score` after `python scripts/enrich.py --gold`; it needs an API key and the permission rule,
-   and with blog off 20 of the 30 chunks are scored. (e) The provider's terms and Valincia's/other accounts' use are the owner's call (D49, D65, D67); O12 still blocks sharing.
+   data/enriched/gold_sample.csv (30 chunks, labels empty; regenerated in the fix round from model-written, non-blog chunks that were never in a pilot or the old sheet, which is kept as
+   gold_sample_old.csv) and run `python scripts/label_sample.py --score`; it needs no API call (labels come from the checkpoint). (e) The provider's terms and Valincia's/other accounts' use are the owner's call (D49, D65, D67); O12 still blocks sharing.
 2. USE OF THE OUTPUT. Rows with provenance `rule_only` (571) and `fallback` (38) carry RULE-BASED fields (aspect, place_type, season_tags, is_warning) and a template context note, not model
    output; Phase 6 must read provenance.jsonl before trusting those fields (aspect "other" is 44% of the model-written rows; the rule-based aspect agrees with the model on 52.6% of the 1,062 model-written eligible chunks, is_warning on 90.0%; neither is a gold label). The
    25 pilot chunks of excluded places are model-written. The 9 D33-excluded places stay out of every dev/test query (D33, D39).
-3. Query: `python scripts/query_index.py "<query>" --model-dir models/bge-m3-full` prints four ranked tables (bm25_contextual, bm25_plain, dense_plain, dense_contextual; ties by chunk_id).
-   Three hand-run queries worked; that is a smoke test, not an evaluation (Phase 4/6).
+3. Query (the cache key of query vectors now includes the weight-file hashes from the index manifest): `python scripts/query_index.py "<query>" --model-dir models/bge-m3-full` prints four ranked tables (bm25_contextual, bm25_plain, dense_plain, dense_contextual; ties by chunk_id).
+   Three hand-run queries RAN (all four tables printed); that shows the code runs, not that retrieval is good. It is a smoke test, not an evaluation (Phase 4/6).
 4. Frozen data: data/processed is read-only; chunks.jsonl is still ee11755106409fd0d6ae8656453fc1ec70560593a9c25348572f01ec804a0003. Enriched chunks and indexes are gitignored (O12).
 5. Never print or log the URL, key or headers: both LLM clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
 6. Not done in Phase 3: the early sample file for Valincia (blocked by O12), the gold score, the final tag.
@@ -82,11 +82,11 @@ PROGRESS LOG (append one line per day; the numbers come from `python scripts/enr
 - Phase 1 layout unchanged (src/common, src/collect, src/places, src/facts; scripts/collect.py, coverage_report.py, smoke_ollama.py).
 - Phase 3 code: `src/process/enrich.py` (prompt enrich-v3, validation, leak/copy scans, rule fallback, pilot selection, resumable `run_batch`, scope
   and labelled assembly, report and projection), `src/process/label.py` + `scripts/label_sample.py` (gold sheet and scoring), `scripts/enrich.py`,
-  `scripts/smoke_llm.py`, `scripts/compare_runs.py`, `scripts/mutation_checks.py` (14 mutations), `OpenAICompatClient`/`RateLimiter`/`scrub_text` in
+  `scripts/smoke_llm.py`, `scripts/compare_runs.py`, `scripts/mutation_checks.py` (19 mutations), `OpenAICompatClient`/`RateLimiter`/`scrub_text` in
   `src/common/llm.py`, `load_llm_settings` in `src/common/schemas.py`.
 - Index code: `src/retrieval/build_index.py` (BM25 contextual/plain with bm25s, dense plain/contextual with local sentence-transformers, resumable, manifest, verify), `src/retrieval/search.py`
   (exact numpy cosine, ties by chunk_id), `scripts/build_index.py`, `scripts/query_index.py` (four ranked tables).
-- Tests: 656 passed, 1 skipped (tests/test_process.py, test_enrich.py, test_llm_api.py, test_index.py, test_label_sample.py, test_hooks_scripts.py, ...); `scripts/mutation_checks.py` runs 16 mutations.
+- Tests: 670 passed (tests/test_process.py, test_enrich.py, test_llm_api.py, test_index.py, test_label_sample.py, test_hooks_scripts.py, ...); `scripts/mutation_checks.py` runs 19 mutations (M1-M19; M17-M19 cover the index code: contextual text built from plain text, tie order).
 
 ## How to run
 - `pip install -e .[dev]`; Python 3.10.11 (D9); `python -m pytest -q`, `python -m ruff check .` (not on PATH).

@@ -738,13 +738,18 @@ def test_assemble_labelled_gives_unprocessed_out_of_scope_chunks_a_labelled_rule
     titles = {c["url"]: "A title" for c in chunks}
     sent = [c for c in chunks if c["place"] != "Munnar" and c["source_type"] != "blog"]
     results = {c["chunk_id"]: {"fields": dict(GOOD),
-                               "prov": {"source": "llm", "reason": None}} for c in sent}
+                               "prov": {"source": "llm", "reason": None, "model": "m-1",
+                                        "prompt_version": "enrich-v4"}} for c in sent}
     kw = {"excluded_places": ["Munnar"], "eligible_only": True, "include_blog": False}
     rows, prov = enrich.assemble_labelled(chunks, results, titles, REGISTRY, **kw)
     assert [r["chunk_id"] for r in rows] == [c["chunk_id"] for c in chunks]  # frozen order
     why = Counter((p["source"], p["reason"]) for p in prov)
     assert why == Counter({("llm", None): 12, ("rule_only", "excluded_place"): 9,
                            ("rule_only", "blog_not_sent"): 6})
+    for p in prov:  # every row says which model and prompt wrote it, or that none did
+        assert set(p) == {"chunk_id", "source", "reason", "model", "prompt_version"}
+        assert (p["model"], p["prompt_version"]) == (
+            ("m-1", "enrich-v4") if p["source"] == "llm" else (None, None))
     munnar = next(r for r in rows if r["place"] == "Munnar")
     assert munnar["context_note"].startswith(("Travel blog post", "Encyclopedia article",
                                               "Wikivoyage guide"))  # the template note

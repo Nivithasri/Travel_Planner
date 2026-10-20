@@ -40,6 +40,19 @@ live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type
 - Writes are atomic (temp file + rename); resumable; a cache hit never calls the network.
 - Cached: downloads, LLM calls (including expanded queries for eval), embeddings, fallback searches.
 
+## Provenance sidecar (Phase 3; data/enriched/provenance.jsonl)
+One JSON object per chunk (1,696 lines), joined to data/enriched/chunks.jsonl by `chunk_id`. The chunk schema is closed, so how a chunk's fields were produced lives here.
+| field | type | notes |
+|---|---|---|
+| chunk_id | str | same ids as the enriched file |
+| source | enum | llm (model-written), fallback (model output rejected; rule-based tags + template note), rule_only (never sent to the model) |
+| reason | str or null | fallback: ungrounded, note_long, ...; rule_only: excluded_place (D33), blog_not_sent (D60) |
+| model | str or null | generator model id for llm and fallback rows; null for rule_only |
+| prompt_version | str or null | e.g. enrich-v4; null for rule_only |
+Counts at the end of Phase 3: llm 1,087, fallback 38, rule_only 571 (288 excluded_place, 283 blog_not_sent). The file is gitignored (O12) and must be shared with the partner together with the
+enriched chunks once O12 is resolved; its sha256 is in data/manifests/enriched_manifest.json. `mentioned_places` (D50) is NOT acknowledged by the partner and must not be used as a ranking or filter
+signal until she acknowledges it. Retrieval must not apply aspect or place_type filters to rule_only or fallback rows without flagging it (D69).
+
 ## Locations
 data/raw/<source>/, data/processed/chunks.jsonl, data/enriched/chunks.jsonl, index/{bm25_contextual,bm25_plain}/, index/{dense_plain,dense_contextual}.npy + index/ids.json (D51, D52, D55),
 index/travel_matrix.json, index/place_cards.json, eval/, kaggle/.

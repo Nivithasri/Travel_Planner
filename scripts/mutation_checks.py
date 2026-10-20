@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ["tests/test_enrich.py", "tests/test_process.py", "tests/test_facts.py",
-         "tests/test_llm_api.py"]
+         "tests/test_llm_api.py", "tests/test_index.py"]
 
 MUTATIONS = [
     ("M1 leak scan disabled (leak_scan returns None)", "src/process/enrich.py",
@@ -72,6 +72,16 @@ MUTATIONS = [
     ("M14 blog chunks sent although --include-blog is off", "src/process/enrich.py",
      '    if chunk["source_type"] == "blog" and not include_blog:\n',
      '    if False:\n'),
+    ("M17 contextual BM25 built from the plain text", "src/retrieval/build_index.py",
+     r"""if kind == "contextual" else chunk["text"]""",
+     r"""if False else chunk["text"]"""),
+    ("M18 contextual dense text built from the plain text", "src/retrieval/build_index.py",
+     """    if kind == "contextual":\n        return f"{chunk['context_note']}{DENSE""",
+     """    if False:\n        return f"{chunk['context_note']}{DENSE"""),
+    ("M19 tie order broken (equal scores ranked by reverse position, not chunk_id)",
+     "src/retrieval/search.py",
+     "key=lambda i: (-float(scores[i]), ids[i]))",
+     "key=lambda i: (-float(scores[i]), -i))"),
 ]
 
 

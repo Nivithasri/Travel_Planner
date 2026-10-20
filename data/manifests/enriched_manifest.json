@@ -25,11 +25,11 @@
   "reasoning_effort": "low"
  },
  "prompt_version": "enrich-v4",
- "provenance_sha256": "cda10137e4c4df1d0e04a4976d47e505825b5b135db0531c2ed7670b08ad5649",
+ "provenance_sha256": "7cea884442c34fe93dac853248663b7f173f9f9f9bbf6d12e24775619778ac12",
  "scope": {
   "eligible_only": true,
   "include_blog": false
  },
  "sha256": "e4885c84031e871a2765b706dbdd9f4c0780c1b6f8ee1fb98479e9be18185135",
- "written_utc": "2026-10-20T07:46:36Z"
+ "written_utc": "2026-10-20T09:47:50Z"
 }

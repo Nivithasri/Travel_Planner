@@ -832,7 +832,8 @@ def assemble_labelled(frozen: list[dict], results: dict[str, dict], titles: dict
         cid = c["chunk_id"]
         if cid in results:
             fields, p = results[cid]["fields"], results[cid]["prov"]
-            prov.append({"chunk_id": cid, "source": p["source"], "reason": p["reason"]})
+            prov.append({"chunk_id": cid, "source": p["source"], "reason": p["reason"],
+                         "model": p.get("model"), "prompt_version": p.get("prompt_version")})
         else:
             why = skip_reason(c, excluded_places=excluded_places, eligible_only=eligible_only,
                               include_blog=include_blog)
@@ -840,7 +841,8 @@ def assemble_labelled(frozen: list[dict], results: dict[str, dict], titles: dict
                 raise KeyError(f"chunk {cid} is in scope but was not processed")
             entry = registry.get(c["place"])
             fields = rule_based(c, titles[c["url"]], entry.place_type if entry else None)
-            prov.append({"chunk_id": cid, "source": "rule_only", "reason": why})
+            prov.append({"chunk_id": cid, "source": "rule_only", "reason": why, "model": None,
+                         "prompt_version": None})
         row = {**c, **{k: fields[k] for k in ENRICHED_FIELDS}}
         EnrichedChunk(**row)
         rows.append(row)

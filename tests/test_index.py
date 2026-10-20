@@ -331,7 +331,6 @@ def test_query_script_prints_four_tables_in_the_agreed_order(tmp_path, capsys, m
     script = load_script("query_index")
     enriched, out = build(tmp_path)
     monkeypatch.setattr(script, "load_encoder", lambda d: fake_encode)
-    monkeypatch.setattr(script, "model_id_for", lambda d: "m")
     code = script.main(["tea plantations", "--index-dir", str(out), "--enriched", str(enriched),
                         "--model-dir", str(tmp_path), "--k", "3"])
     text = capsys.readouterr().out
@@ -341,3 +340,60 @@ def test_query_script_prints_four_tables_in_the_agreed_order(tmp_path, capsys, m
     assert "c02" in text and "Munnar" in text and "wikivoyage" in text
     assert text.count("\n 1  ") == 4  # a first-ranked row in every table
     assert script.main(["x", "--index-dir", str(tmp_path / "empty")]) == 2
+
+
+# ---- fix round: UTF-8 output and the query-vector cache key ---------------------------------
+
+def test_query_script_prints_characters_the_console_cannot_encode(tmp_path, monkeypatch):
+    import io
+
+    script = load_script("query_index")
+    chunks = [make_chunk("c01", "Hampi", "Contact ☏ +91 80 2558 3262 for the ferry timings.",
+                         "Wikivoyage guide about Hampi.", "wikivoyage"),
+              make_chunk("c02", "Munnar", "Tea plantations above the town.", "Munnar tea.")]
+    enriched, out = build(tmp_path, chunks)
+    monkeypatch.setattr(script, "load_encoder", lambda d: fake_encode)
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252", errors="strict", write_through=True)
+    monkeypatch.setattr("sys.stdout", console)  # what a default Windows console gives
+    with pytest.raises(UnicodeEncodeError):
+        print("☏")  # proves the stream cannot print the character on its own
+    code = script.main(["ferry timings", "--index-dir", str(out), "--enriched", str(enriched),
+                        "--model-dir", str(tmp_path), "--k", "2"])
+    console.flush()
+    text = raw.getvalue().decode("utf-8")
+    assert code == 0 and "Contact ☏ +91" in text
+    assert [ln for ln in text.splitlines() if ln.startswith("== ")] == [
+        "== bm25_contextual", "== bm25_plain", "== dense_plain", "== dense_contextual"]
+
+
+def test_the_query_cache_namespace_depends_on_the_recorded_weight_hashes(tmp_path):
+    from src.retrieval.search import model_id_from_manifest
+
+    def manifest(files):
+        d = tmp_path / ("m" + str(abs(hash(json.dumps(files)))))
+        d.mkdir()
+        (d / bi.MANIFEST_FILE).write_text(json.dumps({"model_files_sha256": files}),
+                                          encoding="utf-8")
+        return d
+
+    a = model_id_from_manifest(manifest({"pytorch_model.bin": "aaa", "tokenizer.json": "t"}))
+    same = model_id_from_manifest(manifest({"tokenizer.json": "t", "pytorch_model.bin": "aaa"}))
+    other_weights = model_id_from_manifest(manifest({"pytorch_model.bin": "bbb",
+                                                     "tokenizer.json": "t"}))
+    assert a == same and a != other_weights and a.startswith("bge-m3-local-")
+    assert model_id_from_manifest(manifest({})) == "bge-m3-local-unrecorded"
+    # and the namespace really is part of the cache key: other weights, other cached vectors
+    enriched, out = build(tmp_path / "idx")
+    calls = []
+
+    def counting(texts):
+        calls.append(1)
+        return fake_encode(texts)
+
+    cache = DiskCache(tmp_path / "cache")
+    Index(out, enriched, encode=counting, cache=cache, model_id=a).dense("plain", "tea", 2)
+    Index(out, enriched, encode=counting, cache=cache, model_id=a).dense("plain", "tea", 2)
+    Index(out, enriched, encode=counting, cache=cache, model_id=other_weights).dense(
+        "plain", "tea", 2)
+    assert len(calls) == 2  # the second namespace could not reuse the first one's vector

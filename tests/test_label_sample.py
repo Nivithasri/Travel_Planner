@@ -12,6 +12,7 @@ from src.process.label import (
     read_gold_csv,
     score,
     select_gold,
+    select_gold_unseen,
     write_gold_csv,
 )
 
@@ -135,3 +136,36 @@ def test_score_with_nothing_labelled_by_the_llm_yet():
                   "is_warning": False}], {})
     assert res["llm"]["n"] == 0 and res["llm"]["aspect_accuracy"] is None
     assert "n/a" in format_score(res) and res["rule"]["aspect_accuracy"] == 1.0
+
+
+def test_select_gold_unseen_skips_excluded_and_non_candidates_and_spreads_places():
+    chunks = [c for c in toy_chunks() if c["source_type"] != "blog"]
+    cand = {c["chunk_id"] for c in chunks if c["place"] != "C"}  # place C not eligible
+    banned = {c["chunk_id"] for c in chunks if c["chunk_id"].endswith(("0", "1"))}  # pilot / old
+    ids = select_gold_unseen(chunks, cand, banned, seed=44, n=12)
+    assert ids == select_gold_unseen(chunks, cand, banned, seed=44, n=12)  # deterministic
+    assert ids != select_gold_unseen(chunks, cand, banned, seed=45, n=12)
+    assert len(ids) == len(set(ids)) == 12
+    assert set(ids) <= cand and not set(ids) & banned
+    by_id = {c["chunk_id"]: c for c in chunks}
+    assert {by_id[i]["place"] for i in ids} == {"A", "B"}
+    for st in ("reference", "wikivoyage"):
+        assert sum(by_id[i]["source_type"] == st for i in ids) == 6
+    assert len(select_gold_unseen(chunks, cand, banned, seed=44, n=500)) == len(cand - banned)
+
+
+def test_score_reports_seen_and_unseen_rows_apart():
+    gold = [{"chunk_id": "1", "text": "Entry fee is Rs 50.", "aspect": "price",
+             "is_warning": False},
+            {"chunk_id": "2", "text": "Entry fee is Rs 60.", "aspect": "price",
+             "is_warning": False}]
+    llm = {"1": {"aspect": "price", "is_warning": False},
+           "2": {"aspect": "other", "is_warning": False}}
+    res = score(gold, llm, seen={"1"})
+    assert res["split"]["seen"]["llm"]["aspect_accuracy"] == 1.0
+    assert res["split"]["unseen"]["llm"]["aspect_accuracy"] == 0.0
+    assert res["llm"]["aspect_accuracy"] == 0.5
+    text = format_score(res)
+    assert "seen in the prompt work: 1 rows" in text and "unseen in the prompt work: 1 rows" in text
+    assert "optimistic for the prompt" in text
+    assert "split" not in score(gold, llm)

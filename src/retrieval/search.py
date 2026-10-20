@@ -7,6 +7,7 @@ The query vector comes from the same local bge-m3 encoder as the corpus; it is c
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -19,6 +20,7 @@ from src.retrieval.build_index import (
     DENSE_KINDS,
     DENSE_PARAMS,
     IDS_FILE,
+    MANIFEST_FILE,
     bm25_scores,
     load_bm25,
     load_chunks,
@@ -103,6 +105,18 @@ class Index:
                         "snippet": text[:SNIPPET_CHARS] + ("..." if len(text) > SNIPPET_CHARS
                                                            else "")})
         return out
+
+
+def model_id_from_manifest(index_dir: Path) -> str:
+    """Cache namespace of the query encoder: a hash of the sha256 of every weight and tokenizer
+    file the index manifest recorded (never a path), so other weights never reuse cached query
+    vectors."""
+    manifest = json.loads((Path(index_dir) / MANIFEST_FILE).read_text(encoding="utf-8"))
+    files = manifest.get("model_files_sha256") or {}
+    if not files:
+        return "bge-m3-local-unrecorded"
+    digest = hashlib.sha256(json.dumps(files, sort_keys=True).encode("utf-8")).hexdigest()
+    return "bge-m3-local-" + digest[:16]
 
 
 def model_id_for(model_dir: Path) -> str:
