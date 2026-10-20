@@ -34,7 +34,7 @@ Tick only after verification commands were run (see LOG.md).
 
 ## Phase 3: Enrichment and indexing (COMPLETE 2026-10-20, owner-confirmed, tag phase-3-done; route changed by D59: hosted API, local CPU embeddings, no Kaggle)
 - [x] Enrichment code, validation, leak/copy scans, rule fallback, resumable batch, pilot selection, gold sheet (19 mutations M1-M19, each caught by at least one test)
-- [x] Hosted OpenAI-compatible client with client-side rate limiter, usage accounting and scrubbing (offline tests only; no API call made yet)
+- [x] Hosted OpenAI-compatible client with client-side rate limiter, usage accounting and scrubbing (offline tests; later used for the full run, see below)
 - [x] smoke_llm.py 3/3 (owner); pilot enrich-v4 (79 chunks) passed its gate (JSON validity, fallback rate, leaks, reconciliation; not retrieval quality); index code committed and dry-run on a scratch file (BM25 x2, dense x2, query_index.py, build_index.py --verify)
 - [x] --full --eligible-only finished 2026-10-20: 1,100 of 1,100 (1,062 model-written, 38 fallbacks); `--assemble` wrote data/enriched/chunks.jsonl (1,696 rows; check_enriched_matches_frozen passes)
 - [x] real BM25 x2 + dense x2 built on CPU (76 min), `build_index.py --verify` VERIFIED, query_index.py ran on 3 queries (smoke test only), manifests committed (data/manifests/enriched_manifest.json, index_manifest.json)
@@ -52,9 +52,16 @@ Tick only after verification commands were run (see LOG.md).
 - [ ] Not done: significance tests (Phase 6), round-2 pooling (D5, after Phase 6)
 - [x] Done when: one command prints all metrics for any retrieval function (`python eval/run_eval.py --retriever <module:function> --split dev|test`).
 
-## Phase 5: Routing reference data
-- [ ] Tasks (see docs/plan.md)
-- [ ] Done when: both functions return instantly for every registry place.
+## Phase 5: Routing reference data (BUILT 2026-10-20, awaiting owner confirmation; NOT tagged; parameters PROVISIONAL)
+- [x] Decisions D76-D81 (amended D76, D78, D79); 48 nodes = 26 destinations + 22 hubs (hold-outs never nodes)
+- [x] O13 airport allowlist as a data file (config/airports_allowlist.json) with tests; dedupe rule; military airports excluded (D79); nearest_airport re-derived
+- [x] Travel matrix: index/travel_matrix.json (1,128 pairs), src/tools/travel_time.py, hill flag (6 nodes), 230 triangle violations counted not repaired
+- [x] Season data: index/season_data.json (26 places x 12 months), src/tools/check_season.py with evidence counts by provenance and confidence
+- [x] Verified (commands in LOG.md): pytest 843 passed, ruff clean, M30-M37 all caught, build byte-deterministic, chunks.jsonl sha256 ee117551..., request log 443
+- [ ] Calibration reference routes are UNVERIFIED (from memory): fit is PROVISIONAL until the owner spot-checks about 8 routes; errors are agreement with those values, not accuracy
+- [ ] Sanity table 17 of 19: two heat misses (Chennai May, Hampi May), thresholds unchanged pending an owner decision
+- [ ] Tag phase-5-done: waits for the owner
+- [x] Done when: both functions return instantly for every registry place (tests time 26 places x 12 months and 1,000 lookups).
 
 ## Phase 6: Retrieval engine and ablations
 - [ ] Tasks (see docs/plan.md)

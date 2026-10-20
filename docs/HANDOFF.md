@@ -3,10 +3,12 @@
 ## Status
 Phase 2 (cleaning and chunking) is COMPLETE: the corpus is FROZEN (2026-10-19T16:33:44Z) and tagged `phase-2-done`.
 `data/processed/FROZEN` exists; the hook blocks Edit/Write on every path under data/processed and `scripts/process.py --write`
-refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Nothing has been pushed since the Step 0 tag fix: `phase-1-done` is on
-61f1355 (remote updated by an owner-authorized force push of that one tag); `phase-2-done` is local only. Push only when asked.
-Phase 3 (enrichment and indexing) is COMPLETE, confirmed by the owner, tagged `phase-3-done` (local, not pushed).
-Phase 4 (test collection and harness) is CLOSED (2026-10-20, owner-confirmed), tagged `phase-4-done` (lightweight; main and that tag pushed to origin on the owner's instruction). Next: Phase 5 (see "Next phase" below). Read this file, LOG.md, docs/phase-status.md first.
+refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Push only when asked. Which of the older tags (phase-1/2/3-done) exist on origin was NOT
+re-checked in Phase 5 (no network); `git tag` lists the local ones.
+Phase 3 (enrichment and indexing) is COMPLETE, confirmed by the owner, tagged `phase-3-done`.
+Phase 4 (test collection and harness) is CLOSED (2026-10-20, owner-confirmed), tagged `phase-4-done` (main and that tag were pushed to origin on the owner's instruction).
+Phase 5 (routing reference data) is BUILT and committed (2026-10-20) but NOT tagged and NOT confirmed: the owner confirms, then tags `phase-5-done`. Nothing from Phase 5 is pushed.
+Next after confirmation: Phase 6 (owner Valincia). Read this file, LOG.md, docs/phase-status.md first.
 
 ## The frozen corpus (verify with `python -m pytest -q` and `sha256sum data/processed/*`)
 | file | sha256 |
@@ -56,13 +58,15 @@ RESULTS: LOG.md 2026-10-20 (baselines dev and test, label statistics, kappa 0.82
 CAUTIONS: unjudged@10 is 0 for the five baselines BY CONSTRUCTION (the pool is their own top 10); a Phase 6 variant will retrieve unjudged chunks, so compare it using unjudged@10 and a round-2 pool (D5). Recall@20 is a lower bound. Fresh@10 is 0 for every retriever (D32). 13 dev and 27 test queries are small; no significance tests yet. D69: no aspect/place_type filter or freshness decay on rule_only/fallback rows unflagged; mentioned_places is not a signal (D50). Kappa 0.825 / 0.848 is RUBRIC-ONLY agreement (D75, confirmed): the partner saw only docs/labelling_rubric.md and the tie-break rules were agreed with her later; when the owner wrote the rules relative to labelling the test rows is unknown (rules 12 and 13 cite test rows). Quote it with that caveat.
 Nothing is pending for Phase 4.
 
-## Next phase: Phase 5 (routing reference data; owner Nivithasri)
-Start in PLAN MODE, wait for approval, do not start Phase 6. Plan section: docs/plan.md Phase 5. Outputs: index/travel_matrix.json, season data, src/tools/travel_time.py, src/tools/check_season.py; both functions must return instantly for every registry place.
-1. AMBIGUITY TO RAISE FIRST: the plan wants a travel-time matrix for 40 to 60 destinations, but data/registry/core_places.json has 30 places (26 collectable + 4 hold-outs). Decide with the owner where the other 10 to 30 come from (more places via ensure_place D17, hubs/airports/railheads, or a smaller matrix recorded as a deviation).
-2. Travel matrix: distance x road factor calibrated on about 30 known real routes (or local OSRM; never hammer the public demo server). O6: add a ghat/hill-road correction, calibrated separately. D21: Kodagu and Wayanad are district centroids, so travel to or from them is district-granular; say so in the sanity checks. Registry lat/lon are the inputs.
-3. O13: write the curated IATA allowlist of the 33 in-region codes (BEP BLR BPM CCJ CDP CJB CNN COK GBI HBX HYD IXE IXG IXM IXX KJB MAA MYQ NVY PNY PUT RJA RMD RQY SXV TCR TIR TRV TRZ VDY VGA VTZ WGC) as a data file WITH a test; neither exists yet. Dedupe rule: keep relation > way > node, then lowest OSM id. Raw airports: data/raw/overpass/_south/airports.json (47 elements; 11 out-of-region codes ACJ IXU JAF JGB KLH LTU NDC PYB SAG SSE TRR). nearest_airport must be re-derived (D47 deleted it).
-4. check_season(place, month): season data from the registry, the enriched season_tags (read provenance.jsonl; rule_only and fallback rows carry rule-based tags, D69) and warning chunks, plus Open-Meteo climate normals (re-derive the monthly normals and the rainy-day rule, deleted in D47; the no-elevation files are primary, D42; confidence low for Kodagu, Wayanad, Munnar, Ooty, Kodaikanal). D53 caveat: the Oct-Nov split ignores the Tamil Nadu north-east monsoon (Oct-Dec). Hold-outs are for the cold-start test only (D17): do not tune on them.
-5. Sanity checks on well-known cases (monsoon access to hill destinations); tests for both functions; popularity_tercile (D44) is a proposed planner signal, not yet decided. No network beyond what D36/D37/D43 already allow; ask before any new request.
+## Phase 5 state (BUILT, awaiting owner confirmation; owner: Nivithasri)
+Decisions D76 to D81 (amended D76, D78, D79) in docs/decisions.md; contracts in docs/contracts.md ("Routing and season data"). Everything is offline and deterministic: `python scripts/build_routing.py all` rebuilds config/routing_params.json (fitted block), index/travel_matrix.json, index/season_data.json and data/manifests/routing_manifest.json byte-identically; `report` and `sanity` print the checks. 843 tests pass, ruff clean, chunks.jsonl sha256 ee117551..., request log 443.
+WHAT EXISTS: config/airports_allowlist.json (O13, 33 codes), config/calibration_routes.json (30 routes, UNVERIFIED), config/routing_params.json, config/routing_sanity_cases.json; src/tools/{routing,travel_model,travel_time,season,check_season}.py; scripts/build_routing.py; tests/test_airports.py, test_travel_model.py, test_travel_time.py, test_season.py; mutations M30-M37 (`python scripts/mutation_checks.py --routing`). index/travel_matrix.json and index/season_data.json are un-ignored and committed (ids and numbers only, a test checks no chunk text); the rest of index/ stays ignored.
+USE: `from src.tools.travel_time import travel_time` (hours, destinations and hubs, name or alias or IATA); `from src.tools.check_season import check_season` (26 destinations only; month 1-12 or name). Unknown names, hold-outs, and hubs in check_season raise UnknownPlaceError (a ValueError). Nodes: 26 destinations + 22 hubs (airports), hold-outs never nodes.
+CAUTIONS (also in LOG.md 2026-10-20): (1) all 30 calibration reference values were written from memory; the fit (plain factor 1.1497, 49.38 km/h; hill factor 1.4756, 35.75 km/h) is PROVISIONAL and its errors (fit MAPE hours 16.2%, held-back 19.0%) are agreement with those values, not accuracy; the owner will spot-check about 8 routes, then re-run `calibrate`. (2) 230 of 1,128 pairs violate the triangle inequality (counted, not repaired). (3) Sanity table 17 of 19: Chennai May and Hampi May came out `fair`, expected `poor` (monthly mean Tmax 35.1 and 37.1 C against the 38 C threshold); thresholds are unchanged and any change is a separate decision made after seeing all misses (D80). (4) Verdicts are climate-only: Munnar has 2 model-written chunks of 37, Wayanad 1 of 59, Kodaikanal 3 of 41, so their tag evidence is rule-based (D69); check_season says so in `caveats`. (5) Hubs are airports, not rail junctions, and minor strips (RMD, NVY, PUT, KJB, GBI, CDP, RQY) stay as hubs. (6) Kodagu and Wayanad are district centroids (D21). (7) ERA5 is a 0.25-degree reanalysis (Open-Meteo CC BY 4.0, non-commercial) and OSM airports are ODbL: attribution strings are in both index files' meta; O12 share-alike is still open.
+OWNER ACTIONS: confirm Phase 5 and tag `phase-5-done`; spot-check calibration routes (fill `source` in config/calibration_routes.json, re-run `calibrate matrix season`); decide on the two heat misses; decide whether `popularity_tercile` (D44) is wanted by the planner.
+
+## Next phase: Phase 6 (retrieval engine and ablations; owner Valincia)
+Start in plan mode. Read docs/plan.md Phase 6, D69 (enrichment ablation design) and the Phase 4 cautions above. travel_time and check_season are ready for the Phase 7 planner and critic.
 
 ## Daily routine for the full enrichment run (Phase 3; the run FINISHED on 2026-10-20, kept as a record of how it was operated)
 1. The one command, from the repo root, any time after 00:00 UTC (05:30 India time): `python scripts/enrich.py --full --eligible-only`. It resumes by itself from
@@ -105,7 +109,7 @@ PROGRESS LOG (append one line per day; the numbers come from `python scripts/enr
   `src/common/llm.py`, `load_llm_settings` in `src/common/schemas.py`.
 - Index code: `src/retrieval/build_index.py` (BM25 contextual/plain with bm25s, dense plain/contextual with local sentence-transformers, resumable, manifest, verify), `src/retrieval/search.py`
   (exact numpy cosine, ties by chunk_id), `scripts/build_index.py`, `scripts/query_index.py` (four ranked tables).
-- Tests: 670 passed (tests/test_process.py, test_enrich.py, test_llm_api.py, test_index.py, test_label_sample.py, test_hooks_scripts.py, ...); `scripts/mutation_checks.py` runs 19 mutations (M1-M19; M17-M19 cover the index code: contextual text built from plain text, tie order).
+- Tests: 843 passed after Phase 5 (670 at the end of Phase 3; tests/test_process.py, test_enrich.py, test_llm_api.py, test_index.py, test_label_sample.py, test_hooks_scripts.py, ...); `scripts/mutation_checks.py` runs 19 mutations (M1-M19; M17-M19 cover the index code: contextual text built from plain text, tie order).
 
 ## How to run
 - `pip install -e .[dev]`; Python 3.10.11 (D9); `python -m pytest -q`, `python -m ruff check .` (not on PATH).
@@ -118,7 +122,7 @@ PROGRESS LOG (append one line per day; the numbers come from `python scripts/enr
 2. Phase 3: confirm the hosted API's data-use terms and free-plan limits, fix .env (see Phase 3 state), later install bm25s PyStemmer sentence-transformers and download bge-m3 (EMBED_LOCAL_DIR). Reddit credentials only if Reddit is ever added to the live layer (D48 xvi).
 3. Wikimedia Terms of Use section 7 wording: not in the repo (no fetched copy); needed for the report and app (Phase 8).
 4. Phase 1 items still open: terms quotes and the wiki robots gap (D36/D43), the pre-squash bundle location, D24 review, outreach
-   emails unsent, O13 airport allowlist file (Phase 5), attribution in the report and app (Open-Meteo, OSM, Wikimedia).
+   emails unsent, attribution in the report and app (Open-Meteo, OSM, Wikimedia).
 5. Build-time cleaning rules (D48 amendments a-e) were accepted as a working draft; evidence: `python scripts/phase2_evidence.py rejoin credits`.
 
 ## How Valincia gets the chunks (O12 open)
