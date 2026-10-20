@@ -106,6 +106,7 @@ _SECRET_PATTERNS = (
     re.compile(r"(?i)bearer\s+[A-Za-z0-9._~+/=-]+"),
     re.compile(r"\bgsk_[A-Za-z0-9]+"),
     re.compile(r"\bsk-[A-Za-z0-9_-]{8,}"),
+    re.compile(r"\b(?:org|proj|key)_[A-Za-z0-9]{8,}"),  # account identifiers in API messages
     re.compile(r"(?i)(authorization|x-api-key|api-key)\s*[:=]\s*\S+"),
     re.compile(r"https?://[^\s'\"<>)\]]+"),
 )

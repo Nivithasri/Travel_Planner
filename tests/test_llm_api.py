@@ -896,3 +896,9 @@ def test_a_429_longer_than_the_limit_stops_with_the_apis_reason_scrubbed(tmp_pat
     msg = str(exc.value)
     assert "tokens per day (TPD)" in msg and "Limit 200000" in msg  # which limit it was
     assert KEY not in msg and HOST not in msg and "https://" not in msg and len(post.calls) == 1
+
+
+def test_account_identifiers_in_api_messages_are_scrubbed():
+    text = "Rate limit reached in organization `org_01jabcdefghijk12345` service tier on_demand"
+    out = scrub_text(text)
+    assert "org_01jabcdefghijk12345" not in out and "Rate limit reached" in out
