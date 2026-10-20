@@ -32,8 +32,8 @@ live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type
 ```
 
 ## Eval files
-- eval/queries.json: [{id, text, split: dev|test, type, time_sensitive: bool, freshness_slice: bool}]
-- eval/qrels.json: {query_id: {chunk_id: 0|1|2}}; also record which pooling round judged each chunk.
+- eval/queries.json: [{id, text, split: dev|test, type, time_sensitive: bool, freshness_slice: bool, place_scope: named|free, places: [registry names]}] (place_scope and places added by D70)
+- eval/qrels_dev.json, eval/qrels_test.json: {query_id: {chunk_id: 0|1|2}} (D71; replaces eval/qrels.json). The pooling round and contributing systems are in eval/pool.json (ids only).
 
 ## Cache rules
 - Cache key = sha256 of (kind, model/endpoint, canonical-JSON of inputs). Stored under .cache/ as JSON/JSONL.

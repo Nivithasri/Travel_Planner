@@ -696,3 +696,27 @@ D69 (2026-10-20) Phase 6 ablation design for enrichment (owner decision, from th
    model-written note can be separated from the effect of the place name alone. (3) Results are stratified by provenance: model-written rows only versus all rows. (4) aspect and place_type
    filters and freshness decay (which use the aspect) must not be applied to rule_only or fallback rows without flagging it in the table. (5) `mentioned_places` (D50) is not acknowledged by the
    partner and must not be used as a ranking or filter signal until she acknowledges it. Status: accepted.
+D70 (2026-10-20) Phase 4 query set (owner-approved). 40 queries in eval/queries.json (ids Q01 to Q40), types family, backpacker, honeymoon, pilgrimage, monsoon, budget, vague, freshness. Two fields are added to the
+   query record (contract change, docs/contracts.md): `place_scope` ("named" | "free") and `places` (list of registry names the text names; [] for free). Owner edits to the proposed list: Q37 and Q33 move to dev,
+   Q26 moves to test. ARITHMETIC NOTE: the proposed dev set had 12 queries; with these three moves it has 13 (test 27), not 12 as the instruction said "dev stays 12". The edits were applied literally; moving
+   any one dev query to test restores 12/28 and is a one-line change in eval/queries.json plus tests/test_queries.py. Dev: Q01 Q03 Q06 Q09 Q11 Q16 Q18 Q21 Q28 Q31 Q33 Q37 Q39. Freshness slice (10): Q16 Q17 Q22 Q24
+   Q35 Q36 Q37 Q38 Q39 Q40 (dev: Q16 Q37 Q39). `time_sensitive` true for the 10 slice queries plus Q21 and Q25. FRESHNESS CAVEAT: the frozen corpus has 0 published chunks inside the 18 months before
+   EVAL_REFERENCE_DATE 2026-10-18 (D32, D48 vii), so the freshness share is 0 for every retriever and the slice tests time-sensitive WORDING only, not freshness. No query names a D33-excluded place or a hold-out
+   (D17, D33, D68); scripts/check_queries.py enforces this with registry names and aliases, HoldoutFilter.text_match and the D63 stems. The queries were written before any ranking was looked at. Status: accepted.
+D71 (2026-10-20) Qrels files (refines O2 and the contract). eval/qrels_dev.json and eval/qrels_test.json replace eval/qrels.json: {query_id: {chunk_id: 0|1|2}}, plain integers. The pooling round and the
+   contributing systems live in eval/pool.json (ids only, no text), not in the qrels, so the contract shape is unchanged. eval/qrels.py `load_qrels(split, allow_test=False)` raises for "test" unless allow_test is
+   True; run_eval.py sets it only for `--split test`. Status: accepted.
+D72 (2026-10-20) Pooling (round 1). Per query, the top 10 of each of FIVE lists: bm25_contextual, bm25_plain, dense_plain, dense_contextual and one RRF fusion of those four (k = 60, ties by chunk_id), over all 1,696
+   chunks (D68, so the 9 excluded places and rule_only rows are pooled and judged like any other). The union is deduplicated per (query, chunk). eval/pool.json records, per pair, the round (1), the contributing
+   systems and the provenance class; the excluded-place share of every system's top 10 is reported. Judging sheets are blind and shuffled (seeded): they show the query, place, state, source type, page title (from
+   data/processed/attribution.json), URL, date kind and the chunk text, and NEVER the context_note, systems, ranks, scores or provenance. They carry a pointer to docs/labelling_rubric.md and say that
+   excluded-place chunks are judged like any other. Sheets contain chunk text and are gitignored (eval/sheets/, O12). A second round after Phase 6 follows D5. If the pool exceeds 1,100 judgments in total, a
+   depth reduction is PROPOSED as a decision and not applied. Status: accepted.
+D73 (2026-10-20) Metric conventions (eval/metrics.py, own implementation). Relevant means label >= 1 (configurable, default 1). nDCG@10 uses linear gain (the label) and an ideal ranking built from ALL judged
+   chunks of the query, not only the retrieved ones. A chunk with no label counts as 0 (unjudged@10 and unjudged@20 are reported for every run). A query with no relevant chunk is excluded from the means of nDCG,
+   MRR and Recall and the number of such queries is reported. Recall@10 is the main recall figure (the pool is depth 10); Recall@20 is reported next to unjudged@20 and is a LOWER BOUND, because ranks 11 to 20 are mostly
+   unjudged. Freshness share = fraction of the top 10 with date_kind published and a date within 18 months of EVAL_REFERENCE_DATE (expected 0, D32). Diversity = distinct source types and distinct places in the
+   top 10. Excluded-place share = share of the top 10 in the D33-excluded places (D68). Cuts: overall, per query type, freshness slice, place_scope named vs free, and per provenance class (D69: share of the top
+   10, mean grade and precision per class; no re-ranking by provenance). Chunk fields come from data/enriched/chunks.jsonl and provenance.jsonl, not from the retriever's dicts. Status: accepted.
+D74 (2026-10-20) Kappa subset (O4, owner-approved). About 100 judgments, drawn seeded from the pool, Wikipedia and Wikivoyage chunks only (no blog), exported as a private CSV without the owner's labels. If the partner
+   is unavailable, no kappa is reported (nothing is substituted). Unweighted and linear-weighted kappa are both computed. Status: accepted.
