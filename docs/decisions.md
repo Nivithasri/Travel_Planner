@@ -667,3 +667,11 @@ D64 (2026-10-20) max_tokens 300 -> 400 (owner rule: raise it if cut-off replies 
    not reused. Only the affected chunks are recomputed (`--redo`, which moves their records to checkpoint_*.superseded.jsonl, nothing deleted): c2589f18a98effcb, 9847299a648d79e9,
    37c55b7e0d72a447, 13ad42890b52af0e; the other 75 pilot records stay as produced under 300. Records now carry prov.max_tokens; a record without it was made under 300. The 75 records
    are not recomputed because a reply that finished under 300 was not truncated; whether it would be word-for-word the same under 400 is not claimed. Status: accepted.
+D65 (2026-10-20) Second API account (owner decision). The owner replaced LLM_API_KEY in .env with the key of Valincia's account on the same free tier, to continue the full run after the first account's
+   daily token budget was used up. The run is otherwise unchanged: same model (openai/gpt-oss-20b), prompt (enrich-v4), options and checkpoint, so the results of both accounts form one consistent corpus; the
+   key is not part of any cache key or checkpoint record, and nothing records which account produced which chunk. The daily counter in data/enriched/quota_state.json is now kept PER KEY (a 12-character hash
+   of the key, never the key; the older flat format is read as id "legacy"), so a new key starts its UTC day at zero, switching keys back and forth keeps each key's spend, and the counter of one account is not
+   charged to the other. Caveats recorded, not decided here: (1) D59's data-use confirmation was given for the owner's account; the chunk text now also goes out under a second person's account, which the
+   owner decided and which touches O12 (sharing) and Valincia's own agreement to the provider's terms: not recorded in the repo; (2) whether the provider's terms allow using a second account to continue after one is
+   used up was NOT checked by the assistant (no terms were read); (3) the limits LLM_RPM, LLM_TPM, LLM_RPD, LLM_TPD in .env were not changed and are assumed equal on both accounts. Status: accepted by the owner's
+   instruction.

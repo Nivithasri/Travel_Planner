@@ -16,6 +16,7 @@ limiter, D59). The notes below describe the Ollama client; the hosted one is at 
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 import re
@@ -528,7 +529,7 @@ class RateLimiter:
                  tpd_share: float = 0.85, clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep,
                  utcnow: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-                 state_path: Path | str | None = None):
+                 state_path: Path | str | None = None, key_id: str = "default"):
         if min(rpm, tpm, rpd, tpd) <= 0:
             raise ValueError("RPM, TPM, RPD and TPD must be positive")
         self.limits = {"rpm": rpm, "tpm": tpm, "rpd": rpd, "tpd": tpd}
@@ -538,6 +539,7 @@ class RateLimiter:
         self.tpd_eff = tpd * tpd_share
         self._clock, self._sleep, self._utcnow = clock, sleep, utcnow
         self.state_path = Path(state_path) if state_path else None
+        self.key_id = key_id  # which API key's spend this limiter counts (never the key itself)
         self.window: deque[list] = deque()  # [time, tokens] per request in the last 60 s
         self.slept_s = 0.0
         self.n429 = 0
@@ -557,19 +559,37 @@ class RateLimiter:
         if not self.state_path or not self.state_path.exists():
             return
         try:
-            st = json.loads(self.state_path.read_text(encoding="utf-8"))
+            st = self._read_state()
             if st.get("date") == self.day:
-                self.day_tokens = int(st["tokens"])
-                self.day_requests = int(st["requests"])
+                mine = st["keys"].get(self.key_id)
+                if mine:
+                    self.day_tokens, self.day_requests = int(mine["tokens"]), int(mine["requests"])
         except (ValueError, KeyError, TypeError, OSError):
             pass  # unreadable state: start the day at zero rather than refuse to run
+
+    def _read_state(self) -> dict:
+        """{"date", "keys": {key_id: {"tokens", "requests"}}}. The first format had one flat
+        count for whichever key was in use; it is kept under the id "legacy"."""
+        st = json.loads(self.state_path.read_text(encoding="utf-8"))
+        if "keys" not in st:
+            st = {"date": st.get("date"), "keys": {"legacy": {
+                "tokens": st.get("tokens", 0), "requests": st.get("requests", 0)}}}
+        return st
 
     def _save(self) -> None:
         if self.state_path:
             from src.common.cache import atomic_write_text
 
-            atomic_write_text(self.state_path, json.dumps(
-                {"date": self.day, "tokens": self.day_tokens, "requests": self.day_requests}))
+            keys: dict = {}
+            try:
+                if self.state_path.exists():
+                    old = self._read_state()
+                    if old.get("date") == self.day:
+                        keys = old["keys"]  # other keys' spend of today is kept
+            except (ValueError, KeyError, TypeError, OSError):
+                pass
+            keys[self.key_id] = {"tokens": self.day_tokens, "requests": self.day_requests}
+            atomic_write_text(self.state_path, json.dumps({"date": self.day, "keys": keys}))
 
     def _roll_day(self) -> None:
         today = self._today()
@@ -700,7 +720,8 @@ class OpenAICompatClient(OllamaClient):
         s = load_llm_settings()
         share = kwargs.pop("tpd_share", 0.85)
         limiter = kwargs.pop("limiter", None) or RateLimiter(
-            s.rpm, s.tpm, s.rpd, s.tpd, tpd_share=share, state_path=s.quota_state_path)
+            s.rpm, s.tpm, s.rpd, s.tpd, tpd_share=share, state_path=s.quota_state_path,
+            key_id=hashlib.sha256(s.api_key.encode("utf-8")).hexdigest()[:12])
         kwargs.setdefault("seed", s.seed)
         kwargs.setdefault("retry_budget_s", s.retry_budget_s)
         cache = kwargs.pop("cache", None) or DiskCache(s.cache_dir)

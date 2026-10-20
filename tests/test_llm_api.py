@@ -830,3 +830,34 @@ def test_the_daily_token_share_is_configurable_and_defaults_to_85_percent():
     assert limiter(Clock(), tpd=200000).tpd_eff == 170000
     lim = RateLimiter(30, 8000, 1000, 200000, tpd_share=0.95)
     assert lim.tpd_eff == pytest.approx(190000)
+
+
+def test_the_daily_count_is_kept_per_api_key(tmp_path):
+    clk, state = Clock(), tmp_path / "q.json"
+    now = [datetime(2026, 10, 20, 9, 0, tzinfo=timezone.utc)]
+
+    def lim(key_id):
+        return RateLimiter(30, 8000, 1000, 200000, clock=clk.clock, sleep=clk.sleep,
+                           utcnow=lambda: now[0], state_path=state, key_id=key_id)
+
+    a = lim("aaaa")
+    a.after_call(a.before_call(100), 5000, None)
+    b = lim("bbbb")  # another account: a fresh budget, and it must not erase a's spend
+    assert (b.day_tokens, b.day_requests) == (0, 0)
+    b.after_call(b.before_call(100), 700, None)
+    assert (lim("aaaa").day_tokens, lim("bbbb").day_tokens) == (5000, 700)  # switch back and forth
+    st = json.loads(state.read_text(encoding="utf-8"))
+    assert set(st["keys"]) == {"aaaa", "bbbb"}
+    now[0] += timedelta(days=1)
+    assert lim("aaaa").day_tokens == 0 and lim("bbbb").day_tokens == 0  # a new UTC day
+
+
+def test_a_flat_state_file_from_before_per_key_counts_is_read_as_legacy(tmp_path):
+    state = tmp_path / "q.json"
+    state.write_text('{"date": "2026-10-20", "tokens": 193324, "requests": 238}', encoding="utf-8")
+    now = [datetime(2026, 10, 20, 9, 0, tzinfo=timezone.utc)]
+    new_key = RateLimiter(30, 8000, 1000, 200000, utcnow=lambda: now[0], state_path=state,
+                          key_id="cccc")
+    assert new_key.day_tokens == 0  # not charged with the old key's spend
+    new_key.after_call(new_key.before_call(100), 50, None)
+    assert json.loads(state.read_text(encoding="utf-8"))["keys"]["legacy"]["tokens"] == 193324
