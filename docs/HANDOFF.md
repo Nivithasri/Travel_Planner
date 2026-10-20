@@ -6,7 +6,7 @@ Phase 2 (cleaning and chunking) is COMPLETE: the corpus is FROZEN (2026-10-19T16
 refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Nothing has been pushed since the Step 0 tag fix: `phase-1-done` is on
 61f1355 (remote updated by an owner-authorized force push of that one tag); `phase-2-done` is local only. Push only when asked.
 Phase 3 (enrichment and indexing) is COMPLETE, confirmed by the owner, tagged `phase-3-done` (local, not pushed).
-Phase 4 (test collection and harness) is IN PROGRESS and STOPPED AT LABELLING (2026-10-20): see "Phase 4 state" below. No phase-4 tag. Read this file, LOG.md, docs/phase-status.md first.
+Phase 4 (test collection and harness) is DONE in code and results (2026-10-20); the owner's confirmation and the tag phase-4-done are PENDING (no tag was made). Next: Phase 5 (see "Next phase" below). Read this file, LOG.md, docs/phase-status.md first.
 
 ## The frozen corpus (verify with `python -m pytest -q` and `sha256sum data/processed/*`)
 | file | sha256 |
@@ -46,24 +46,23 @@ Build time on CPU: dense_plain 2,171 s (0.781 rows/s), dense_contextual 2,344 s 
 5. Never print or log the URL, key or headers: both LLM clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
 6. Not done in Phase 3: the early sample file for Valincia (blocked by O12) and the gold score (sheet unlabelled).
 
-## Phase 4 state (STOPPED AT LABELLING; owner: Nivithasri)
-Decisions D70 to D74 (+ amendments to D70 and D72) in docs/decisions.md; contract change in docs/contracts.md (query fields place_scope, places; qrels_dev/qrels_test).
-WHAT EXISTS (all committed; tests 759 passed, ruff clean, chunks.jsonl sha256 ee117551..., request log 443):
-- eval/queries.json (40; dev 13 / test 27, NOT 12/28: the owner's three moves made it 13, D70; slice 10; time_sensitive 12; place_scope named 23 / free 17, lexical). scripts/check_queries.py.
-- docs/labelling_rubric.md (read it before labelling). eval/pool.json (ids only): 963 judgments, dev 326, test 637. Sheets: eval/sheets/judge_dev.csv, judge_test.csv (gitignored, chunk text, blind).
-- eval/metrics.py, eval/qrels.py (load_qrels("test") raises unless allow_test=True; only `run_eval.py --split test` passes it), eval/run_eval.py, eval/adapters.py (bm25_contextual, bm25_plain, dense_plain, dense_contextual, rrf4).
-- scripts/import_labels.py, scripts/kappa.py, eval/kappa_subset.json (100 pairs, reference + wikivoyage only), eval/sheets/kappa_partner.csv (blind, empty labels, gitignored). scripts/pool.py. scripts/mutation_checks.py --eval (M20-M29).
-WHAT DOES NOT EXIST: any label, eval/qrels_dev.json, eval/qrels_test.json, any baseline number, any kappa value. run_eval has run only on toy data.
-OWNER DOES: (1) label eval/sheets/judge_dev.csv (326 rows) and judge_test.csv (637 rows): fill the `label` column with 0, 1 or 2 (optional `note`), per docs/labelling_rubric.md; excluded-place chunks are judged like any other.
-(2) Send eval/sheets/kappa_partner.csv (100 rows, Wikipedia/Wikivoyage text, private; O12) to the partner; she fills `label`. If she cannot, report no kappa.
-COMMANDS AFTER LABELLING (in this order; never rebuild the pool: `python scripts/pool.py build` refuses without --force):
-  python scripts/import_labels.py dev                  # validates, writes eval/qrels_dev.json (refuses overwrite without --force)
-  python scripts/import_labels.py test                 # writes eval/qrels_test.json; do not open it while tuning (rule 3)
-  python eval/run_eval.py --retriever eval.adapters:bm25_contextual --split dev   # likewise bm25_plain, dense_plain, dense_contextual, rrf4
-  python eval/run_eval.py --retriever eval.adapters:rrf4 --split test    # ONE final test run per retriever, reported as is, no tuning
-  python scripts/kappa.py compute --partner <partner's filled CSV>        # unweighted + linear-weighted kappa; "kappa not computed" without the partner
-Then: record the numbers in LOG.md with these commands, tick docs/phase-status.md, rewrite this file, run `python scripts/mutation_checks.py` once (M1-M29), commit explicit paths, tag `phase-4-done` only when the owner confirms.
-CAUTIONS: Recall@20 is a LOWER BOUND (pool depth 10; read unjudged@20). Queries with no relevant chunk are excluded from nDCG/MRR/Recall means and counted (0rel column). Freshness share is 0 for every retriever (no published chunk in the window, D32). D69: never apply aspect/place_type filters to rule_only/fallback rows unflagged; mentioned_places is not a signal (D50). D5: a second pooling round after Phase 6. Do not start Phase 5 in the same session.
+## Phase 4 state (labels imported, baselines run; owner: Nivithasri)
+Decisions D70 to D75 in docs/decisions.md; contract change in docs/contracts.md (query fields place_scope, places; qrels_dev/qrels_test).
+WHAT EXISTS (all committed except the gitignored sheets; 793 tests pass, ruff clean, chunks.jsonl sha256 ee117551..., request log 443):
+- eval/queries.json (40; dev 13 / test 27, not 12/28, D70; slice 10; place_scope lexical), scripts/check_queries.py, docs/labelling_rubric.md, docs/labelling_rules.md (owner's rules 1-13, D75).
+- eval/pool.json (963 judgments), eval/qrels_dev.json (326) and eval/qrels_test.json (637): ids and ints 0/1/2 only. eval/kappa_subset.json (100). Sheets and labelled files in eval/sheets/ are gitignored (chunk text, O12): judge_{dev,test}.csv, judge_{dev,test}_labelled.csv, kappa_partner.csv, kappa_partner_labelled.csv.
+- eval/metrics.py, eval/qrels.py (test refused unless --split test), eval/run_eval.py, eval/adapters.py (bm25_contextual, bm25_plain, dense_plain, dense_contextual, rrf4), eval/pooling.py, scripts/pool.py, scripts/import_labels.py (verifies a labelled sheet against its export; floats only as exactly 0.0/1.0/2.0), scripts/kappa.py, scripts/mutation_checks.py (M1-M29).
+RESULTS: LOG.md 2026-10-20 (baselines dev and test, label statistics, kappa 0.825 / 0.848 on 100 judgments from one partner). Reproduce: `python eval/run_eval.py --retriever eval.adapters:dense_contextual --split dev` (needs EMBED_LOCAL_DIR; set HF_HUB_OFFLINE=1). The test split was run once per retriever; Phase 6 must tune on dev only and report test.
+CAUTIONS: unjudged@10 is 0 for the five baselines BY CONSTRUCTION (the pool is their own top 10); a Phase 6 variant will retrieve unjudged chunks, so compare it using unjudged@10 and a round-2 pool (D5). Recall@20 is a lower bound. Fresh@10 is 0 for every retriever (D32). 13 dev and 27 test queries are small; no significance tests yet. D69: no aspect/place_type filter or freshness decay on rule_only/fallback rows unflagged; mentioned_places is not a signal (D50). The owner must confirm D75 (when the rules were written; whether the partner saw them) before the kappa value is quoted without a caveat.
+OWNER STILL DOES: confirm D75 and the phase, then `git tag phase-4-done` (not made).
+
+## Next phase: Phase 5 (routing reference data; owner Nivithasri)
+Start in PLAN MODE, wait for approval, do not start Phase 6. Plan section: docs/plan.md Phase 5. Outputs: index/travel_matrix.json, season data, src/tools/travel_time.py, src/tools/check_season.py; both functions must return instantly for every registry place.
+1. AMBIGUITY TO RAISE FIRST: the plan wants a travel-time matrix for 40 to 60 destinations, but data/registry/core_places.json has 30 places (26 collectable + 4 hold-outs). Decide with the owner where the other 10 to 30 come from (more places via ensure_place D17, hubs/airports/railheads, or a smaller matrix recorded as a deviation).
+2. Travel matrix: distance x road factor calibrated on about 30 known real routes (or local OSRM; never hammer the public demo server). O6: add a ghat/hill-road correction, calibrated separately. D21: Kodagu and Wayanad are district centroids, so travel to or from them is district-granular; say so in the sanity checks. Registry lat/lon are the inputs.
+3. O13: write the curated IATA allowlist of the 33 in-region codes (BEP BLR BPM CCJ CDP CJB CNN COK GBI HBX HYD IXE IXG IXM IXX KJB MAA MYQ NVY PNY PUT RJA RMD RQY SXV TCR TIR TRV TRZ VDY VGA VTZ WGC) as a data file WITH a test; neither exists yet. Dedupe rule: keep relation > way > node, then lowest OSM id. Raw airports: data/raw/overpass/_south/airports.json (47 elements; 11 out-of-region codes ACJ IXU JAF JGB KLH LTU NDC PYB SAG SSE TRR). nearest_airport must be re-derived (D47 deleted it).
+4. check_season(place, month): season data from the registry, the enriched season_tags (read provenance.jsonl; rule_only and fallback rows carry rule-based tags, D69) and warning chunks, plus Open-Meteo climate normals (re-derive the monthly normals and the rainy-day rule, deleted in D47; the no-elevation files are primary, D42; confidence low for Kodagu, Wayanad, Munnar, Ooty, Kodaikanal). D53 caveat: the Oct-Nov split ignores the Tamil Nadu north-east monsoon (Oct-Dec). Hold-outs are for the cold-start test only (D17): do not tune on them.
+5. Sanity checks on well-known cases (monsoon access to hill destinations); tests for both functions; popularity_tercile (D44) is a proposed planner signal, not yet decided. No network beyond what D36/D37/D43 already allow; ask before any new request.
 
 ## Daily routine for the full enrichment run (Phase 3; the run FINISHED on 2026-10-20, kept as a record of how it was operated)
 1. The one command, from the repo root, any time after 00:00 UTC (05:30 India time): `python scripts/enrich.py --full --eligible-only`. It resumes by itself from
