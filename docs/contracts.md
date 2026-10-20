@@ -34,6 +34,8 @@ live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type
 ## Eval files
 - eval/queries.json: [{id, text, split: dev|test, type, time_sensitive: bool, freshness_slice: bool, place_scope: named|free, places: [registry names]}] (place_scope and places added by D70)
 - eval/qrels_dev.json, eval/qrels_test.json: {query_id: {chunk_id: 0|1|2}} (D71; replaces eval/qrels.json). The pooling round and contributing systems are in eval/pool.json (ids only).
+- eval/qrels_dev_r2.json, eval/qrels_test_r2.json (D91, Phase 6): same shape, the round-2 judgments of the pairs the Phase 6 variants surfaced that round 1 never pooled. eval.qrels.load_qrels_merged(split) unions round 1 and round 2; round 2 never overrides a round-1 label. The round-1 files qrels_dev.json/qrels_test.json are read-only and untouched. eval/pool2.json holds the round-2 pool (ids only, no text); sheets stay gitignored (O12).
+- eval/parsed_queries.json (D86, Phase 6): per eval query id, the committed query-understanding output (structured fields + 3-5 sub-queries). Derived from query text only, no corpus text.
 
 ## Cache rules
 - Cache key = sha256 of (kind, model/endpoint, canonical-JSON of inputs). Stored under .cache/ as JSON/JSONL.
