@@ -737,3 +737,25 @@ D75 (amendment 2026-10-20, owner confirmation) The partner who labelled the 100-
    with her LATER, after her labels. Therefore kappa 0.825 (unweighted) and 0.848 (linear-weighted), agreement 0.900, is RUBRIC-ONLY agreement: the two labellers did not share the tie-break rules when they
    labelled. The owner's labels follow the rubric plus the rules. UNKNOWN, and stays so: when the owner wrote the rules relative to labelling the test rows (rules 12 and 13 cite test rows of Q36 and Q38).
    Still one partner, 100 judgments, Wikipedia and Wikivoyage chunks only. The owner confirmed Phase 4 as closed. Status: accepted.
+D76 (2026-10-20) Phase 5 matrix nodes (owner decision; deviation from the plan's 40 to 60). The matrix covers the 26 NON-hold-out registry places (the registry has 30
+   entries, 4 are hold-outs, so "30 registry places" is 26 here) plus hub nodes, target about 45 nodes. Hold-outs are never nodes (D17). Hubs are chosen by a rule (D79); if the rule gives fewer
+   than 15 or more than 22 hubs the build stops and asks, the threshold is not tuned. The count is recorded as a deviation if it falls below 40. Status: accepted.
+D77 (2026-10-20) Travel-time method (owner decision). hours = (great-circle km x road factor) / speed, with parameters fitted on about 30 reference routes
+   (config/calibration_routes.json). Every reference distance and time was written from memory, no map service was queried, so ALL are UNVERIFIED and the fitted parameters are PROVISIONAL.
+   Reported errors are "agreement with unverified reference values", never validated accuracy; the owner will spot-check about 8 routes later and the fit is then re-run. OSRM only if the owner
+   later downloads an extract. Fit by medians (robust to a few wrong reference values). Six routes are held back from the fit and reported separately. Status: accepted, provisional.
+D78 (2026-10-20) Ghat/hill correction (owner decision, refines O6). Edges with a hill endpoint use their own road factor and speed, fitted only on hill routes. A node is hill when its saved
+   Wikidata elevation (data/raw/wikidata, P2044) is >= 700 m, with an explicit override list in config/routing_params.json for district centroids (D21); the build prints which nodes got the
+   flag and why. Edge time is symmetric. Triangle-inequality violations are counted and reported, not repaired (repairing through hubs would invent routes). Status: accepted.
+D79 (2026-10-20) Hubs come from the saved OSM airports (data/raw/overpass/_south/airports.json), restricted to the O13 allowlist of 33 IATA codes (config/airports_allowlist.json, one entry per
+   IATA, dedupe: relation > way > node, then lowest OSM id). A hub is an allowlist airport more than 25 km from every one of the 26 destinations and more than 25 km from every hold-out; other
+   allowlist airports become the `nearest_airport` of the destinations they serve. No network and no coordinates from memory. Limitation: hubs are airports, not rail junctions. Status: accepted.
+D80 (2026-10-20) check_season (owner decision, refines D53, D69). The verdict (good | fair | poor) comes from ERA5 monthly normals (Open-Meteo 2015-2024; the no-elevation files are primary, D42),
+   because the season tags are 89% all_year and rule-based for most hill stations (Munnar 2 model-written chunks of 37, Wayanad 1 of 59, Kodaikanal 3 of 41). Tags and is_warning chunk ids are attached as
+   EVIDENCE with counts split by provenance (model_written, fallback, rule_only; D69). `mentioned_places` is not used (D50). Confidence is low for Munnar, Wayanad, Kodaikanal, Kodagu and Ooty
+   (D42), medium for the others. Thresholds are starting values written down before the sanity table is run; if the table shows misses they are reported together and any threshold change is a
+   separate decision made after seeing all misses, not case by case. Rainy day = precipitation_sum >= 2.5 mm (parameter). Status: accepted.
+D81 (2026-10-20) Function contracts (owner decision). travel_time(a, b) -> float hours; check_season(place, month) -> dict. Both are lookups from files under index/ loaded once. Unknown names raise
+   UnknownPlaceError (a ValueError) with close-name suggestions; aliases resolve through the registry. travel_time accepts destinations and hubs; check_season accepts the 26 destinations only
+   (a hub is unknown there); hold-outs are unknown in both. index/travel_matrix.json and index/season_data.json are un-ignored and committed because they hold no chunk text (a test checks that
+   no chunk text appears in either file); the rest of index/ stays ignored (O12). Status: accepted.

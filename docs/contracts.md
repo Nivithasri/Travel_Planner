@@ -25,8 +25,8 @@ name, aliases[list], state, region_cluster, popularity ("popular" | "hidden_gem"
 ## Function contracts
 ```python
 retrieve(query, filters=None, k=10) -> list[dict]   # chunk fields + "score"            (Phase 6)
-travel_time(place_a, place_b) -> float              # hours                             (Phase 5)
-check_season(place, month) -> dict                  # suitability + notes               (Phase 5)
+travel_time(place_a, place_b) -> float              # hours; destinations and hubs; UnknownPlaceError (D81)  (Phase 5)
+check_season(place, month) -> dict                  # suitability + notes + evidence; 26 destinations only; UnknownPlaceError (D81)  (Phase 5)
 get_place_card(place) -> dict                       # tips, warnings, citations         (Phase 7)
 live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type "live"    (Phase 7, Valincia; D31 PROPOSED, not binding until she acknowledges)
 ```
@@ -88,3 +88,10 @@ attribution, source_revision, response). Not records.jsonl and not part of the c
 data/live/places/<slug>.json (status), data/live/registry.json (resolved places). gitignored. The snapshot registry
 data/registry/core_places.json is committed and fixed: the scripts that built it were removed (D46, D47), so no code writes it; changing it needs a decisions.md entry. Committed manifest:
 data/manifests/raw_manifest.jsonl (url, source, place, retrieved_at, sha256, bytes; no content).
+
+## Routing and season data (Phase 5; D76 to D81)
+- index/travel_matrix.json: {meta, nodes: [{id, name, kind: destination|hub, state, lat, lon, hill, iata?}], hours: {"<idA>|<idB>": float}, km: {...}}. Pairs stored once (ids sorted), both orders resolve.
+  Hold-outs are not nodes. Parameters are PROVISIONAL (D77). No chunk text.
+- index/season_data.json: {meta, places: {name: {confidence, nearest_airport, months: {"1".."12": {climate, verdict, reasons, access_risk, evidence{model_written, fallback, rule_only, tag_counts},
+  warning_chunk_ids}}}}}. Chunk ids only, no text.
+- check_season returns: place, month, verdict, reasons, access_risk, climate, evidence, warning_chunk_ids, confidence, caveats.
