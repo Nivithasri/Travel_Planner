@@ -534,7 +534,8 @@ class RateLimiter:
                  tpd_share: float = 0.85, clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep,
                  utcnow: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-                 state_path: Path | str | None = None, key_id: str = "default"):
+                 state_path: Path | str | None = None, key_id: str = "default",
+                 trust_provider: bool = False):
         if min(rpm, tpm, rpd, tpd) <= 0:
             raise ValueError("RPM, TPM, RPD and TPD must be positive")
         self.limits = {"rpm": rpm, "tpm": tpm, "rpd": rpd, "tpd": tpd}
@@ -544,6 +545,7 @@ class RateLimiter:
         self.tpd_eff = tpd * tpd_share
         self._clock, self._sleep, self._utcnow = clock, sleep, utcnow
         self.state_path = Path(state_path) if state_path else None
+        self.trust_provider = trust_provider  # skip the local daily checks; the API's 429 decides
         self.key_id = key_id  # which API key's spend this limiter counts (never the key itself)
         self.window: deque[list] = deque()  # [time, tokens] per request in the last 60 s
         self.slept_s = 0.0
@@ -623,10 +625,10 @@ class RateLimiter:
         midnight = self.seconds_to_utc_midnight()
         if self._rpd_blocked_for_s is not None:
             raise self._exhausted("the API reports no daily requests left", self._rpd_blocked_for_s)
-        if self.day_requests + 1 > self.rpd_eff:
+        if not self.trust_provider and self.day_requests + 1 > self.rpd_eff:
             raise self._exhausted(f"daily request budget used ({self.day_requests} of "
                                   f"{self.rpd_eff} allowed)", midnight)
-        if self.day_tokens + est_tokens > self.tpd_eff:
+        if not self.trust_provider and self.day_tokens + est_tokens > self.tpd_eff:
             raise self._exhausted(f"daily token budget used ({self.day_tokens} of "
                                   f"{int(self.tpd_eff)} allowed)", midnight)
         while True:
@@ -724,8 +726,10 @@ class OpenAICompatClient(OllamaClient):
 
         s = load_llm_settings()
         share = kwargs.pop("tpd_share", 0.85)
+        trust = kwargs.pop("trust_provider", False)
         limiter = kwargs.pop("limiter", None) or RateLimiter(
-            s.rpm, s.tpm, s.rpd, s.tpd, tpd_share=share, state_path=s.quota_state_path,
+            s.rpm, s.tpm, s.rpd, s.tpd, tpd_share=share, trust_provider=trust,
+            state_path=s.quota_state_path,
             key_id=hashlib.sha256(s.api_key.encode("utf-8")).hexdigest()[:12])
         kwargs.setdefault("seed", s.seed)
         kwargs.setdefault("retry_budget_s", s.retry_budget_s)

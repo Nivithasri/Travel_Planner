@@ -902,3 +902,18 @@ def test_account_identifiers_in_api_messages_are_scrubbed():
     text = "Rate limit reached in organization `org_01jabcdefghijk12345` service tier on_demand"
     out = scrub_text(text)
     assert "org_01jabcdefghijk12345" not in out and "Rate limit reached" in out
+
+
+def test_trust_provider_skips_the_local_daily_checks_but_keeps_counting():
+    clk = Clock()
+    strict = limiter(clk, tpd=1000)
+    strict.after_call(strict.before_call(100), 800, None)
+    with pytest.raises(QuotaExhausted):
+        strict.before_call(100)
+    lax = RateLimiter(100, 100000, 10000, 1000, clock=clk.clock, sleep=clk.sleep,
+                      utcnow=lambda: datetime(2026, 10, 20, 9, 0, tzinfo=timezone.utc),
+                      trust_provider=True)
+    lax.after_call(lax.before_call(100), 800, None)
+    entry = lax.before_call(100)  # no local stop: only the provider's 429 can stop it now
+    lax.after_call(entry, 100, None)
+    assert lax.day_tokens == 900  # the spend is still recorded

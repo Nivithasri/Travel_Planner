@@ -274,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="recompute these chunks (their records move to *.superseded.jsonl)")
     ap.add_argument("--tpd-share", type=float, default=0.85, metavar="F",
                     help="share of LLM_TPD to use per UTC day (default 0.85; 0.5 to 1.0 allowed)")
+    ap.add_argument("--trust-provider", action="store_true",
+                    help="skip the client daily budget; the API 429 decides and names the limit")
     ap.add_argument("--max-failures", type=int, default=5,
                     help="stop after this many consecutive transport failures (default 5)")
     args = ap.parse_args(argv)
@@ -327,7 +329,8 @@ def main(argv: list[str] | None = None) -> int:
         posts["n"] += 1
         return requests.post(*a, **k)
 
-    client = OpenAICompatClient.from_settings(post=counting_post, tpd_share=args.tpd_share)
+    client = OpenAICompatClient.from_settings(post=counting_post, tpd_share=args.tpd_share,
+                                              trust_provider=args.trust_provider)
     model, lim = s.generator_model, client.limiter
     ckpt = checkpoint_path(model)
     print(f"generator {model}; judge {s.judge_model} is not used in Phase 3; prompt "
