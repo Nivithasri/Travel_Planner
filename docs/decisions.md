@@ -723,3 +723,6 @@ D74 (2026-10-20) Kappa subset (O4, owner-approved). About 100 judgments, drawn s
 D70 (amendment 2026-10-20) place_scope is LEXICAL: "named" means the query TEXT contains a registry place name or alias, "free" means it contains none (D69 asks whether a note that repeats
    the place name can help). Q37 ("Is the Vivekananda Rock ferry running, latest timings") names only a landmark, so it is "free" with places []; its expected answer scope is still Kanniyakumari. With that,
    place_scope counts are named 23, free 17 (dev: named 5, free 8). scripts/check_queries.py enforces the lexical rule both ways. Query text is exactly as approved. Status: accepted.
+D72 (amendment 2026-10-20) The RRF fusion list is built from the top 100 of each of the four indexes (not only their top 10) with k = 60 and ties broken by chunk_id; its top 10 enters the pool.
+   eval/adapters.py RRF_DEPTH = 100 and RRF_K = 60, recorded in eval/pool.json meta (rrf_k, rrf_depth). Round-1 pool as built: 963 judgments (dev 326, test 637) for 40 queries, so no depth reduction was
+   proposed (limit 1,100). Status: accepted.
