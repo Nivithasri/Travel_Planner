@@ -43,6 +43,7 @@
   "Ooty",
   "Kodaikanal"
  ],
+ "band_km": 150,
  "min_hours": 0.25,
  "note": "Fitted values are written by `python scripts/build_routing.py calibrate` from config/calibration_routes.json (UNVERIFIED reference values, D77). Static values below were fixed before any fit (D78, D79, D80).",
  "rainy_day_mm": 2.5,
