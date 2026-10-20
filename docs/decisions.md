@@ -675,3 +675,9 @@ D65 (2026-10-20) Second API account (owner decision). The owner replaced LLM_API
    owner decided and which touches O12 (sharing) and Valincia's own agreement to the provider's terms: not recorded in the repo; (2) whether the provider's terms allow using a second account to continue after one is
    used up was NOT checked by the assistant (no terms were read); (3) the limits LLM_RPM, LLM_TPM, LLM_RPD, LLM_TPD in .env were not changed and are assumed equal on both accounts. Status: accepted by the owner's
    instruction.
+D66 (2026-10-20) A 429 is waited out up to 290 s, and its reason is kept. Evidence: the run with the owner's own key stopped at 75,198 tokens and 91 requests of that key (far below 200,000 tokens
+   and 1,000 requests a day) with "HTTP 429: the API asks to wait 275 s"; the client treated any Retry-After over 120 s as a daily-quota stop and exited with code 5, although 275 s is a short wait,
+   and it did not keep the API's explanation, so the limit that was hit (per minute, per day, or a shared account limit) is unknown. Change: MAX_RETRY_AFTER_S is 290 s (a longer wait is still a quota
+   stop, as for a daily reset); the server's wait is no longer counted against the retry budget (otherwise the call after a 275 s wait would get a squeezed read timeout); the scrubbed first 300
+   characters of every 429 body are kept in the message, so the next stop names its limit. Not claimed: why the limit was reached at 75k tokens (a limit shared by the two accounts, a rolling
+   window, or another use of the same key are all possible; none was checked). Status: accepted.

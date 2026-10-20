@@ -253,9 +253,13 @@ class OllamaClient:
                 delay = float(retry_after)
             else:
                 delay = self.backoff_base * (2**attempt) * (0.5 + random.random() / 2)
-            if attempt == self.max_retries or self._clock() - start + delay >= self.retry_budget_s:
+            server_wait = retry_after is not None  # D66: not part of the retry budget
+            if attempt == self.max_retries or (
+                    not server_wait and self._clock() - start + delay >= self.retry_budget_s):
                 break
             self._sleep(delay)
+            if server_wait:
+                start += delay
         if isinstance(last, _BadBody):
             raise BadResponseError(f"{last} (after {attempts} attempts)") from last
         raise LLMError(
@@ -450,7 +454,7 @@ CHAT_COMPLETIONS_PATH = "/chat/completions"
 MODELS_PATH = "/models"
 MAX_COMPLETION_TOKENS_CAP = 400  # D59 set 300; D64 raised it: 5% of replies were cut off at 300
 REASONING_EFFORTS = ("low", "medium", "high")
-MAX_RETRY_AFTER_S = 120.0  # a longer Retry-After is a quota stop, not a wait
+MAX_RETRY_AFTER_S = 290.0  # a longer Retry-After is a quota stop, not a wait (D66: was 120)
 _DURATION = re.compile(r"(\d+(?:\.\d+)?)(ms|d|h|m|s)")
 _UNIT_S = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0, "d": 86400.0}
 
@@ -787,15 +791,16 @@ class OpenAICompatClient(OllamaClient):
             if self.limiter is not None:
                 self.limiter.n429 += 1
             wait = retry_after_seconds(self._last_headers)
+            detail = " ".join(self._scrub(resp.text[:300]).split())  # which limit, as the API says
             if wait is None:
-                raise _Retryable("HTTP 429 without Retry-After")
+                raise _Retryable(f"HTTP 429 without Retry-After: {detail}")
             if wait > MAX_RETRY_AFTER_S:
                 lim = self.limiter
                 raise QuotaExhausted(
-                    f"HTTP 429: the API asks to wait {int(wait)} s", reset_in_s=wait,
+                    f"HTTP 429: the API asks to wait {int(wait)} s ({detail})", reset_in_s=wait,
                     tokens_today=lim.day_tokens if lim else 0,
                     requests_today=lim.day_requests if lim else 0)
-            raise _RetryAfter(f"HTTP 429, retry after {wait:g} s", wait)
+            raise _RetryAfter(f"HTTP 429, retry after {wait:g} s: {detail}", wait)
         if status >= 500:
             raise _Retryable(f"HTTP {status}")
         if status == 400:

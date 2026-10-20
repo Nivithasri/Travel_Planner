@@ -861,3 +861,38 @@ def test_a_flat_state_file_from_before_per_key_counts_is_read_as_legacy(tmp_path
     assert new_key.day_tokens == 0  # not charged with the old key's spend
     new_key.after_call(new_key.before_call(100), 50, None)
     assert json.loads(state.read_text(encoding="utf-8"))["keys"]["legacy"]["tokens"] == 193324
+
+
+def test_a_429_asking_for_a_few_minutes_is_waited_out_and_the_wait_is_not_charged_to_the_budget(
+        tmp_path):
+    timeouts = []
+
+    def answers(n, payload):
+        message = "Rate limit reached ... Please try again in 4m35s."
+        return (HTTP(429, {"error": {"message": message}}, headers={"Retry-After": "275"})
+                if n == 1 else completion("fine"))
+
+    clk = Clock()
+    post = Post(answers)
+    orig = post.__call__
+
+    def spy(url, json=None, headers=None, timeout=None):
+        timeouts.append(timeout)
+        return orig(url, json=json, headers=headers, timeout=timeout)
+
+    client = OpenAICompatClient(BASE, KEY, DiskCache(tmp_path / "c"), post=spy, sleep=clk.sleep,
+                                clock=clk.clock, max_retries=3, retry_budget_s=300.0)
+    assert client.chat(MESSAGES, MODEL, options=OPTIONS) == "fine"
+    assert clk.slept == [275.0] and len(timeouts) == 2
+    assert timeouts[1][1] > 200  # the read timeout was not squeezed by the 275 s already waited
+
+
+def test_a_429_longer_than_the_limit_stops_with_the_apis_reason_scrubbed(tmp_path):
+    body = {"error": {"message": f"Rate limit reached for model on tokens per day (TPD): Limit "
+                      f"200000, Used 199900. Visit https://{HOST}/limits {KEY}"}}
+    client, post, _ = make(tmp_path, [HTTP(429, body, headers={"retry-after": "4000"})])
+    with pytest.raises(QuotaExhausted) as exc:
+        client.chat(MESSAGES, MODEL, options=OPTIONS)
+    msg = str(exc.value)
+    assert "tokens per day (TPD)" in msg and "Limit 200000" in msg  # which limit it was
+    assert KEY not in msg and HOST not in msg and "https://" not in msg and len(post.calls) == 1
