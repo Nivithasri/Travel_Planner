@@ -5,7 +5,7 @@ Phase 2 (cleaning and chunking) is COMPLETE: the corpus is FROZEN (2026-10-19T16
 `data/processed/FROZEN` exists; the hook blocks Edit/Write on every path under data/processed and `scripts/process.py --write`
 refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Nothing has been pushed since the Step 0 tag fix: `phase-1-done` is on
 61f1355 (remote updated by an owner-authorized force push of that one tag); `phase-2-done` is local only. Push only when asked.
-Phase 3 (enrichment and indexing) is IN PROGRESS on a changed route (see "Phase 3 state" below). Read this file, LOG.md, docs/phase-status.md first.
+Phase 3 (enrichment and indexing): enrichment and indexes are BUILT, the tag waits for the owner (see "Phase 3 state" below). Read this file, LOG.md, docs/phase-status.md first.
 
 ## The frozen corpus (verify with `python -m pytest -q` and `sha256sum data/processed/*`)
 | file | sha256 |
@@ -24,43 +24,28 @@ D23: 17 of 26 places pass at chunk level (18 at raw level; Kodaikanal fails at c
 Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source types, one blog host; 0 published chunks in the
 18-month window (freshness comes only from the live layer, D32); no Reddit, no official, no YouTube.
 
-## Phase 3 state (2026-10-20, IN PROGRESS; not tagged; FULL RUN UNDER WAY since 2026-10-19 UTC)
-Route (D59, supersedes D56; amends D1, D49, D58): the Kaggle account is banned, so enrichment uses a hosted OpenAI-compatible API on its FREE tier (Groq): generator
-openai/gpt-oss-20b, judge openai/gpt-oss-120b (unused in Phase 3). Embeddings are computed LOCALLY on CPU with sentence-transformers bge-m3 (models/bge-m3-full, gitignored,
-weights hashed in models/bge-m3-full/WEIGHTS_MANIFEST.json). Prompt `enrich-v4` (D62 applied, D63, D64: reply cap 400 tokens). The 79-chunk pilot passed the gate (LOG
-2026-10-20): 2 of 79 notes fell back as ungrounded, 0 leaks, JSON valid, the three earlier problem notes (Badami, Hampi, Auroville) fixed. The index code is committed and was dry-run on a SCRATCH file
-(data/enriched/scratch/, pilot checkpoint only): it works end to end. NOTHING real is built: data/enriched/chunks.jsonl and index/ do not exist.
-1. OWNER ACTIONS. (a) Add `EMBED_LOCAL_DIR=models/bge-m3-full` to .env: the key is NOT there yet (key names checked; scripts/build_index.py and query_index.py take --model-dir
-   until then). (b) Delete the old Ollama GENERATOR_MODEL/JUDGE_MODEL lines in .env (each key appears twice; the last wins; the scripts warn). (c) You must have read the provider's
-   data-use terms and free-plan limits (D49 does not cover a third-party API); blog chunks stay OFF (no --include-blog) until you decide. (d) Optional but valuable: fill
-   data/enriched/gold_sample.csv (30 chunks; labels empty), then `python scripts/label_sample.py --score` (needs `python scripts/enrich.py --gold` first).
-2. EXACT FULL-RUN PLAN (approved and started by the owner on 2026-10-19 UTC; progress log in the daily routine below).
-   Command, repeated once per UTC day until it prints no INCOMPLETE:
-       python scripts/enrich.py --full --eligible-only
-   Scope: the 17 D33-eligible places without blog = 1,100 chunks, of which 54 are already done by the pilot (checkpoint_enrich-v4_openai-gpt-oss-20b.jsonl), so 1,046 remain.
-   Budget: the client keeps 85% of LLM_TPD per UTC day (170,000 tokens at the limits in .env) and 80% of RPM/TPM/RPD; it stores the day's spend in data/enriched/quota_state.json.
-   Cost measured on the v4 pilot: 812 tokens and 1.00 calls per chunk, so about 209 chunks a day, about 27 minutes of wall time a day (the TPM pacing, ~7.7 s a chunk).
-   PROJECTION (not a measurement): 1,046 x 812 = 849,000 tokens = about 5 days of budget; the day of the start counts only what is left of it (135,985 of 170,000 were spent by
-   the pilots on 2026-10-19 UTC, so about 41 chunks fit before the 00:00 UTC reset, which is 05:30 India time), so expect 5 to 6 calendar days.
-   A day ends with exit code 5 and the message "DAILY QUOTA USED UP ... Tokens used today N ... resets in about H h ... re-run the same command to resume". Other exit codes: 3
-   five failures in a row (re-run the same command), 4 key/model/config rejected (stop and read the message), 130 Ctrl-C. Nothing is lost on any stop: every chunk is checkpointed
-   (data/enriched/checkpoint_enrich-v4_openai-gpt-oss-20b.jsonl) and every reply cached (.cache).
-   After the last day (the command prints no INCOMPLETE):
-       python scripts/enrich.py --assemble --eligible-only      # data/enriched/chunks.jsonl + provenance.jsonl + data/manifests/enriched_manifest.json
-       python scripts/build_index.py                            # real BM25 x2 + dense x2 on CPU, about 81 minutes (0.69 chunks/s measured); resumable every 200 rows
-       python scripts/build_index.py --verify
-       python scripts/query_index.py "quiet beaches in Kerala in monsoon"
-   The 313 chunks of the 9 excluded places and the 283 blog chunks get the rule-based fields and are labelled rule_only in provenance.jsonl (the schema is closed, so the label
-   lives in the sidecar); Phase 6 must read it before trusting their aspect/season fields.
-   Do not use --include-blog before the terms are confirmed.
-3. Comparability: the v1 pilot (200 chunks, qwen2.5 via Ollama, checkpoint_enrich-v1.jsonl) and the v3 pilot are history; nothing is comparable across models or prompts
-   (scripts/compare_runs.py marks it). *.superseded.jsonl files hold recomputed records (D64) and are never read as results.
-4. Enriched chunks go to data/enriched/chunks.jsonl (gitignored), NEVER to data/processed (D48 xi); check_enriched_matches_frozen must pass. Phase 3 may fill context_note,
-   place_type, season_tags, aspect, is_warning and the optional mentioned_places (D50, to be sent to Valincia). O12 still blocks sharing anything enriched with the partner.
-5. Never print or log the URL, the key or response headers: both clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
-6. Not started: the early sample file for Valincia (O12), the final HANDOFF rewrite and the phase-3-done tag.
+## Phase 3 state (2026-10-20: ENRICHMENT AND INDEXES BUILT; waiting for the owner's confirmation before the phase-3-done tag)
+What was done (details and commands in LOG.md; decisions D49 to D67): all 1,100 chunks of the 17 D33-eligible places (blog off) were enriched with prompt enrich-v4 on openai/gpt-oss-20b
+(hosted free tier, D59): 1,062 model-written, 38 fallbacks (37 `ungrounded`, 1 `note_long`), JSON-valid 100%, leak hits 0, 836 tokens a chunk (919,711 in all, 1,180 POSTs). The
+assembled corpus is data/enriched/chunks.jsonl (1,696 rows, sha256 e4885c84031e871a2765b706dbdd9f4c0780c1b6f8ee1fb98479e9be18185135; gitignored) with data/enriched/provenance.jsonl
+(1,087 llm incl. 25 pilot chunks of excluded places, 37 + 1 fallback, 288 rule_only:excluded_place, 283 rule_only:blog_not_sent). `check_enriched_matches_frozen` passes. The indexes are in
+index/ (gitignored): bm25_contextual, bm25_plain, dense_plain.npy, dense_contextual.npy (1,696 x 1,024 float32, normalised), ids.json, index_manifest.json; `python scripts/build_index.py
+--verify` prints VERIFIED. Committed manifests (hashes, counts, params, versions, weight-file sha256s; no text): data/manifests/enriched_manifest.json and index_manifest.json.
+Build time on CPU: dense_plain 2,171 s (0.781 rows/s), dense_contextual 2,344 s (0.724 rows/s), BM25 under 1 s each.
+1. OWNER ACTIONS. (a) Confirm that Phase 3 can be tagged (`git tag phase-3-done` is NOT done). (b) Add `EMBED_LOCAL_DIR=models/bge-m3-full` to .env (still missing; until then
+   `scripts/query_index.py` and `build_index.py` need `--model-dir models/bge-m3-full`). (c) Remove the duplicate old GENERATOR_MODEL/JUDGE_MODEL lines in .env. (d) Fill
+   data/enriched/gold_sample.csv (30 chunks, labels empty) and run `python scripts/label_sample.py --score` after `python scripts/enrich.py --gold`; it needs an API key and the permission rule,
+   and with blog off 20 of the 30 chunks are scored. (e) The provider's terms and Valincia's/other accounts' use are the owner's call (D49, D65, D67); O12 still blocks sharing.
+2. USE OF THE OUTPUT. Rows with provenance `rule_only` (571) and `fallback` (38) carry RULE-BASED fields (aspect, place_type, season_tags, is_warning) and a template context note, not model
+   output; Phase 6 must read provenance.jsonl before trusting those fields (aspect "other" is 44% of the model-written rows; the rule-based aspect agrees with the model on 52.6% of the 1,062 model-written eligible chunks, is_warning on 90.0%; neither is a gold label). The
+   25 pilot chunks of excluded places are model-written. The 9 D33-excluded places stay out of every dev/test query (D33, D39).
+3. Query: `python scripts/query_index.py "<query>" --model-dir models/bge-m3-full` prints four ranked tables (bm25_contextual, bm25_plain, dense_plain, dense_contextual; ties by chunk_id).
+   Three hand-run queries worked; that is a smoke test, not an evaluation (Phase 4/6).
+4. Frozen data: data/processed is read-only; chunks.jsonl is still ee11755106409fd0d6ae8656453fc1ec70560593a9c25348572f01ec804a0003. Enriched chunks and indexes are gitignored (O12).
+5. Never print or log the URL, key or headers: both LLM clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
+6. Not done in Phase 3: the early sample file for Valincia (blocked by O12), the gold score, the final tag.
 
-## Daily routine for the full enrichment run (Phase 3)
+## Daily routine for the full enrichment run (Phase 3; the run FINISHED on 2026-10-20, kept as a record of how it was operated)
 1. The one command, from the repo root, any time after 00:00 UTC (05:30 India time): `python scripts/enrich.py --full --eligible-only`. It resumes by itself from
    data/enriched/checkpoint_enrich-v4_openai-gpt-oss-20b.jsonl and the disk cache; running it twice does no harm. Never add --include-blog until the data-use terms are
    confirmed. Never edit the checkpoint by hand; *.superseded.jsonl files are history, not results.

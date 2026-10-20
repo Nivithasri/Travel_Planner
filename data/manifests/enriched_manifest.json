@@ -1,0 +1,35 @@
+{
+ "by_source": {
+  "fallback:note_long": 1,
+  "fallback:ungrounded": 37,
+  "llm": 1087,
+  "rule_only:blog_not_sent": 283,
+  "rule_only:excluded_place": 288
+ },
+ "bytes": 2581345,
+ "fields": [
+  "context_note",
+  "place_type",
+  "season_tags",
+  "aspect",
+  "is_warning",
+  "mentioned_places"
+ ],
+ "file": "data/enriched/chunks.jsonl",
+ "frozen_chunks_sha256": "ee11755106409fd0d6ae8656453fc1ec70560593a9c25348572f01ec804a0003",
+ "leak_audit_hits": 0,
+ "lines": 1696,
+ "model": "openai/gpt-oss-20b",
+ "options": {
+  "max_tokens": 400,
+  "reasoning_effort": "low"
+ },
+ "prompt_version": "enrich-v4",
+ "provenance_sha256": "cda10137e4c4df1d0e04a4976d47e505825b5b135db0531c2ed7670b08ad5649",
+ "scope": {
+  "eligible_only": true,
+  "include_blog": false
+ },
+ "sha256": "e4885c84031e871a2765b706dbdd9f4c0780c1b6f8ee1fb98479e9be18185135",
+ "written_utc": "2026-10-20T07:46:36Z"
+}

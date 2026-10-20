@@ -681,3 +681,9 @@ D66 (2026-10-20) A 429 is waited out up to 290 s, and its reason is kept. Eviden
    stop, as for a daily reset); the server's wait is no longer counted against the retry budget (otherwise the call after a 275 s wait would get a squeezed read timeout); the scrubbed first 300
    characters of every 429 body are kept in the message, so the next stop names its limit. Not claimed: why the limit was reached at 75k tokens (a limit shared by the two accounts, a rolling
    window, or another use of the same key are all possible; none was checked). Status: accepted.
+D67 (2026-10-20) The full run was finished with several API keys (owner's instruction; follows D65). The owner supplied the keys (per-key spend in data/enriched/quota_state.json under 12-character hashes; five keys were used,
+   two of them accounts of other people, which the owner described as theirs to use). Every chunk of the corpus was written by the same model (openai/gpt-oss-20b) with the same prompt (enrich-v4) and options, so
+   the key does not change the result and nothing records which key wrote which chunk. Observed provider behaviour, recorded as measured: the free tier's "tokens per day" limit (200,000 per model and organisation) behaves
+   as a sliding window; a key that sits at its limit still gets a few chunks per ten minutes, and a fresh key gets a burst of 40 to 70 chunks per ten minutes until its window fills. Modes added for this: `--tpd-share` (up to 1.0),
+   `--trust-provider` (skip the local daily count; the API's 429 decides), `--max-wait` (wait out a 429 of up to 1,800 s). Outcome: 1,100 of 1,100 eligible chunks, 1,062 model-written and 38 fallbacks, 919,711 tokens.
+   Caveats unchanged from D65, not checked by the assistant: the provider's terms on using several accounts, and the data-use agreement of each account holder; O12 (sharing) is untouched. Status: accepted by the owner's instruction.

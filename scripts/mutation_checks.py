@@ -61,7 +61,7 @@ MUTATIONS = [
      '    return content\n\n\nclass OpenAICompatClient',
      '    return content + str(message.get("reasoning", ""))\n\n\nclass OpenAICompatClient'),
     ("M11 daily token budget not enforced", "src/common/llm.py",
-     '        if self.day_tokens + est_tokens > self.tpd_eff:\n',
+     '        if not self.trust_provider and self.day_tokens + est_tokens > self.tpd_eff:\n',
      '        if False:\n'),
     ("M12 Retry-After ignored", "src/common/llm.py",
      '            if retry_after is not None:  # the server said how long to wait: honour it\n',

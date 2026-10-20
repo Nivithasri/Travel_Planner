@@ -36,9 +36,9 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Enrichment code, validation, leak/copy scans, rule fallback, resumable batch, pilot selection, gold sheet (tests: 588 passed; 14 mutations caught)
 - [x] Hosted OpenAI-compatible client with client-side rate limiter, usage accounting and scrubbing (offline tests only; no API call made yet)
 - [x] smoke_llm.py 3/3 (owner); pilot enrich-v4 (79 chunks) passed its gate; index code committed and dry-run on a scratch file (BM25 x2, dense x2, query_index.py, build_index.py --verify)
-- [ ] --full --eligible-only (about 5 to 6 UTC days of free-tier budget; owner approval needed); --assemble
-- [ ] real BM25 + dense build (about 81 min CPU), verify, query_index.py on the real index, index manifest committed
-- [ ] Early sample for Valincia (blocked by O12); HANDOFF rewrite and tag phase-3-done
+- [x] --full --eligible-only finished 2026-10-20: 1,100 of 1,100 (1,062 model-written, 38 fallbacks); `--assemble` wrote data/enriched/chunks.jsonl (1,696 rows; check_enriched_matches_frozen passes)
+- [x] real BM25 x2 + dense x2 built on CPU (76 min), `build_index.py --verify` VERIFIED, query_index.py tried on 3 queries, manifests committed (data/manifests/enriched_manifest.json, index_manifest.json)
+- [ ] Early sample for Valincia (blocked by O12); gold labels and score (owner); tag phase-3-done (waits for the owner's confirmation)
 - [ ] Done when: a script takes a query and returns ranked chunks from each index.
 
 ## Phase 4: Test collection and evaluation harness
