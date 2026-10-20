@@ -32,7 +32,6 @@
     "Group of Monuments at Hampi",
     "Hampe",
     "Hampi Group of Monuments",
-    "Hampi group of monuments (except those under ASI)",
     "Kishkindha-kshetra",
     "Pampa-kshetra",
     "Vijayanagara ruins"
@@ -68,8 +67,7 @@
     "Māmallapuram (India)"
    ],
    "Munnar": [
-    "Kashmir of South India",
-    "Munnar was a town that was formed before the formation of Kerala. It was created by Tamils."
+    "Kashmir of South India"
    ],
    "Mysuru": [
     "Mysore"
@@ -98,7 +96,7 @@
    ]
   },
   "attribution": "Climate: Weather data by Open-Meteo.com (CC BY 4.0), ERA5 reanalysis. Airports: OpenStreetMap contributors (ODbL). Elevations: Wikidata (CC0). Distances and times are model estimates fitted on unverified reference routes (D77).",
-  "decision": "D80",
+  "decision": "D80, D83",
   "places": 26,
   "rainy_day_mm": 2.5,
   "status": "PROVISIONAL",
@@ -145,12 +143,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -182,12 +176,8 @@
       "rain 300.5 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": false,
@@ -219,12 +209,8 @@
       "rain 196 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -256,12 +242,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -293,12 +275,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -330,12 +308,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -367,12 +341,8 @@
       "rain 174.6 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -404,12 +374,8 @@
       "rain 456.9 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -441,14 +407,8 @@
       "rain 382.9 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "b9b6e2df5ecd3e14",
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "b9b6e2df5ecd3e14": "rule_only",
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -480,14 +440,8 @@
       "rain 355.9 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "b9b6e2df5ecd3e14",
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "b9b6e2df5ecd3e14": "rule_only",
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -519,14 +473,8 @@
       "rain 313.8 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "b9b6e2df5ecd3e14",
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "b9b6e2df5ecd3e14": "rule_only",
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -558,20 +506,19 @@
       "rain 261.9 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "b9b6e2df5ecd3e14",
-      "f69f87048cb6f15c"
-     ],
-     "warning_sources": {
-      "b9b6e2df5ecd3e14": "rule_only",
-      "f69f87048cb6f15c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "COK",
     "km": 73.3,
     "name": "Cochin International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 2
    }
   },
   "Auroville": {
@@ -609,16 +556,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -650,16 +589,8 @@
       "rain 226 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": false,
@@ -691,16 +622,8 @@
       "rain 363.4 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -732,16 +655,8 @@
       "rain 167.2 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -773,16 +688,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -814,16 +721,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -855,16 +754,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -896,16 +787,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -937,16 +820,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -978,16 +853,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -1019,16 +886,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -1060,22 +919,19 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "3a8a300381b404fc",
-      "678d67ca2896bdf1",
-      "ac45f2110fadfe68"
-     ],
-     "warning_sources": {
-      "3a8a300381b404fc": "rule_only",
-      "678d67ca2896bdf1": "rule_only",
-      "ac45f2110fadfe68": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "PNY",
     "km": 3.9,
     "name": "Pondicherry Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 3
    }
   },
   "Badami": {
@@ -1114,13 +970,9 @@
      ],
      "verdict": "good",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b",
-      "a365662e7843ed92"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
-      "a365662e7843ed92": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1155,11 +1007,9 @@
      ],
      "verdict": "good",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1194,11 +1044,9 @@
      ],
      "verdict": "good",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1233,13 +1081,9 @@
      ],
      "verdict": "good",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b",
-      "a365662e7843ed92"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
-      "a365662e7843ed92": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1274,13 +1118,9 @@
      ],
      "verdict": "good",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b",
-      "a365662e7843ed92"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
-      "a365662e7843ed92": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1316,11 +1156,9 @@
      "verdict": "fair",
      "warning_chunk_ids": [
       "799cb3aee6f5c43f",
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "799cb3aee6f5c43f": "model_written",
       "d2dbc7680b72b6f3": "model_written"
      }
@@ -1357,11 +1195,9 @@
      "verdict": "fair",
      "warning_chunk_ids": [
       "799cb3aee6f5c43f",
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "799cb3aee6f5c43f": "model_written",
       "d2dbc7680b72b6f3": "model_written"
      }
@@ -1398,11 +1234,9 @@
      "verdict": "fair",
      "warning_chunk_ids": [
       "799cb3aee6f5c43f",
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "799cb3aee6f5c43f": "model_written",
       "d2dbc7680b72b6f3": "model_written"
      }
@@ -1438,11 +1272,9 @@
      ],
      "verdict": "fair",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1477,11 +1309,9 @@
      ],
      "verdict": "fair",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1516,11 +1346,9 @@
      ],
      "verdict": "good",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     },
@@ -1555,11 +1383,9 @@
      ],
      "verdict": "fair",
      "warning_chunk_ids": [
-      "d2dbc7680b72b6f3",
-      "73e5b003ac57ec0b"
+      "d2dbc7680b72b6f3"
      ],
      "warning_sources": {
-      "73e5b003ac57ec0b": "rule_only",
       "d2dbc7680b72b6f3": "model_written"
      }
     }
@@ -1568,6 +1394,11 @@
     "iata": "HBX",
     "km": 89.6,
     "name": "Hubballi Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 2,
+    "rule_only": 2
    }
   },
   "Bengaluru": {
@@ -2120,6 +1951,11 @@
     "iata": "BLR",
     "km": 27.3,
     "name": "Kempegowda International Airport"
+   },
+   "warning_counts": {
+    "fallback": 1,
+    "model_written": 14,
+    "rule_only": 8
    }
   },
   "Bhadrachalam": {
@@ -2157,14 +1993,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -2196,14 +2026,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": false,
@@ -2235,14 +2059,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -2274,14 +2092,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -2313,14 +2125,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -2352,14 +2158,8 @@
       "Tmax 36.8 C >= 35 C"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -2391,14 +2191,8 @@
       "Tmax 39 C >= 38 C"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -2430,14 +2224,8 @@
       "Tmax 39.8 C >= 38 C"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -2470,16 +2258,8 @@
       "Tmax 35.1 C >= 35 C"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3",
-      "f44c56f5457088f4"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only",
-      "f44c56f5457088f4": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -2511,16 +2291,8 @@
       "rain 407.7 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3",
-      "f44c56f5457088f4"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only",
-      "f44c56f5457088f4": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -2552,16 +2324,8 @@
       "rain 324.8 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3",
-      "f44c56f5457088f4"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only",
-      "f44c56f5457088f4": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -2593,22 +2357,19 @@
       "rain 296.6 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2e2f05e2c8920e5d",
-      "b0a0a7c62021c3e3",
-      "f44c56f5457088f4"
-     ],
-     "warning_sources": {
-      "2e2f05e2c8920e5d": "rule_only",
-      "b0a0a7c62021c3e3": "rule_only",
-      "f44c56f5457088f4": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "RJA",
     "km": 116.6,
     "name": "Rajahmundry Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 3
    }
   },
   "Chennai": {
@@ -3161,6 +2922,11 @@
     "iata": "MAA",
     "km": 15.3,
     "name": "Chennai International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 7,
+    "rule_only": 0
    }
   },
   "Gokarna": {
@@ -3713,6 +3479,11 @@
     "iata": "HBX",
     "km": 121.7,
     "name": "Hubballi Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 9,
+    "rule_only": 3
    }
   },
   "Hampi": {
@@ -4265,6 +4036,11 @@
     "iata": "VDY",
     "km": 26.0,
     "name": "Vidyanagar Jindal Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 8,
+    "rule_only": 2
    }
   },
   "Hyderabad": {
@@ -4817,6 +4593,11 @@
     "iata": "HYD",
     "km": 15.2,
     "name": "Rajiv Gandhi International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 10,
+    "rule_only": 6
    }
   },
   "Kanniyakumari": {
@@ -5369,6 +5150,11 @@
     "iata": "TRV",
     "km": 81.1,
     "name": "Thiruvananthapuram International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 6,
+    "rule_only": 1
    }
   },
   "Kochi": {
@@ -5921,6 +5707,11 @@
     "iata": "COK",
     "km": 24.6,
     "name": "Cochin International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 12,
+    "rule_only": 0
    }
   },
   "Kodagu": {
@@ -5960,16 +5751,10 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "6495d95a60525e34"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "6495d95a60525e34": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6005,16 +5790,10 @@
      "verdict": "fair",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "6495d95a60525e34"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "6495d95a60525e34": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6050,16 +5829,10 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "6495d95a60525e34"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "6495d95a60525e34": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6095,16 +5868,10 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "6495d95a60525e34"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "6495d95a60525e34": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6140,16 +5907,10 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "6495d95a60525e34"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "6495d95a60525e34": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6185,16 +5946,10 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "5c0f99fd61077b72"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "5c0f99fd61077b72": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6230,16 +5985,10 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "5c0f99fd61077b72"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "5c0f99fd61077b72": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6275,16 +6024,10 @@
      "verdict": "fair",
      "warning_chunk_ids": [
       "085666e2faf0ddca",
-      "d8898a897119b8c0",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1",
-      "5c0f99fd61077b72"
+      "d8898a897119b8c0"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
-      "5c0f99fd61077b72": "rule_only",
       "d8898a897119b8c0": "model_written"
      }
     },
@@ -6321,14 +6064,10 @@
      "warning_chunk_ids": [
       "085666e2faf0ddca",
       "d8898a897119b8c0",
-      "dbf572f5f73cd562",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1"
+      "dbf572f5f73cd562"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
       "d8898a897119b8c0": "model_written",
       "dbf572f5f73cd562": "model_written"
      }
@@ -6366,14 +6105,10 @@
      "warning_chunk_ids": [
       "085666e2faf0ddca",
       "d8898a897119b8c0",
-      "dbf572f5f73cd562",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1"
+      "dbf572f5f73cd562"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
       "d8898a897119b8c0": "model_written",
       "dbf572f5f73cd562": "model_written"
      }
@@ -6411,14 +6146,10 @@
      "warning_chunk_ids": [
       "085666e2faf0ddca",
       "d8898a897119b8c0",
-      "dbf572f5f73cd562",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1"
+      "dbf572f5f73cd562"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
       "d8898a897119b8c0": "model_written",
       "dbf572f5f73cd562": "model_written"
      }
@@ -6456,14 +6187,10 @@
      "warning_chunk_ids": [
       "085666e2faf0ddca",
       "d8898a897119b8c0",
-      "dbf572f5f73cd562",
-      "07e9a4fb15237a5b",
-      "23d5bec319a6f8e1"
+      "dbf572f5f73cd562"
      ],
      "warning_sources": {
-      "07e9a4fb15237a5b": "rule_only",
       "085666e2faf0ddca": "model_written",
-      "23d5bec319a6f8e1": "rule_only",
       "d8898a897119b8c0": "model_written",
       "dbf572f5f73cd562": "model_written"
      }
@@ -6473,6 +6200,11 @@
     "iata": "CNN",
     "km": 59.9,
     "name": "Kannur International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 3,
+    "rule_only": 8
    }
   },
   "Kodaikanal": {
@@ -6510,16 +6242,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44",
-      "97226419d4f8101c"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only",
-      "97226419d4f8101c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": true,
@@ -6551,14 +6275,8 @@
       "rain 313.8 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": true,
@@ -6590,14 +6308,8 @@
       "rain 305 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -6629,16 +6341,8 @@
       "rain 219.4 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44",
-      "97226419d4f8101c"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only",
-      "97226419d4f8101c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -6670,16 +6374,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44",
-      "97226419d4f8101c"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only",
-      "97226419d4f8101c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -6711,16 +6407,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "1b0648ee382d8c31",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "1b0648ee382d8c31": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -6752,16 +6440,8 @@
       "rain 152.3 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "1b0648ee382d8c31",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "1b0648ee382d8c31": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -6793,16 +6473,8 @@
       "rain 261.3 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "1b0648ee382d8c31",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "1b0648ee382d8c31": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -6834,14 +6506,8 @@
       "rain 206.8 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -6873,14 +6539,8 @@
       "rain 194.3 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -6912,14 +6572,8 @@
       "rain 230.1 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -6951,20 +6605,19 @@
       "rain 209.4 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "1641a244975e949b",
-      "76034d8d66874e44"
-     ],
-     "warning_sources": {
-      "1641a244975e949b": "rule_only",
-      "76034d8d66874e44": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "IXM",
     "km": 79.7,
     "name": "Madurai International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 4
    }
   },
   "Madurai": {
@@ -7517,6 +7170,11 @@
     "iata": "IXM",
     "km": 9.8,
     "name": "Madurai International Airport"
+   },
+   "warning_counts": {
+    "fallback": 1,
+    "model_written": 7,
+    "rule_only": 0
    }
   },
   "Mahabalipuram": {
@@ -7556,11 +7214,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7597,11 +7253,9 @@
      "verdict": "fair",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7638,11 +7292,9 @@
      "verdict": "poor",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7679,11 +7331,9 @@
      "verdict": "fair",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7720,11 +7370,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7761,11 +7409,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7802,11 +7448,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7843,11 +7487,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7884,11 +7526,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7925,11 +7565,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -7966,11 +7604,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -8007,11 +7643,9 @@
      "verdict": "good",
      "warning_chunk_ids": [
       "c3eadfdd392d5821",
-      "f4e33be9ccce79f6",
-      "a58b70dacb944c31"
+      "f4e33be9ccce79f6"
      ],
      "warning_sources": {
-      "a58b70dacb944c31": "rule_only",
       "c3eadfdd392d5821": "model_written",
       "f4e33be9ccce79f6": "model_written"
      }
@@ -8021,6 +7655,11 @@
     "iata": "MAA",
     "km": 41.7,
     "name": "Chennai International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 2,
+    "rule_only": 1
    }
   },
   "Munnar": {
@@ -8058,20 +7697,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a",
-      "9028bfae27196cf6",
-      "d165efc6d3df9ca6"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only",
-      "9028bfae27196cf6": "rule_only",
-      "d165efc6d3df9ca6": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": true,
@@ -8103,16 +7730,8 @@
       "rain 488 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": true,
@@ -8144,16 +7763,8 @@
       "rain 327.6 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -8185,20 +7796,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a",
-      "9028bfae27196cf6",
-      "d165efc6d3df9ca6"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only",
-      "9028bfae27196cf6": "rule_only",
-      "d165efc6d3df9ca6": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -8230,20 +7829,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a",
-      "9028bfae27196cf6",
-      "d165efc6d3df9ca6"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only",
-      "9028bfae27196cf6": "rule_only",
-      "d165efc6d3df9ca6": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -8275,20 +7862,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a",
-      "9028bfae27196cf6",
-      "d165efc6d3df9ca6"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only",
-      "9028bfae27196cf6": "rule_only",
-      "d165efc6d3df9ca6": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -8320,20 +7895,8 @@
       "rain 175.1 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a",
-      "9028bfae27196cf6",
-      "d165efc6d3df9ca6"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only",
-      "9028bfae27196cf6": "rule_only",
-      "d165efc6d3df9ca6": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": true,
@@ -8365,20 +7928,8 @@
       "rain 447 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a",
-      "9028bfae27196cf6",
-      "d165efc6d3df9ca6"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only",
-      "9028bfae27196cf6": "rule_only",
-      "d165efc6d3df9ca6": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": true,
@@ -8410,16 +7961,8 @@
       "rain 463.6 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": true,
@@ -8451,16 +7994,8 @@
       "rain 572.8 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": true,
@@ -8492,16 +8027,8 @@
       "rain 605.9 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": true,
@@ -8533,22 +8060,19 @@
       "rain 408.5 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "08ea6b58e57efd11",
-      "7b8e762b00d2fd90",
-      "8a290fd32efce52a"
-     ],
-     "warning_sources": {
-      "08ea6b58e57efd11": "rule_only",
-      "7b8e762b00d2fd90": "rule_only",
-      "8a290fd32efce52a": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "COK",
     "km": 72.3,
     "name": "Cochin International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 5
    }
   },
   "Mysuru": {
@@ -9077,6 +8601,11 @@
     "iata": "MYQ",
     "km": 8.7,
     "name": "Mysore Mandakalli Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 4,
+    "rule_only": 0
    }
   },
   "Ooty": {
@@ -9118,11 +8647,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9163,11 +8690,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9208,11 +8733,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9253,11 +8776,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9298,11 +8819,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9478,11 +8997,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9523,11 +9040,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9568,11 +9083,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9613,11 +9126,9 @@
       "692cbfddb97f8d6a",
       "7f1fed18d033bea3",
       "b0579c17c5ef1681",
-      "f5372d181943a653",
-      "29e20035344b976a"
+      "f5372d181943a653"
      ],
      "warning_sources": {
-      "29e20035344b976a": "rule_only",
       "692cbfddb97f8d6a": "model_written",
       "7f1fed18d033bea3": "model_written",
       "b0579c17c5ef1681": "model_written",
@@ -9629,6 +9140,11 @@
     "iata": "CJB",
     "km": 56.7,
     "name": "Coimbatore International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 5,
+    "rule_only": 2
    }
   },
   "Pondicherry": {
@@ -10091,6 +9607,11 @@
     "iata": "PNY",
     "km": 4.7,
     "name": "Pondicherry Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 2,
+    "rule_only": 0
    }
   },
   "Rameswaram": {
@@ -10128,14 +9649,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -10167,14 +9682,8 @@
       "rain 243.4 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": false,
@@ -10206,14 +9715,8 @@
       "rain 400.7 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -10245,14 +9748,8 @@
       "rain 228.4 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -10284,14 +9781,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -10323,16 +9814,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "16bf4b8c60c4431c",
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "16bf4b8c60c4431c": "rule_only",
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -10364,16 +9847,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "16bf4b8c60c4431c",
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "16bf4b8c60c4431c": "rule_only",
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -10405,16 +9880,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "16bf4b8c60c4431c",
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "16bf4b8c60c4431c": "rule_only",
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -10446,14 +9913,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -10485,14 +9946,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -10524,14 +9979,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -10563,20 +10012,19 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "d1964b590a61982f",
-      "f0a718b748b45997"
-     ],
-     "warning_sources": {
-      "d1964b590a61982f": "rule_only",
-      "f0a718b748b45997": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "IXM",
     "km": 146.4,
     "name": "Madurai International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 3
    }
   },
   "Srisailam": {
@@ -10614,16 +10062,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -10655,16 +10095,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": false,
@@ -10696,16 +10128,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -10737,16 +10161,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -10778,16 +10194,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -10819,16 +10227,8 @@
       "Tmax 35.5 C >= 35 C"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -10860,16 +10260,8 @@
       "Tmax 37.5 C >= 35 C"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -10901,16 +10293,8 @@
       "Tmax 36.9 C >= 35 C"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -10942,16 +10326,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -10983,16 +10359,8 @@
       "rain 153.9 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -11024,16 +10392,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -11065,22 +10425,19 @@
       "rain 160.5 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "2c193824e2192507",
-      "7d501e17a91ff9eb",
-      "8c3ab1cc518c5ce7"
-     ],
-     "warning_sources": {
-      "2c193824e2192507": "rule_only",
-      "7d501e17a91ff9eb": "rule_only",
-      "8c3ab1cc518c5ce7": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "KJB",
     "km": 84.8,
     "name": "Uyyalawada Narasimha Reddy Airport ,   Kurnool"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 3
    }
   },
   "Tirupati": {
@@ -11585,6 +10942,11 @@
     "iata": "TIR",
     "km": 13.3,
     "name": "Tirupati Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 3,
+    "rule_only": 0
    }
   },
   "Varkala": {
@@ -11622,14 +10984,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49",
-      "f65e5ccd6ddea992"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only",
-      "f65e5ccd6ddea992": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -11727,14 +11083,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49",
-      "f65e5ccd6ddea992"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only",
-      "f65e5ccd6ddea992": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -11766,14 +11116,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49",
-      "f65e5ccd6ddea992"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only",
-      "f65e5ccd6ddea992": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -11805,14 +11149,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49",
-      "f65e5ccd6ddea992"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only",
-      "f65e5ccd6ddea992": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -11844,14 +11182,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49",
-      "f65e5ccd6ddea992"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only",
-      "f65e5ccd6ddea992": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -11883,14 +11215,8 @@
       "rain 407.5 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49",
-      "f65e5ccd6ddea992"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only",
-      "f65e5ccd6ddea992": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -11922,12 +11248,8 @@
       "rain 321.9 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -11959,12 +11281,8 @@
       "rain 255.8 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -11996,12 +11314,8 @@
       "rain 276.6 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -12033,18 +11347,19 @@
       "rain 257.4 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "65decbaaf65c9b49"
-     ],
-     "warning_sources": {
-      "65decbaaf65c9b49": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "TRV",
     "km": 35.7,
     "name": "Thiruvananthapuram International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 2
    }
   },
   "Visakhapatnam": {
@@ -12501,6 +11816,11 @@
     "iata": "VTZ",
     "km": 38.7,
     "name": "Alluri Sitarama Raju International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 1,
+    "rule_only": 0
    }
   },
   "Warangal": {
@@ -12538,14 +11858,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -12577,14 +11891,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": false,
@@ -12616,14 +11924,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -12655,14 +11957,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -12694,14 +11990,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -12733,14 +12023,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -12772,14 +12056,8 @@
       "Tmax 37.5 C >= 35 C"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -12811,14 +12089,8 @@
       "Tmax 38.5 C >= 38 C"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": false,
@@ -12850,14 +12122,8 @@
       "rain 171.8 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": false,
@@ -12889,14 +12155,8 @@
       "rain 342.5 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": false,
@@ -12928,14 +12188,8 @@
       "rain 247.2 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -12967,20 +12221,19 @@
       "rain 212.8 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "750530aefcdb0786",
-      "d7b58425a713440c"
-     ],
-     "warning_sources": {
-      "750530aefcdb0786": "rule_only",
-      "d7b58425a713440c": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "WGC",
     "km": 6.8,
     "name": "Warangal Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 2
    }
   },
   "Wayanad": {
@@ -13018,20 +12271,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "10": {
      "access_risk": false,
@@ -13063,20 +12304,8 @@
       "rain 244.8 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1f2dc42c59bd4b0e",
-      "1fcd2d26c8d883b4",
-      "22552964533f3efb"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1f2dc42c59bd4b0e": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "22552964533f3efb": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "11": {
      "access_risk": false,
@@ -13108,20 +12337,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1f2dc42c59bd4b0e",
-      "1fcd2d26c8d883b4",
-      "22552964533f3efb"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1f2dc42c59bd4b0e": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "22552964533f3efb": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "12": {
      "access_risk": false,
@@ -13153,20 +12370,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "2": {
      "access_risk": false,
@@ -13198,20 +12403,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "3": {
      "access_risk": false,
@@ -13243,20 +12436,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "4": {
      "access_risk": false,
@@ -13288,20 +12469,8 @@
       "rain and heat below the thresholds"
      ],
      "verdict": "good",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "5": {
      "access_risk": false,
@@ -13333,20 +12502,8 @@
       "rain 242.7 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "6": {
      "access_risk": true,
@@ -13378,20 +12535,8 @@
       "rain 399.3 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "7": {
      "access_risk": true,
@@ -13423,20 +12568,8 @@
       "rain 506.8 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "8": {
      "access_risk": true,
@@ -13468,20 +12601,8 @@
       "rain 437.2 mm >= 300 mm"
      ],
      "verdict": "poor",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     },
     "9": {
      "access_risk": false,
@@ -13513,26 +12634,19 @@
       "rain 272.7 mm >= 150 mm"
      ],
      "verdict": "fair",
-     "warning_chunk_ids": [
-      "0d8a26be2c1f20cc",
-      "1acb73b326762be9",
-      "1fcd2d26c8d883b4",
-      "29dd38849ec9e4c2",
-      "2b3802e81a03ae6d"
-     ],
-     "warning_sources": {
-      "0d8a26be2c1f20cc": "rule_only",
-      "1acb73b326762be9": "rule_only",
-      "1fcd2d26c8d883b4": "rule_only",
-      "29dd38849ec9e4c2": "rule_only",
-      "2b3802e81a03ae6d": "rule_only"
-     }
+     "warning_chunk_ids": [],
+     "warning_sources": {}
     }
    },
    "nearest_airport": {
     "iata": "CCJ",
     "km": 56.4,
     "name": "Calicut International Airport"
+   },
+   "warning_counts": {
+    "fallback": 0,
+    "model_written": 0,
+    "rule_only": 11
    }
   }
  }
