@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from src.tools.routing import (
     AIRPORTS_ALLOWLIST_PATH,
     AIRPORTS_RAW_PATH,
@@ -16,6 +18,10 @@ from src.tools.routing import (
 IN_REGION = ("BEP BLR BPM CCJ CDP CJB CNN COK GBI HBX HYD IXE IXG IXM IXX KJB MAA MYQ NVY PNY PUT "
              "RJA RMD RQY SXV TCR TIR TRV TRZ VDY VGA VTZ WGC").split()
 OUT_OF_REGION = "ACJ IXU JAF JGB KLH LTU NDC PYB SAG SSE TRR".split()
+
+needs_raw = pytest.mark.skipif(
+    not AIRPORTS_RAW_PATH.exists(),
+    reason="data/raw/overpass is gitignored and absent on a fresh clone")
 
 
 def raw_elements():
@@ -37,11 +43,13 @@ def test_allowlist_is_the_33_in_region_codes():
     assert sorted(doc["out_of_region_excluded"]) == sorted(OUT_OF_REGION)
 
 
+@needs_raw
 def test_every_allowlist_code_is_in_the_saved_overpass_file():
     present = {(e.get("tags") or {}).get("iata") for e in raw_elements()}
     assert set(IN_REGION) <= present
 
 
+@needs_raw
 def test_load_airports_has_one_entry_per_code_and_no_out_of_region():
     airports = load_airports()
     assert sorted(airports) == sorted(IN_REGION)
@@ -68,6 +76,7 @@ def test_dedupe_drops_codes_outside_the_allowlist_and_pointless_elements():
     assert list(dedupe_airports(elements, ["AAA"])) == ["AAA"]
 
 
+@needs_raw
 def test_the_duplicated_codes_resolve_to_one_entry_each():
     airports = load_airports()
     by_iata = {}
@@ -85,6 +94,7 @@ def test_element_point_uses_center_for_ways_and_relations():
     assert element_point({"type": "way"}) is None
 
 
+@needs_raw
 def test_nearest_airport_never_returns_an_out_of_region_code():
     airports = load_airports()
     # Rameswaram is about 100 km from Jaffna (JAF, Sri Lanka); the allowlist keeps JAF out
@@ -101,6 +111,7 @@ def test_military_tags_are_detected():
     assert not is_military({})
 
 
+@needs_raw
 def test_saved_file_marks_exactly_the_military_airports_among_the_allowlist():
     airports = load_airports()
     assert {k for k, v in airports.items() if v["military"]} == {"IXX", "BEP", "BPM"}

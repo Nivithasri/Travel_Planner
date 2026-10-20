@@ -555,6 +555,9 @@ def load_script(name):
     return mod
 
 
+@pytest.mark.skipif(
+    not (Path(__file__).resolve().parents[1] / "data" / "processed" / "chunks.jsonl").exists(),
+    reason="data/processed/chunks.jsonl is gitignored and absent on a fresh clone")
 def test_enrich_script_exit_codes_are_distinct_and_quota_prints_the_resume_command(
         tmp_path, monkeypatch, capsys):
     script = load_script("enrich")
@@ -597,6 +600,9 @@ def test_enrich_script_exit_codes_are_distinct_and_quota_prints_the_resume_comma
     assert script.main(["--full"]) == 3
 
 
+@pytest.mark.skipif(
+    not (Path(__file__).resolve().parents[1] / "data" / "processed" / "chunks.jsonl").exists(),
+    reason="data/processed/chunks.jsonl is gitignored and absent on a fresh clone")
 def test_enrich_script_refuses_to_run_when_a_limit_is_unset(tmp_path, monkeypatch, capsys):
     script = load_script("enrich")
     env(monkeypatch)
