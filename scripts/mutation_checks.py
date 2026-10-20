@@ -133,12 +133,46 @@ def run_tests(tests: list[str] = TESTS) -> tuple[str, list[str]]:
     return (lines[-1] if lines else "no output"), failed
 
 
+ROUTING_TESTS = ["tests/test_airports.py", "tests/test_travel_model.py",
+                 "tests/test_travel_time.py", "tests/test_season.py"]
+
+# Phase 5 (D76 to D81): each mutation is run against the routing and season tests (M30 to M37).
+ROUTING_MUTATIONS = [
+    ("M30 hill factor ignored (hill edges use the plain parameters)",
+     "src/tools/travel_model.py",
+     '    prefix = "hill_" if hill else ""\n    km = haversine_km',
+     '    prefix = ""\n    km = haversine_km'),
+    ("M31 pair key not sorted (asymmetric lookup)", "src/tools/travel_model.py",
+     'return "|".join(sorted((a, b)))', 'return "|".join((a, b))'),
+    ("M32 hold-outs admitted as nodes", "src/tools/travel_model.py",
+     "    dest = [e for e in registry.entries if not e.holdout]\n    held",
+     "    dest = list(registry.entries)\n    held"),
+    ("M33 allowlist not applied (out-of-region airports kept)", "src/tools/routing.py",
+     "        if iata not in allow or point is None:\n", "        if point is None:\n"),
+    ("M34 plain climate file preferred over the no-elevation file", "src/tools/season.py",
+     '    for name in ("archive_2015_2024_noelev.json", "archive_2015_2024.json"):',
+     '    for name in ("archive_2015_2024.json", "archive_2015_2024_noelev.json"):'),
+    ("M35 rule_only rows counted as model-written", "src/tools/season.py",
+     '"rule_only": "rule_only"}', '"rule_only": "model_written"}'),
+    ("M36 rainy-day threshold exclusive (> instead of >=)", "src/tools/season.py",
+     "+= 1 if pr >= rainy_day_mm else 0", "+= 1 if pr > rainy_day_mm else 0"),
+    ("M37 hub distance rule inverted (keeps airports near destinations)",
+     "src/tools/travel_model.py",
+     'lon) > min_km for lat, lon in points', 'lon) < min_km for lat, lon in points'),
+]
+
+
 def main() -> int:
     survived = 0
     rows = []
     plan = [(m, EVAL_TESTS) for m in EVAL_MUTATIONS]
-    if "--eval" not in sys.argv[1:]:  # --eval runs only M20 to M29
-        plan = [(m, TESTS) for m in MUTATIONS] + plan
+    routing = [(m, ROUTING_TESTS) for m in ROUTING_MUTATIONS]
+    if "--routing" in sys.argv[1:]:  # --routing runs only M30 to M37
+        plan = routing
+    elif "--eval" in sys.argv[1:]:  # --eval runs only M20 to M29
+        pass
+    else:
+        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing
     for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()
