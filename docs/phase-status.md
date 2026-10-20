@@ -1,5 +1,6 @@
 # Phase status
 Tick only after verification commands were run (see LOG.md).
+Phases 1 to 5 are CLOSED (owner-confirmed). Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 6 (Valincia).
 
 ## Phase 0: Scaffold and shared infrastructure
 - [x] pyproject.toml, src/common/{config,cache,llm,schemas}.py (verified: `python -m pytest -q` 128 passed, `python -m ruff check .` clean)
@@ -52,15 +53,17 @@ Tick only after verification commands were run (see LOG.md).
 - [ ] Not done: significance tests (Phase 6), round-2 pooling (D5, after Phase 6)
 - [x] Done when: one command prints all metrics for any retrieval function (`python eval/run_eval.py --retriever <module:function> --split dev|test`).
 
-## Phase 5: Routing reference data (BUILT 2026-10-20, review PASS WITH NOTES, fix round done; awaiting owner confirmation; NOT tagged; parameters PROVISIONAL)
+## Phase 5: Routing reference data (CLOSED 2026-10-20, owner-confirmed, tag phase-5-done; review PASS WITH NOTES, fix round done; parameters PROVISIONAL until the route spot-check)
 - [x] Decisions D76-D83 (amended D76, D78, D79; D82, D83 after the review); 48 nodes = 26 destinations + 22 hubs (hold-outs never nodes)
 - [x] O13 airport allowlist as a data file with tests; dedupe rule; military airports excluded (D79); nearest_airport re-derived and every returned code resolves in travel_time (D83)
 - [x] Travel matrix: index/travel_matrix.json (1,128 pairs), src/tools/travel_time.py; model = road factor + two-band speed + fixed ghat surcharge per hill endpoint (D78 amended, D82); hill flag on 6 nodes; 0 triangle violations (was 230, by construction)
 - [x] Season data: index/season_data.json (26 places x 12 months), src/tools/check_season.py with evidence counts by provenance, model-written warnings only, confidence
 - [x] Verified (commands in LOG.md): pytest 868 passed, ruff clean, M1-M41 all caught, two rebuilds identical, fresh clone 850 passed / 18 skipped / 0 failed, chunks.jsonl sha256 ee117551..., request log 443
 - [ ] Calibration reference routes are UNVERIFIED (from memory): fit is PROVISIONAL until the owner spot-checks about 8 routes; errors are agreement with those values, not accuracy; road km on hill edges is 20-26% short
-- [ ] Sanity table 17 of 19: two heat misses (Chennai May, Hampi May), thresholds unchanged pending an owner decision
-- [ ] Tag phase-5-done: waits for the owner
+- [x] Sanity table 17 of 19: two heat misses (Chennai May, Hampi May) kept as measured, recorded in D80 amended (days with Tmax >= 38 is a later option, not built)
+- [x] Tag phase-5-done (lightweight, local, not pushed); owner confirmed the phase
+- [ ] popularity_tercile (D44): NOT built; Phase 7 reads D44 and decides
+- [ ] travel_km is unreliable on hill legs (20-26% short): documented in contracts.md, use hours
 - [x] Done when: both functions return instantly for every registry place (tests time 26 places x 12 months and 1,000 lookups).
 
 ## Phase 6: Retrieval engine and ablations
