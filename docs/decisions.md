@@ -733,3 +733,7 @@ D75 (2026-10-20) Labels follow docs/labelling_rubric.md AND the owner's tie-brea
    kappa measures agreement between two labellers who may have used different rules, so a low value may reflect different rules and not only noisy judgments. The labelled sheets store labels as floats (0.0, 1.0, 2.0);
    the importer accepts a float only when it is exactly 0.0, 1.0 or 2.0 and converts it to an int; anything else is rejected. The labelled sheets are verified row by row against the exports before import (only label, note
    and rubric may differ). The sheets and labelled files stay gitignored (chunk text, O12). Status: accepted.
+D75 (amendment 2026-10-20, owner confirmation) The partner who labelled the 100-judgment kappa sheet saw ONLY docs/labelling_rubric.md. The tie-break rules in docs/labelling_rules.md were agreed
+   with her LATER, after her labels. Therefore kappa 0.825 (unweighted) and 0.848 (linear-weighted), agreement 0.900, is RUBRIC-ONLY agreement: the two labellers did not share the tie-break rules when they
+   labelled. The owner's labels follow the rubric plus the rules. UNKNOWN, and stays so: when the owner wrote the rules relative to labelling the test rows (rules 12 and 13 cite test rows of Q36 and Q38).
+   Still one partner, 100 judgments, Wikipedia and Wikivoyage chunks only. The owner confirmed Phase 4 as closed. Status: accepted.

@@ -6,7 +6,7 @@ Phase 2 (cleaning and chunking) is COMPLETE: the corpus is FROZEN (2026-10-19T16
 refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Nothing has been pushed since the Step 0 tag fix: `phase-1-done` is on
 61f1355 (remote updated by an owner-authorized force push of that one tag); `phase-2-done` is local only. Push only when asked.
 Phase 3 (enrichment and indexing) is COMPLETE, confirmed by the owner, tagged `phase-3-done` (local, not pushed).
-Phase 4 (test collection and harness) is DONE in code and results (2026-10-20); the owner's confirmation and the tag phase-4-done are PENDING (no tag was made). Next: Phase 5 (see "Next phase" below). Read this file, LOG.md, docs/phase-status.md first.
+Phase 4 (test collection and harness) is CLOSED (2026-10-20, owner-confirmed), tagged `phase-4-done` (lightweight; main and that tag pushed to origin on the owner's instruction). Next: Phase 5 (see "Next phase" below). Read this file, LOG.md, docs/phase-status.md first.
 
 ## The frozen corpus (verify with `python -m pytest -q` and `sha256sum data/processed/*`)
 | file | sha256 |
@@ -46,15 +46,15 @@ Build time on CPU: dense_plain 2,171 s (0.781 rows/s), dense_contextual 2,344 s 
 5. Never print or log the URL, key or headers: both LLM clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
 6. Not done in Phase 3: the early sample file for Valincia (blocked by O12) and the gold score (sheet unlabelled).
 
-## Phase 4 state (labels imported, baselines run; owner: Nivithasri)
+## Phase 4 state (CLOSED; owner: Nivithasri)
 Decisions D70 to D75 in docs/decisions.md; contract change in docs/contracts.md (query fields place_scope, places; qrels_dev/qrels_test).
 WHAT EXISTS (all committed except the gitignored sheets; 793 tests pass, ruff clean, chunks.jsonl sha256 ee117551..., request log 443):
 - eval/queries.json (40; dev 13 / test 27, not 12/28, D70; slice 10; place_scope lexical), scripts/check_queries.py, docs/labelling_rubric.md, docs/labelling_rules.md (owner's rules 1-13, D75).
 - eval/pool.json (963 judgments), eval/qrels_dev.json (326) and eval/qrels_test.json (637): ids and ints 0/1/2 only. eval/kappa_subset.json (100). Sheets and labelled files in eval/sheets/ are gitignored (chunk text, O12): judge_{dev,test}.csv, judge_{dev,test}_labelled.csv, kappa_partner.csv, kappa_partner_labelled.csv.
 - eval/metrics.py, eval/qrels.py (test refused unless --split test), eval/run_eval.py, eval/adapters.py (bm25_contextual, bm25_plain, dense_plain, dense_contextual, rrf4), eval/pooling.py, scripts/pool.py, scripts/import_labels.py (verifies a labelled sheet against its export; floats only as exactly 0.0/1.0/2.0), scripts/kappa.py, scripts/mutation_checks.py (M1-M29).
 RESULTS: LOG.md 2026-10-20 (baselines dev and test, label statistics, kappa 0.825 / 0.848 on 100 judgments from one partner). Reproduce: `python eval/run_eval.py --retriever eval.adapters:dense_contextual --split dev` (needs EMBED_LOCAL_DIR; set HF_HUB_OFFLINE=1). The test split was run once per retriever; Phase 6 must tune on dev only and report test.
-CAUTIONS: unjudged@10 is 0 for the five baselines BY CONSTRUCTION (the pool is their own top 10); a Phase 6 variant will retrieve unjudged chunks, so compare it using unjudged@10 and a round-2 pool (D5). Recall@20 is a lower bound. Fresh@10 is 0 for every retriever (D32). 13 dev and 27 test queries are small; no significance tests yet. D69: no aspect/place_type filter or freshness decay on rule_only/fallback rows unflagged; mentioned_places is not a signal (D50). The owner must confirm D75 (when the rules were written; whether the partner saw them) before the kappa value is quoted without a caveat.
-OWNER STILL DOES: confirm D75 and the phase, then `git tag phase-4-done` (not made).
+CAUTIONS: unjudged@10 is 0 for the five baselines BY CONSTRUCTION (the pool is their own top 10); a Phase 6 variant will retrieve unjudged chunks, so compare it using unjudged@10 and a round-2 pool (D5). Recall@20 is a lower bound. Fresh@10 is 0 for every retriever (D32). 13 dev and 27 test queries are small; no significance tests yet. D69: no aspect/place_type filter or freshness decay on rule_only/fallback rows unflagged; mentioned_places is not a signal (D50). Kappa 0.825 / 0.848 is RUBRIC-ONLY agreement (D75, confirmed): the partner saw only docs/labelling_rubric.md and the tie-break rules were agreed with her later; when the owner wrote the rules relative to labelling the test rows is unknown (rules 12 and 13 cite test rows). Quote it with that caveat.
+Nothing is pending for Phase 4.
 
 ## Next phase: Phase 5 (routing reference data; owner Nivithasri)
 Start in PLAN MODE, wait for approval, do not start Phase 6. Plan section: docs/plan.md Phase 5. Outputs: index/travel_matrix.json, season data, src/tools/travel_time.py, src/tools/check_season.py; both functions must return instantly for every registry place.

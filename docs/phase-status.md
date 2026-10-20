@@ -42,13 +42,13 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Tag phase-3-done (local, not pushed)
 - [x] Done when: a script takes a query and returns ranked chunks from each index (query_index.py, four tables).
 
-## Phase 4: Test collection and evaluation harness (code and results DONE 2026-10-20; owner confirmation and tag phase-4-done PENDING)
+## Phase 4: Test collection and evaluation harness (CLOSED 2026-10-20, owner-confirmed, tag phase-4-done)
 - [x] 40 queries (dev 13, test 27, slice 10, D70), exclusion check, rubric + owner's tie-break rules (D75)
 - [x] Round-1 pool 963 judgments, all labelled by the owner; eval/qrels_dev.json (326) and eval/qrels_test.json (637) imported and committed (ids and ints only)
 - [x] eval/run_eval.py with five baseline adapters: dev and one test run per retriever recorded in LOG.md (nDCG@10 test: bm25_contextual 0.559, bm25_plain 0.453, dense_plain 0.614, dense_contextual 0.708, rrf4 0.665)
-- [x] Kappa on 100 partner judgments: 0.825 unweighted, 0.848 linear-weighted, agreement 0.900 (one partner; rules caveat D75)
+- [x] Kappa on 100 partner judgments: 0.825 unweighted, 0.848 linear-weighted, agreement 0.900 (one partner; RUBRIC-ONLY agreement: she did not see the tie-break rules, D75)
 - [x] Mutations M1-M29 all caught; 793 tests pass; ruff clean
-- [ ] Owner confirms the D75 facts (when the rules were written, whether the partner saw them) and the phase; then tag phase-4-done
+- [x] Owner confirmed D75 (partner saw only the rubric; the rules were agreed with her later; when the owner wrote them relative to labelling the test rows is unknown) and the phase; tag phase-4-done
 - [ ] Not done: significance tests (Phase 6), round-2 pooling (D5, after Phase 6)
 - [x] Done when: one command prints all metrics for any retrieval function (`python eval/run_eval.py --retriever <module:function> --split dev|test`).
 
