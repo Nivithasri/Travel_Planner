@@ -8,6 +8,8 @@ data/raw/*
 !data/raw/.gitkeep
 index/*
 !index/.gitkeep
+!index/travel_matrix.json
+!index/season_data.json
 .cache/
 *.egg-info/
 .claude/settings.local.json
