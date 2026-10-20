@@ -111,7 +111,7 @@ PROGRESS LOG (append one line per day; the numbers come from `python scripts/enr
   `src/common/llm.py`, `load_llm_settings` in `src/common/schemas.py`.
 - Index code: `src/retrieval/build_index.py` (BM25 contextual/plain with bm25s, dense plain/contextual with local sentence-transformers, resumable, manifest, verify), `src/retrieval/search.py`
   (exact numpy cosine, ties by chunk_id), `scripts/build_index.py`, `scripts/query_index.py` (four ranked tables).
-- Tests: 843 passed after Phase 5 (670 at the end of Phase 3; tests/test_process.py, test_enrich.py, test_llm_api.py, test_index.py, test_label_sample.py, test_hooks_scripts.py, ...); `scripts/mutation_checks.py` runs 19 mutations (M1-M19; M17-M19 cover the index code: contextual text built from plain text, tie order).
+- Tests: 868 passed after the Phase 5 fix round (850 passed and 18 skipped on a fresh clone; 670 at the end of Phase 3; tests/test_process.py, test_enrich.py, test_llm_api.py, test_index.py, test_label_sample.py, test_hooks_scripts.py, ...); `scripts/mutation_checks.py` runs 41 mutations (M1-M41: M1-M19 enrichment, LLM client and index code, M20-M29 evaluation, M30-M41 routing and season).
 
 ## How to run
 - `pip install -e .[dev]`; Python 3.10.11 (D9); `python -m pytest -q`, `python -m ruff check .` (not on PATH).
