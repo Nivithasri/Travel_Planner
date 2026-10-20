@@ -4,6 +4,8 @@ You judge ONE chunk against ONE query at a time. Judge what the chunk text says,
 and not how you think a search engine would rank it. You are not told which index returned a chunk; the rows
 are shuffled. The chunk's `place` and `title` columns tell you where the text comes from.
 
+Tie-break rules for recurring cases (named places, free queries with a region, compound queries, accommodation, transport, safety, torn grades): docs/labelling_rules.md (D75). The grade definitions below stay the rubric's.
+
 Excluded-place chunks (the nine D33 places) are judged like any other chunk. If a chunk about such a place answers
 the query, it gets the grade it deserves.
 

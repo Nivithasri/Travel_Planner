@@ -726,3 +726,10 @@ D70 (amendment 2026-10-20) place_scope is LEXICAL: "named" means the query TEXT 
 D72 (amendment 2026-10-20) The RRF fusion list is built from the top 100 of each of the four indexes (not only their top 10) with k = 60 and ties broken by chunk_id; its top 10 enters the pool.
    eval/adapters.py RRF_DEPTH = 100 and RRF_K = 60, recorded in eval/pool.json meta (rrf_k, rrf_depth). Round-1 pool as built: 963 judgments (dev 326, test 637) for 40 queries, so no depth reduction was
    proposed (limit 1,100). Status: accepted.
+D75 (2026-10-20) Labels follow docs/labelling_rubric.md AND the owner's tie-break rules in docs/labelling_rules.md (rules 1 to 13 incl. 3b, copied verbatim from the owner's notes), applied identically to dev and test. KNOWN:
+   the owner labelled all 963 judgments alone; the owner re-read and re-graded 8 early dev rows blind and 7 of 8 matched (row 4 moved 2 to 1, see the note in the CSV); rules 12 and 13 cite specific rows of Q36 and Q38 (test
+   queries), so at least those two rules were written while or after the test rows were labelled; the exported sheets' `rubric` column points to the rubric only, not to these rules. NOT KNOWN (owner will confirm): whether the
+   rules were written before or during labelling, and whether the partner who labelled the 100-judgment kappa sheet was shown the rules or only the rubric. Until confirmed, a kappa value is reported with this caveat, and
+   kappa measures agreement between two labellers who may have used different rules, so a low value may reflect different rules and not only noisy judgments. The labelled sheets store labels as floats (0.0, 1.0, 2.0);
+   the importer accepts a float only when it is exactly 0.0, 1.0 or 2.0 and converts it to an int; anything else is rejected. The labelled sheets are verified row by row against the exports before import (only label, note
+   and rubric may differ). The sheets and labelled files stay gitignored (chunk text, O12). Status: accepted.
