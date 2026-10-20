@@ -43,6 +43,11 @@ def element_point(element: dict) -> tuple[float, float] | None:
     return None
 
 
+def is_military(tags: dict) -> bool:
+    """D79: military=* or an aerodrome:type containing "military" marks a military airport."""
+    return bool(tags.get("military")) or "military" in str(tags.get("aerodrome:type", "")).lower()
+
+
 def dedupe_airports(elements: Iterable[dict], allowed: Iterable[str]) -> dict[str, dict]:
     """IATA -> airport record, only for allowed codes. Same IATA: relation > way > node, then the
     lowest OSM id (O13). Elements without a usable point are skipped."""
@@ -58,7 +63,8 @@ def dedupe_airports(elements: Iterable[dict], allowed: Iterable[str]) -> dict[st
         if iata not in best or key < best[iata][0]:
             name = tags.get("name") or tags.get("alt_name") or iata
             best[iata] = (key, {"iata": iata, "name": name, "lat": point[0], "lon": point[1],
-                                "osm_type": el.get("type"), "osm_id": int(el["id"])})
+                                "osm_type": el.get("type"), "osm_id": int(el["id"]),
+                                "military": is_military(tags)})
     return {k: v[1] for k, v in sorted(best.items())}
 
 
@@ -71,10 +77,10 @@ def load_airports(raw_path: Path = AIRPORTS_RAW_PATH,
 def nearest_airport(lat: float, lon: float, airports: dict[str, dict]) -> dict:
     """The closest allowlist airport (never an out-of-region one: `airports` is already filtered).
     Ties go to the lower IATA so the result is deterministic."""
-    if not airports:
+    civil = {k: v for k, v in airports.items() if not v.get("military")}
+    if not civil:
         raise ValueError("no airports")
-    iata = min(airports, key=lambda k: (haversine_km(lat, lon, airports[k]["lat"],
-                                                      airports[k]["lon"]), k))
-    a = airports[iata]
+    iata = min(civil, key=lambda k: (haversine_km(lat, lon, civil[k]["lat"], civil[k]["lon"]), k))
+    a = civil[iata]
     return {"iata": iata, "name": a["name"],
             "km": round(haversine_km(lat, lon, a["lat"], a["lon"]), 1)}

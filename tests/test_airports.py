@@ -93,6 +93,25 @@ def test_nearest_airport_never_returns_an_out_of_region_code():
     assert nearest_airport(17.69, 83.29, airports)["iata"] == "VTZ"
 
 
+def test_military_tags_are_detected():
+    from src.tools.routing import is_military
+    assert is_military({"military": "airfield"})
+    assert is_military({"aerodrome:type": "military/public"})
+    assert not is_military({"aerodrome:type": "public"})
+    assert not is_military({})
+
+
+def test_saved_file_marks_exactly_the_military_airports_among_the_allowlist():
+    airports = load_airports()
+    assert {k for k, v in airports.items() if v["military"]} == {"IXX", "BEP", "BPM"}
+
+
+def test_nearest_airport_skips_military_fields():
+    airports = {"MIL": {"iata": "MIL", "name": "m", "lat": 10.0, "lon": 77.0, "military": True},
+                "CIV": {"iata": "CIV", "name": "c", "lat": 11.0, "lon": 77.0, "military": False}}
+    assert nearest_airport(10.0, 77.0, airports)["iata"] == "CIV"
+
+
 def test_nearest_airport_tie_goes_to_the_lower_iata():
     airports = {"BBB": {"iata": "BBB", "name": "b", "lat": 10.0, "lon": 77.0},
                 "AAA": {"iata": "AAA", "name": "a", "lat": 10.0, "lon": 77.0}}
