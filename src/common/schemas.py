@@ -112,10 +112,13 @@ class LLMApiSettings:
     retry_budget_s: float
     json_mode: str
     cache_dir: Path
+    quota_state_override: Path | None = None
 
     @property
     def quota_state_path(self) -> Path:
-        return REPO_ROOT / "data" / "enriched" / "quota_state.json"
+        """Where the rate limiter persists daily counters. LLM_QUOTA_STATE overrides the Phase 3
+        default so Phase 6 can keep out of the read-only data/enriched (D93)."""
+        return self.quota_state_override or (REPO_ROOT / "data" / "enriched" / "quota_state.json")
 
 
 def load_llm_settings(env_file: str | os.PathLike | None = None) -> LLMApiSettings:
@@ -152,12 +155,14 @@ def load_llm_settings(env_file: str | os.PathLike | None = None) -> LLMApiSettin
     if budget <= 0:
         raise ConfigError("LLM_RETRY_BUDGET_S must be positive")
     cache_dir = Path(os.environ.get("CACHE_DIR", "").strip() or REPO_ROOT / ".cache")
+    quota_override = os.environ.get("LLM_QUOTA_STATE", "").strip()
     return LLMApiSettings(
         base_url=base, api_key=os.environ["LLM_API_KEY"].strip(), generator_model=generator,
         judge_model=judge, rpm=numbers["LLM_RPM"], tpm=numbers["LLM_TPM"],
         rpd=numbers["LLM_RPD"], tpd=numbers["LLM_TPD"],
         seed=_optional_number("LLM_SEED", DEFAULT_LLM_SEED, int), retry_budget_s=budget,
-        json_mode=json_mode, cache_dir=cache_dir)
+        json_mode=json_mode, cache_dir=cache_dir,
+        quota_state_override=Path(quota_override) if quota_override else None)
 
 
 def env_duplicate_keys(env_file: str | os.PathLike | None = None) -> list[str]:

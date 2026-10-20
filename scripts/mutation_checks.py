@@ -173,17 +173,40 @@ ROUTING_MUTATIONS = [
 ]
 
 
+RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py"]
+
+# Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
+RETRIEVAL_MUTATIONS = [
+    ("M42 RRF rank off by one (ranks counted from 0)", "src/retrieval/fusion.py",
+     "        for rank, cid in enumerate(ranking, 1):\n",
+     "        for rank, cid in enumerate(ranking, 0):\n"),
+    ("M43 RRF ties not broken by chunk_id (insertion order kept)", "src/retrieval/fusion.py",
+     "    return sorted(score.items(), key=lambda t: (-t[1], t[0]))\n",
+     "    return sorted(score.items(), key=lambda t: (-t[1],))\n"),
+    ("M44 randomization test one-sided (abs dropped on the exact branch)",
+     "eval/significance.py",
+     "            if abs(s) / n >= obs - _EPS:\n",
+     "            if s / n >= obs - _EPS:\n"),
+    ("M45 Holm step-up instead of step-down", "eval/significance.py",
+     "        running = max(running, (m - rank) * pvalues[idx])\n",
+     "        running = max(running, (rank + 1) * pvalues[idx])\n"),
+]
+
+
 def main() -> int:
     survived = 0
     rows = []
     plan = [(m, EVAL_TESTS) for m in EVAL_MUTATIONS]
     routing = [(m, ROUTING_TESTS) for m in ROUTING_MUTATIONS]
+    retrieval = [(m, RETRIEVAL_TESTS) for m in RETRIEVAL_MUTATIONS]
     if "--routing" in sys.argv[1:]:  # --routing runs only M30 to M41
         plan = routing
     elif "--eval" in sys.argv[1:]:  # --eval runs only M20 to M29
         pass
+    elif "--retrieval" in sys.argv[1:]:  # --retrieval runs only M42+
+        plan = retrieval
     else:
-        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing
+        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval
     for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()

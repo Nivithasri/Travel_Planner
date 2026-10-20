@@ -630,7 +630,7 @@ ALL = {"LLM_API_BASE_URL": BASE, "LLM_API_KEY": KEY, "GENERATOR_MODEL": MODEL,
 
 
 def env(monkeypatch, **override):
-    for k in (*ALL, "LLM_API_URL", "LLM_JSON_MODE", "LLM_RETRY_BUDGET_S"):
+    for k in (*ALL, "LLM_API_URL", "LLM_JSON_MODE", "LLM_RETRY_BUDGET_S", "LLM_QUOTA_STATE"):
         monkeypatch.delenv(k, raising=False)
     for k, v in {**ALL, **override}.items():
         if v is None:
@@ -656,6 +656,17 @@ def test_any_unset_key_means_refuse_to_run_and_the_error_lists_names_only(
     with pytest.raises(ConfigError) as exc:
         load_llm_settings(tmp_path / "none.env")
     assert name in str(exc.value) and KEY not in str(exc.value) and BASE not in str(exc.value)
+
+
+def test_quota_state_defaults_to_enriched_but_LLM_QUOTA_STATE_overrides_it(tmp_path, monkeypatch):
+    # D93: Phase 6 must not write into the read-only data/enriched.
+    env(monkeypatch)
+    s = load_llm_settings(tmp_path / "none.env")
+    assert s.quota_state_path.parts[-2:] == ("enriched", "quota_state.json")
+    env(monkeypatch, LLM_QUOTA_STATE=str(tmp_path / "q" / "state.json"))
+    s2 = load_llm_settings(tmp_path / "none.env")
+    assert s2.quota_state_path == tmp_path / "q" / "state.json"
+    assert "enriched" not in str(s2.quota_state_path)
 
 
 def test_a_missing_url_is_reported_by_its_main_name(tmp_path, monkeypatch):

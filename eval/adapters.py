@@ -9,17 +9,16 @@ on disk (CLAUDE.md rule 4).
 """
 from __future__ import annotations
 
-from collections import defaultdict
 from pathlib import Path
 
 from src.common.cache import DiskCache
 from src.common.schemas import REPO_ROOT, load_embed_local_dir
 from src.retrieval.build_index import load_encoder
+from src.retrieval.fusion import rrf
 from src.retrieval.search import TABLES, Index, model_id_from_manifest
 
 INDEX_DIR = REPO_ROOT / "index"
 ENRICHED = REPO_ROOT / "data" / "enriched" / "chunks.jsonl"
-RRF_K = 60
 RRF_DEPTH = 100
 SYSTEMS = tuple(name for name, _, _ in TABLES) + ("rrf4",)
 
@@ -36,16 +35,6 @@ def get_index() -> Index:
                        cache=DiskCache(REPO_ROOT / ".cache"),
                        model_id=model_id_from_manifest(INDEX_DIR))
     return _index
-
-
-def rrf(rankings: list[list[str]], k: int = RRF_K) -> list[tuple[str, float]]:
-    """Reciprocal Rank Fusion: score(d) = sum over lists of 1 / (k + rank), rank from 1. Ties are
-    broken by chunk id, so the order is reproducible."""
-    score: dict[str, float] = defaultdict(float)
-    for ranking in rankings:
-        for rank, cid in enumerate(ranking, 1):
-            score[cid] += 1.0 / (k + rank)
-    return sorted(score.items(), key=lambda t: (-t[1], t[0]))
 
 
 def system_ids(system: str, query: str, k: int,
