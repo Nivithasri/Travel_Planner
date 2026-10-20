@@ -24,7 +24,6 @@ from eval.qrels import SPLITS, load_queries, qrels_path  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 POOL = ROOT / "eval" / "pool.json"
 SHEETS = ROOT / "eval" / "sheets"
-VALID = {"0": 0, "1": 1, "2": 2}
 
 
 def validate(rows: list[dict], pool: dict, queries: list[dict], split: str
@@ -54,12 +53,14 @@ def validate(rows: list[dict], pool: dict, queries: list[dict], split: str
             continue
         seen.add(key)
         raw = (r.get("label") or "").strip()
+        label = pooling.parse_label(raw)
         if raw == "":
             problems.append(f"{where}: blank label")
-        elif raw not in VALID:
-            problems.append(f"{where}: label {raw!r} is not 0, 1 or 2")
+        elif label is None:
+            problems.append(f"{where}: label {raw!r} is not 0, 1 or 2 "
+                            "(a float only as 0.0, 1.0 or 2.0)")
         else:
-            qrels[key[0]][key[1]] = VALID[raw]
+            qrels[key[0]][key[1]] = label
     if sorted(row_ids) != list(range(1, len(rows) + 1)):
         problems.append("row_ids are not exactly 1..N without gaps or duplicates")
     for qid, cid in sorted(expected - seen):
@@ -72,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("split", choices=SPLITS)
     ap.add_argument("--sheet", type=Path,
                     help="filled sheet (default eval/sheets/judge_<split>.csv)")
+    ap.add_argument("--original", type=Path,
+                    help="the exported sheet to compare a differently named --sheet against "
+                         "(default eval/sheets/judge_<split>.csv)")
     ap.add_argument("--force", action="store_true", help="overwrite an existing qrels file")
     args = ap.parse_args(argv)
 
@@ -84,7 +88,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"no sheet at {sheet}")
         return 2
     pool = json.loads(POOL.read_text(encoding="utf-8"))
-    qrels, problems = validate(pooling.read_sheet(sheet), pool, load_queries(), args.split)
+    rows = pooling.read_sheet(sheet)
+    original = args.original or SHEETS / f"judge_{args.split}.csv"
+    if original.resolve() != sheet.resolve():
+        if not original.exists():
+            print(f"no exported sheet at {original} to compare {sheet.name} against")
+            return 2
+        changed = pooling.verify_unchanged(rows, pooling.read_sheet(original))
+        if changed:
+            print(f"{sheet.name} differs from {original.name} outside label/note/rubric; "
+                  f"nothing written ({len(changed)} problem(s)):")
+            for p in changed[:20]:
+                print("  " + p)
+            return 1
+        print(f"{sheet.name}: {len(rows)} rows, identical to {original.name} outside "
+              "label, note and rubric")
+    qrels, problems = validate(rows, pool, load_queries(), args.split)
     if problems:
         print(f"{len(problems)} problem(s) in {sheet.name}; nothing written:")
         for p in problems[:50]:

@@ -165,6 +165,21 @@ def test_main_compute_end_to_end(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(kp, "POOL", tmp_path / "pool.json")
     monkeypatch.setattr(kp, "SUBSET", tmp_path / "subset.json")
     monkeypatch.setattr(kp, "SHEETS", sheets)
+    monkeypatch.setattr(kp, "PARTNER_SHEET", sheets / "kappa_partner.csv")
     assert kp.main(["compute", "--partner", str(sheets / "kappa_partner.csv")]) == 0
     out = capsys.readouterr().out
     assert "0.592" in out and "0.675" in out
+
+
+def test_partner_floats_and_disagreement_list():
+    rows = [{"row_id": str(i), "query_id": "Q", "chunk_id": f"c{i}", "query_text": f"query {i}",
+             "label": lab} for i, lab in enumerate(["2.0", "0.0", "1.0", "2"], 1)]
+    assert kp.labels_from_sheet(rows) == {("Q", "c1"): 2, ("Q", "c2"): 0, ("Q", "c3"): 1,
+                                          ("Q", "c4"): 2}
+    subset = [("Q", f"c{i}") for i in range(1, 5)]
+    owner = {("Q", "c1"): 0, ("Q", "c2"): 0, ("Q", "c3"): 2, ("Q", "c4"): 1}
+    partner = kp.labels_from_sheet(rows)
+    got = kp.top_disagreements(subset, owner, partner, rows)
+    assert [(d["row_id"], d["gap"]) for d in got] == [(1, 2), (3, 1), (4, 1)]
+    assert "text" not in got[0] and got[0]["query_text"] == "query 1"
+    assert kp.top_disagreements(subset, owner, partner, rows, n=1)[0]["row_id"] == 1

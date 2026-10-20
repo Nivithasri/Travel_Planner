@@ -42,7 +42,8 @@ def test_blank_label():
     assert any("blank label" in p for p in problems)
 
 
-@pytest.mark.parametrize("bad", ["3", "-1", "1.0", "two", "x", "01"])
+@pytest.mark.parametrize("bad", ["3", "-1", "1.5", "2.1", "two", "x", "01", "1e0", "+1", "1.",
+                                 "nan", "0.0.0", "1,0", "２"])
 def test_invalid_label(bad):
     _, problems = check(rows(labels=("2", bad, "0")))
     assert any("is not 0, 1 or 2" in p for p in problems), problems
@@ -124,3 +125,86 @@ def test_main_missing_sheet(monkeypatch, tmp_path):
     setup_files(monkeypatch, tmp_path, rows())
     (tmp_path / "sheets" / "judge_dev.csv").unlink()
     assert il.main(["dev"]) == 2
+
+
+@pytest.mark.parametrize("raw,want", [("0", 0), ("1", 1), ("2", 2), ("0.0", 0), ("1.0", 1),
+                                      ("2.0", 2), (" 2.0 ", 2), ("1.00", 1)])
+def test_floats_exactly_0_1_2_are_converted_to_int(raw, want):
+    qrels, problems = check(rows(labels=(raw, "1", "0")))
+    assert problems == []
+    got = qrels["Q1"]["c1"]
+    assert got == want and type(got) is int
+
+
+def test_float_sheet_imports_as_ints():
+    qrels, problems = check(rows(labels=("2.0", "1.0", "0.0")))
+    assert problems == [] and qrels == {"Q1": {"c1": 2, "c2": 1, "c3": 0}}
+    assert all(type(v) is int for v in qrels["Q1"].values())
+
+
+def test_extra_rubric_column_is_ignored():
+    r = rows()
+    for x in r:
+        x["rubric"] = "anything, even a different text"
+        x["note"] = "free text"
+    qrels, problems = check(r)
+    assert problems == [] and qrels == {"Q1": {"c1": 2, "c2": 1, "c3": 0}}
+    for x in r:
+        del x["rubric"]  # and its absence is fine too
+    assert check(r)[1] == []
+
+
+def test_parse_label_directly():
+    assert pooling.parse_label("2.0") == 2 and pooling.parse_label(None) is None
+    assert pooling.parse_label("") is None and pooling.parse_label("2.5") is None
+
+
+def export(n=3):
+    return [{c: f"{c}{i}" for c in pooling.FIXED_COLUMNS} | {"row_id": str(i), "label": "",
+            "note": "", "rubric": "r"} for i in range(1, n + 1)]
+
+
+def test_verify_unchanged_accepts_label_note_rubric_changes():
+    orig = export()
+    lab = [dict(r) for r in orig]
+    for r in lab:
+        r["label"], r["note"], r["rubric"] = "1.0", "n", "other"
+    assert pooling.verify_unchanged(lab, orig) == []
+    lab.reverse()  # order does not matter, row_ids do
+    assert pooling.verify_unchanged(lab, orig) == []
+
+
+@pytest.mark.parametrize("column", list(pooling.FIXED_COLUMNS))
+def test_verify_unchanged_flags_every_fixed_column(column):
+    orig = export()
+    lab = [dict(r) for r in orig]
+    if column == "row_id":
+        lab[0]["row_id"] = "99"
+    else:
+        lab[0][column] = "edited"
+    assert pooling.verify_unchanged(lab, orig)
+
+
+def test_verify_unchanged_flags_missing_extra_and_duplicate_rows():
+    orig = export()
+    assert any("missing" in p for p in pooling.verify_unchanged(orig[:2], orig))
+    assert pooling.verify_unchanged(orig + [dict(orig[0])], orig)  # duplicate
+    assert any("not in the exported" in p for p in pooling.verify_unchanged(
+        orig[:2] + [dict(orig[2], row_id="7")], orig))
+
+
+def test_main_checks_a_renamed_sheet_against_the_original(monkeypatch, tmp_path):
+    out = setup_files(monkeypatch, tmp_path, rows())  # writes judge_dev.csv (the "original")
+    orig = pooling.read_sheet(tmp_path / "sheets" / "judge_dev.csv")
+    lab = [dict(r) for r in orig]
+    for r in lab:
+        r["label"] = "1.0"
+    pooling.write_sheet(tmp_path / "sheets" / "judge_dev_labelled.csv", lab)
+    sheet = str(tmp_path / "sheets" / "judge_dev_labelled.csv")
+    assert il.main(["dev", "--sheet", sheet]) == 0
+    assert json.loads(out.read_text(encoding="utf-8")) == {"Q1": {"c1": 1, "c2": 1, "c3": 1}}
+    lab[0]["text"] = "tampered"
+    pooling.write_sheet(tmp_path / "sheets" / "judge_dev_labelled.csv", lab)
+    out.unlink()
+    assert il.main(["dev", "--sheet", sheet]) == 1
+    assert not out.exists()

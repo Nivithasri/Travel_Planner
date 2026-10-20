@@ -121,8 +121,7 @@ def partner_rows(subset: list[tuple[str, str]], pool: dict, queries: list[dict],
 def labels_from_sheet(rows: list[dict]) -> dict[tuple[str, str], int | None]:
     out: dict[tuple[str, str], int | None] = {}
     for r in rows:
-        raw = (r.get("label") or "").strip()
-        out[(r["query_id"], r["chunk_id"])] = int(raw) if raw in ("0", "1", "2") else None
+        out[(r["query_id"], r["chunk_id"])] = pooling.parse_label(r.get("label"))
     return out
 
 
@@ -143,6 +142,22 @@ def compute(subset: list[tuple[str, str]], owner: dict, partner: dict) -> tuple[
     return "ok", res
 
 
+def top_disagreements(subset: list[tuple[str, str]], owner: dict, partner: dict,
+                      sheet_rows_: list[dict], n: int = 10) -> list[dict]:
+    """The n pairs with the largest label gap (ties: lower partner-sheet row_id first). Carries the
+    row_id, query id and text and both labels; no chunk text."""
+    by_key = {(r["query_id"], r["chunk_id"]): r for r in sheet_rows_}
+    rows = []
+    for k in subset:
+        gap = abs(owner[k] - partner[k])
+        if gap:
+            r = by_key[k]
+            rows.append({"row_id": int(r["row_id"]), "query_id": k[0],
+                         "query_text": r["query_text"], "owner": owner[k],
+                         "partner": partner[k], "gap": gap})
+    return sorted(rows, key=lambda r: (-r["gap"], r["row_id"]))[:n]
+
+
 def fmt(v: float | None) -> str:
     return "undefined" if v is None else f"{v:.3f}"
 
@@ -152,6 +167,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("action", choices=("select", "compute"))
     ap.add_argument("--partner", type=Path, default=PARTNER_SHEET,
                     help="the partner's filled CSV (default eval/sheets/kappa_partner.csv)")
+    ap.add_argument("--owner-dev", type=Path, default=SHEETS / "judge_dev.csv",
+                    help="the owner's filled dev sheet (default eval/sheets/judge_dev.csv)")
+    ap.add_argument("--owner-test", type=Path, default=SHEETS / "judge_test.csv",
+                    help="the owner's filled test sheet (default eval/sheets/judge_test.csv)")
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args(argv)
     pool = json.loads(POOL.read_text(encoding="utf-8"))
@@ -186,11 +205,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     subset = [tuple(p) for p in json.loads(SUBSET.read_text(encoding="utf-8"))["pairs"]]
     owner: dict = {}
-    for split in ("dev", "test"):
-        sheet = SHEETS / f"judge_{split}.csv"
+    for sheet in (args.owner_dev, args.owner_test):
         if sheet.exists():
             owner.update(labels_from_sheet(pooling.read_sheet(sheet)))
-    partner = labels_from_sheet(pooling.read_sheet(args.partner))
+    partner_rows_ = pooling.read_sheet(args.partner)
+    if PARTNER_SHEET.exists() and PARTNER_SHEET.resolve() != args.partner.resolve():
+        changed = pooling.verify_unchanged(partner_rows_, pooling.read_sheet(PARTNER_SHEET))
+        if changed:
+            print(f"{args.partner.name} differs from the exported partner sheet; kappa not "
+                  f"computed ({len(changed)} problem(s)):")
+            for p in changed[:20]:
+                print("  " + p)
+            return 1
+    partner = labels_from_sheet(partner_rows_)
     msg, res = compute(subset, owner, partner)
     if res is None:
         print(msg)
@@ -201,6 +228,10 @@ def main(argv: list[str] | None = None) -> int:
     print("rows = owner, columns = partner (labels 0, 1, 2):")
     for i, row in enumerate(res["table"]):
         print(f"  {i}: " + "  ".join(f"{x:>3}" for x in row))
+    print("largest disagreements (partner-sheet row_id, query, owner label, partner label):")
+    for d in top_disagreements(subset, owner, partner, partner_rows_):
+        print(f"  row {d['row_id']:>3}  {d['query_id']} {d['query_text'][:60]!r}  "
+              f"owner {d['owner']}  partner {d['partner']}")
     return 0
 
 

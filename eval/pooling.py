@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import random
+import re
 import statistics
 from collections import Counter
 from collections.abc import Callable
@@ -26,6 +27,9 @@ SHEET_COLUMNS = ("row_id", "query_id", "query_text", "chunk_id", "place", "state
                  "title", "url", "date_kind", "text", "label", "note", "rubric")
 RUBRIC_NOTE = ("see docs/labelling_rubric.md: 2 directly answers, 1 on topic but partial, 0 not "
                "relevant; excluded-place chunks are judged like any other")
+
+FIXED_COLUMNS = tuple(c for c in SHEET_COLUMNS if c not in ("label", "note", "rubric"))
+_LABEL = re.compile(r"[012](\.0+)?")
 
 Search = Callable[[str, str, int], list[tuple[str, float]]]  # (system, query, k) -> [(id, score)]
 
@@ -141,3 +145,35 @@ def write_sheet(path: Path, rows: list[dict]) -> None:
 def read_sheet(path: Path) -> list[dict]:
     with path.open("r", encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
+
+
+def parse_label(raw: str | None) -> int | None:
+    """0, 1 or 2 from a sheet cell. Accepts the digit or a float written exactly as 0.0, 1.0 or 2.0
+    (a spreadsheet may save it so); everything else (blank, 1.5, 3, "01", "1e0", text) is None."""
+    raw = (raw or "").strip()
+    return int(raw[0]) if _LABEL.fullmatch(raw) else None
+
+
+def verify_unchanged(labelled: list[dict], original: list[dict]) -> list[str]:
+    """Problems when a labelled sheet differs from the sheet we exported anywhere except the
+    label, note and rubric columns: same row_ids, same fixed columns in every row."""
+    problems = []
+    if len(labelled) != len(original):
+        problems.append(f"{len(labelled)} rows, the exported sheet has {len(original)}")
+    by_id = {r["row_id"]: r for r in original}
+    seen = set()
+    for r in labelled:
+        rid = r.get("row_id")
+        if rid in seen:
+            problems.append(f"row_id {rid}: duplicate")
+        seen.add(rid)
+        o = by_id.get(rid)
+        if o is None:
+            problems.append(f"row_id {rid}: not in the exported sheet")
+            continue
+        for c in FIXED_COLUMNS:
+            if r.get(c) != o.get(c):
+                problems.append(f"row_id {rid}: column {c} was changed")
+    for rid in sorted(set(by_id) - seen, key=int):
+        problems.append(f"row_id {rid}: missing from the labelled sheet")
+    return problems
