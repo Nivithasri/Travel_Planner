@@ -5,6 +5,7 @@ chunks and provenance.jsonl, config/routing_params.json. Output rows hold chunk 
 """
 from __future__ import annotations
 
+import calendar
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -32,10 +33,11 @@ def climate_file(place: str, raw_root: Path = OPEN_METEO_RAW) -> Path | None:
 
 
 def monthly_normals(daily: dict, rainy_day_mm: float) -> dict[int, dict]:
-    """Calendar-month normals from daily ERA5 values. Rain is the monthly sum averaged over the
-    years that have that month; a rainy day has precipitation_sum >= rainy_day_mm."""
+    """Calendar-month normals from daily ERA5 values. Rain and rainy days are averaged over the
+    COMPLETE years of that month only (every calendar day has a precipitation value, D83); a
+    rainy day has precipitation_sum >= rainy_day_mm. Tmax and Tmin average the available days."""
     tmax, tmin = defaultdict(list), defaultdict(list)
-    rain, rainy = defaultdict(float), defaultdict(int)
+    rain, rainy, days = defaultdict(float), defaultdict(int), defaultdict(int)
     for day, hi, lo, pr in zip(daily["time"], daily["temperature_2m_max"],
                                daily["temperature_2m_min"], daily["precipitation_sum"],
                                strict=True):
@@ -46,10 +48,12 @@ def monthly_normals(daily: dict, rainy_day_mm: float) -> dict[int, dict]:
             tmin[month].append(lo)
         if pr is not None:
             rain[(year, month)] += pr
+            days[(year, month)] += 1
             rainy[(year, month)] += 1 if pr >= rainy_day_mm else 0
     out = {}
     for m in range(1, 13):
-        years = sorted(y for (y, mm) in rain if mm == m)
+        years = sorted(y for (y, mm), n in days.items()
+                       if mm == m and n == calendar.monthrange(y, mm)[1])
         if not years or not tmax[m] or not tmin[m]:
             continue
         out[m] = {"tmax_c": round(sum(tmax[m]) / len(tmax[m]), 1),
@@ -90,6 +94,8 @@ def load_evidence(chunks_path: Path = ENRICHED_PATH, prov_path: Path = PROVENANC
     out: dict[str, list[dict]] = defaultdict(list)
     for line in Path(chunks_path).read_text(encoding="utf-8").splitlines():
         c = json.loads(line)
+        if c["chunk_id"] not in prov:
+            raise ValueError(f"no provenance row for chunk {c['chunk_id']}")
         out[c["place"]].append({"chunk_id": c["chunk_id"], "source": prov[c["chunk_id"]],
                                 "tags": list(c["season_tags"]),
                                 "is_warning": bool(c["is_warning"])})
@@ -97,9 +103,10 @@ def load_evidence(chunks_path: Path = ENRICHED_PATH, prov_path: Path = PROVENANC
 
 
 def month_evidence(rows: list[dict], month: int) -> tuple[dict, list[str], dict]:
-    """Counts split by provenance for the month's season, warning ids (model-written first, at most
-    MAX_WARNINGS) and their provenance. A chunk is season-relevant when it carries the season tag
-    or all_year."""
+    """Counts split by provenance for the month's season, warning ids and their provenance. Only
+    MODEL-WRITTEN warnings are listed (at most MAX_WARNINGS, by chunk_id); rule-based is_warning
+    values are not trusted as signals (D69, D83). A chunk is season-relevant when it carries the
+    season tag or all_year."""
     season = SEASON_OF_MONTH[month]
     counts = {k: {"chunks": 0, "season_tagged": 0, "all_year": 0}
               for k in ("model_written", "fallback", "rule_only")}
@@ -109,10 +116,10 @@ def month_evidence(rows: list[dict], month: int) -> tuple[dict, list[str], dict]
         c["chunks"] += 1
         c["season_tagged"] += season in r["tags"]
         c["all_year"] += "all_year" in r["tags"]
-        if r["is_warning"] and (season in r["tags"] or "all_year" in r["tags"]):
+        if (r["is_warning"] and r["source"] == "model_written"
+                and (season in r["tags"] or "all_year" in r["tags"])):
             warn.append(r)
-    order = {"model_written": 0, "fallback": 1, "rule_only": 2}
-    warn.sort(key=lambda r: (order[r["source"]], r["chunk_id"]))
+    warn.sort(key=lambda r: r["chunk_id"])
     warn = warn[:MAX_WARNINGS]
     return counts, [w["chunk_id"] for w in warn], {w["chunk_id"]: w["source"] for w in warn}
 
@@ -136,8 +143,12 @@ def build_season(places: list[dict], params: dict, evidence: dict[str, list[dict
             months[str(m)] = {"climate": clim, "verdict": v, "reasons": reasons,
                               "access_risk": risk, "evidence": counts,
                               "warning_chunk_ids": wids, "warning_sources": wsrc}
+        rows = evidence.get(name, [])
+        warning_counts = {k: sum(r["is_warning"] and r["source"] == k for r in rows)
+                          for k in ("model_written", "fallback", "rule_only")}
         entry = {"confidence": "low" if name in params["low_confidence_places"] else "medium",
-                 "climate_file": path.name, "hill": node["hill"], "months": months}
+                 "climate_file": path.name, "hill": node["hill"], "months": months,
+                 "warning_counts": warning_counts}
         if airports:
             entry["nearest_airport"] = nearest_airport(node["lat"], node["lon"], airports)
         out[name] = entry

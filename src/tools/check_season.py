@@ -15,7 +15,7 @@ from src.tools.routing import UnknownPlaceError
 SEASON_PATH = REPO_ROOT / "index" / "season_data.json"
 _MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august",
            "september", "october", "november", "december"]
-_cache: dict[Path, SeasonTable] = {}
+_cache: dict[Path, tuple[tuple[int, int], SeasonTable]] = {}
 
 
 def parse_month(month) -> int:
@@ -66,6 +66,12 @@ class SeasonTable:
             caveats.append("low confidence: district or hill-station grid cell (D21, D42)")
         if ev["model_written"]["chunks"] == 0:
             caveats.append("no model-written chunks for this place: tags are rule-based (D69)")
+        wc = entry.get("warning_counts") or {}
+        if wc.get("model_written", 0) == 0:
+            others = wc.get("fallback", 0) + wc.get("rule_only", 0)
+            caveats.append("no model-written warnings for this place, none listed"
+                           + (f" ({others} rule-based warning chunks exist, not trusted, D69)"
+                              if others else ""))
         return {"place": name, "month": m, "verdict": row["verdict"], "reasons": row["reasons"],
                 "access_risk": row["access_risk"], "climate": row["climate"], "evidence": ev,
                 "warning_chunk_ids": row["warning_chunk_ids"],
@@ -75,9 +81,11 @@ class SeasonTable:
 
 def load_season(path: Path | str | None = None) -> SeasonTable:
     p = Path(path) if path else SEASON_PATH
-    if p not in _cache:
-        _cache[p] = SeasonTable(json.loads(p.read_text(encoding="utf-8")))
-    return _cache[p]
+    st = p.stat()
+    stamp = (st.st_mtime_ns, st.st_size)  # a rebuilt file is reloaded (D83)
+    if p not in _cache or _cache[p][0] != stamp:
+        _cache[p] = (stamp, SeasonTable(json.loads(p.read_text(encoding="utf-8"))))
+    return _cache[p][1]
 
 
 def check_season(place: str, month) -> dict:
