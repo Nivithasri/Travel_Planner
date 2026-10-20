@@ -1,0 +1,13 @@
+{
+ "status": "PROVISIONAL",
+ "note": "Fitted values are written by `python scripts/build_routing.py calibrate` from config/calibration_routes.json (UNVERIFIED reference values, D77). Static values below were fixed before any fit (D78, D79, D80).",
+ "hill_elevation_m": 1000,
+ "hill_overrides": ["Kodagu", "Wayanad", "Srisailam"],
+ "hub_min_km": 25,
+ "hub_expected_count": 22,
+ "min_hours": 0.25,
+ "rainy_day_mm": 2.5,
+ "season_thresholds": {"poor_rain_mm": 300, "fair_rain_mm": 150, "poor_tmax_c": 38, "fair_tmax_c": 35},
+ "low_confidence_places": ["Kodagu", "Wayanad", "Munnar", "Ooty", "Kodaikanal"],
+ "fitted": null
+}

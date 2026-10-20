@@ -1,0 +1,26 @@
+{
+ "note": "Written BEFORE any matrix or season data was built (D80). Expected values are my expectations from general knowledge, not measurements. `python scripts/build_routing.py sanity` prints every case with PASS or MISS; misses are reported together and a threshold change is a separate recorded decision made after seeing all of them.",
+ "travel": [
+  {"a": "Chennai", "b": "Bengaluru", "min_h": 5.0, "max_h": 7.0},
+  {"a": "Chennai", "b": "Pondicherry", "min_h": 2.5, "max_h": 3.5},
+  {"a": "Kochi", "b": "Munnar", "min_h": 3.0, "max_h": 4.5, "hill_slower_than_plain": true},
+  {"a": "Mysuru", "b": "Ooty", "min_h": 3.0, "max_h": 5.0, "hill_slower_than_plain": true},
+  {"a": "Hyderabad", "b": "Warangal", "min_h": 2.0, "max_h": 3.5},
+  {"a": "Madurai", "b": "Kanniyakumari", "min_h": 4.0, "max_h": 5.5}
+ ],
+ "season": [
+  {"place": "Munnar", "month": 7, "expect": ["poor"], "access_risk": true},
+  {"place": "Munnar", "month": 1, "expect": ["good"]},
+  {"place": "Ooty", "month": 7, "expect": ["fair", "poor"]},
+  {"place": "Ooty", "month": 1, "expect": ["good"]},
+  {"place": "Kodagu", "month": 7, "expect": ["poor"], "access_risk": true},
+  {"place": "Wayanad", "month": 7, "expect": ["poor"], "access_risk": true},
+  {"place": "Chennai", "month": 5, "expect": ["poor"]},
+  {"place": "Chennai", "month": 11, "expect": ["fair", "poor"]},
+  {"place": "Hampi", "month": 5, "expect": ["poor"]},
+  {"place": "Hampi", "month": 1, "expect": ["good"]},
+  {"place": "Gokarna", "month": 7, "expect": ["poor"]},
+  {"place": "Kanniyakumari", "month": 8, "expect": ["good", "fair"]},
+  {"place": "Hyderabad", "month": 1, "expect": ["good"]}
+ ]
+}

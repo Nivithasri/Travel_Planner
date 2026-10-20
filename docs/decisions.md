@@ -759,3 +759,11 @@ D81 (2026-10-20) Function contracts (owner decision). travel_time(a, b) -> float
    UnknownPlaceError (a ValueError) with close-name suggestions; aliases resolve through the registry. travel_time accepts destinations and hubs; check_season accepts the 26 destinations only
    (a hub is unknown there); hold-outs are unknown in both. index/travel_matrix.json and index/season_data.json are un-ignored and committed because they hold no chunk text (a test checks that
    no chunk text appears in either file); the rest of index/ stays ignored (O12). Status: accepted.
+D76 (amended 2026-10-20) Hub count and its limit. The D79 rule (airport more than 25 km from every destination and hold-out) first gave 24 hubs, above the 15 to 22 limit, so the build stopped and the
+   owner chose to exclude military airports (D79). Limitation, stated plainly: the rule keeps minor civil strips (for example Basant Nagar Airstrip RMD, Neyveli NVY, Puttaparthi PUT, Kurnool KJB, Kalaburagi GBI)
+   because OSM tags do not mark them as unimportant; some hubs are therefore of little use to a traveller. They cost nothing but matrix size. No threshold was tuned.
+D78 (amended 2026-10-20) Hill flag. Decided after seeing the saved Wikidata elevations only and BEFORE any fit: a destination is hill when its Wikidata elevation is >= 1000 m (not 700 m, which would flag the
+   plateau cities Bengaluru 920 m and Mysuru 770 m), plus explicit overrides for ghat-access places whose recorded elevation is a district value or low: Kodagu (900 m), Wayanad (700 m) and Srisailam (409 m).
+   Hubs are never hill. Test: Bengaluru, Mysuru and Hampi are NOT flagged. The build prints every flagged node with the reason.
+D79 (amended 2026-10-20, owner decision) Hubs exclude military airports: an airport whose OSM tags contain military=* or an aerodrome:type containing "military" is neither a hub nor a nearest_airport.
+   In the saved file that removes IXX (military=airfield) and BEP (aerodrome:type military/public). Expected result 22 hubs, 48 nodes; any other count stops the build.
