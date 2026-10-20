@@ -17,6 +17,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ["tests/test_enrich.py", "tests/test_process.py", "tests/test_facts.py",
          "tests/test_llm_api.py", "tests/test_index.py"]
+EVAL_TESTS = ["tests/test_eval_metrics.py", "tests/test_eval_qrels.py", "tests/test_run_eval.py",
+              "tests/test_queries.py", "tests/test_pool.py", "tests/test_import_labels.py",
+              "tests/test_kappa.py"]
 
 MUTATIONS = [
     ("M1 leak scan disabled (leak_scan returns None)", "src/process/enrich.py",
@@ -85,13 +88,46 @@ MUTATIONS = [
 ]
 
 
+# Phase 4 (D70 to D74): each mutation is run against the evaluation tests (M20 to M29).
+EVAL_MUTATIONS = [
+    ("M20 nDCG ideal built from the retrieved items only", "eval/metrics.py",
+     "    ideal = sorted((int(v) for v in qrel.values()), reverse=True)[:k]\n",
+     "    ideal = sorted((grade(qrel, c) for c in top), reverse=True)[:k]\n"),
+    ("M21 MRR rank off by one", "eval/metrics.py",
+     "            return 1.0 / i\n", "            return 1.0 / (i + 1)\n"),
+    ("M22 unjudged chunks counted as relevant", "eval/metrics.py",
+     "    return int(qrel.get(chunk_id, 0))\n", "    return int(qrel.get(chunk_id, 1))\n"),
+    ("M23 P@5 divided by the judged count instead of 5", "eval/metrics.py",
+     "    return sum(1 for c in top if grade(qrel, c) >= threshold) / k\n",
+     "    return sum(1 for c in top if grade(qrel, c) >= threshold) / max(\n"
+     "        1, sum(1 for c in top if c in qrel))\n"),
+    ("M24 qrels loader allows test without the flag", "eval/qrels.py",
+     '    if split == "test" and not allow_test:\n', "    if False:\n"),
+    ("M25 freshness share counts revised dates", "eval/metrics.py",
+     '        if r.get("date_kind") != "published" or not r.get("date"):\n',
+     '        if not r.get("date"):\n'),
+    ("M26 judging sheet not deduplicated (one row per contributing system)", "eval/pooling.py",
+     "        for cid in ids:\n            c = chunks[cid]\n",
+     '        for cid in [c for c in ids for _ in pool["pairs"][q["id"]][c]["systems"]]:\n'
+     "            c = chunks[cid]\n"),
+    ("M27 judging sheet leaks the contributing systems", "eval/pooling.py",
+     '"label": "", "note": "", "rubric": RUBRIC_NOTE,',
+     '"label": "", "note": ",".join(pool["pairs"][q["id"]][cid]["systems"]),\n'
+     '                "rubric": RUBRIC_NOTE,'),
+    ("M28 query check ignores aliases", "scripts/check_queries.py",
+     "    return [entry.name, *entry.aliases]\n", "    return [entry.name]\n"),
+    ("M29 kappa denominator wrong", "scripts/kappa.py",
+     "    return (po - pe) / (1 - pe)\n", "    return (po - pe) / 1\n"),
+]
+
+
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def run_tests() -> tuple[str, list[str]]:
+def run_tests(tests: list[str] = TESTS) -> tuple[str, list[str]]:
     r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-rf",
-                        *TESTS], cwd=ROOT, capture_output=True, text=True)
+                        *tests], cwd=ROOT, capture_output=True, text=True)
     lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
     failed = [ln.split(" ", 1)[1].split(" - ")[0] for ln in lines if ln.startswith("FAILED ")]
     return (lines[-1] if lines else "no output"), failed
@@ -100,7 +136,10 @@ def run_tests() -> tuple[str, list[str]]:
 def main() -> int:
     survived = 0
     rows = []
-    for name, rel, old, new in MUTATIONS:
+    plan = [(m, EVAL_TESTS) for m in EVAL_MUTATIONS]
+    if "--eval" not in sys.argv[1:]:  # --eval runs only M20 to M29
+        plan = [(m, TESTS) for m in MUTATIONS] + plan
+    for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()
         before = hashlib.sha256(original).hexdigest()
@@ -111,7 +150,7 @@ def main() -> int:
             continue
         path.write_bytes(text.replace(old, new).encode("utf-8"))
         try:
-            summary, failed = run_tests()
+            summary, failed = run_tests(tests)
         finally:
             path.write_bytes(original)
         restored = sha(path) == before
