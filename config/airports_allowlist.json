@@ -1,0 +1,8 @@
+{
+ "decision": "D79 / O13 (2026-10-19, amended 2026-10-20)",
+ "purpose": "IATA codes of airports inside the five states and Puducherry, curated from data/raw/overpass/_south/airports.json. A distance filter cannot separate them (O13).",
+ "dedupe_rule": "One entry per IATA. Among elements with the same IATA keep the highest type priority relation > way > node; on a tie keep the lowest OSM id (arbitrary but deterministic).",
+ "in_region": ["BEP", "BLR", "BPM", "CCJ", "CDP", "CJB", "CNN", "COK", "GBI", "HBX", "HYD", "IXE", "IXG", "IXM", "IXX", "KJB", "MAA", "MYQ", "NVY", "PNY", "PUT", "RJA", "RMD", "RQY", "SXV", "TCR", "TIR", "TRV", "TRZ", "VDY", "VGA", "VTZ", "WGC"],
+ "out_of_region_excluded": ["ACJ", "IXU", "JAF", "JGB", "KLH", "LTU", "NDC", "PYB", "SAG", "SSE", "TRR"],
+ "note": "TJV (Thanjavur Air Force Station, a hold-out place) is in the raw file but not in the allowlist."
+}
