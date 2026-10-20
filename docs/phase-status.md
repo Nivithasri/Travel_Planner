@@ -32,14 +32,15 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Done when: the corpus is frozen. From this point it never changes, so every metric stays reproducible.
 - Deviations (accepted, D48 vii/xvi): 1,696 chunks vs the plan's 10k-20k; 3 source types, one blog host; 0 published chunks in the 18-month window; no Reddit/official/YouTube
 
-## Phase 3: Enrichment and indexing (BUILT, review fix round done, tag phase-3-done waits for the owner, 2026-10-20; route changed by D59: hosted API, local CPU embeddings, no Kaggle)
+## Phase 3: Enrichment and indexing (COMPLETE 2026-10-20, owner-confirmed, tag phase-3-done; route changed by D59: hosted API, local CPU embeddings, no Kaggle)
 - [x] Enrichment code, validation, leak/copy scans, rule fallback, resumable batch, pilot selection, gold sheet (19 mutations M1-M19, each caught by at least one test)
 - [x] Hosted OpenAI-compatible client with client-side rate limiter, usage accounting and scrubbing (offline tests only; no API call made yet)
 - [x] smoke_llm.py 3/3 (owner); pilot enrich-v4 (79 chunks) passed its gate (JSON validity, fallback rate, leaks, reconciliation; not retrieval quality); index code committed and dry-run on a scratch file (BM25 x2, dense x2, query_index.py, build_index.py --verify)
 - [x] --full --eligible-only finished 2026-10-20: 1,100 of 1,100 (1,062 model-written, 38 fallbacks); `--assemble` wrote data/enriched/chunks.jsonl (1,696 rows; check_enriched_matches_frozen passes)
 - [x] real BM25 x2 + dense x2 built on CPU (76 min), `build_index.py --verify` VERIFIED, query_index.py ran on 3 queries (smoke test only), manifests committed (data/manifests/enriched_manifest.json, index_manifest.json)
-- [ ] Early sample for Valincia (blocked by O12); gold labels and score (owner); tag phase-3-done (waits for the owner's confirmation)
-- [ ] Done when: a script takes a query and returns ranked chunks from each index.
+- [ ] Early sample for Valincia (blocked by O12); gold labels and score: NOT DONE (both sheets unlabelled, `--score` has nothing to score)
+- [x] Tag phase-3-done (local, not pushed)
+- [x] Done when: a script takes a query and returns ranked chunks from each index (query_index.py, four tables).
 
 ## Phase 4: Test collection and evaluation harness
 - [ ] Tasks (see docs/plan.md)

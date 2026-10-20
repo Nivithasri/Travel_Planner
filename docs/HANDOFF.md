@@ -5,7 +5,7 @@ Phase 2 (cleaning and chunking) is COMPLETE: the corpus is FROZEN (2026-10-19T16
 `data/processed/FROZEN` exists; the hook blocks Edit/Write on every path under data/processed and `scripts/process.py --write`
 refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Nothing has been pushed since the Step 0 tag fix: `phase-1-done` is on
 61f1355 (remote updated by an owner-authorized force push of that one tag); `phase-2-done` is local only. Push only when asked.
-Phase 3 (enrichment and indexing): enrichment and indexes are BUILT, the tag waits for the owner (see "Phase 3 state" below). Read this file, LOG.md, docs/phase-status.md first.
+Phase 3 (enrichment and indexing) is COMPLETE, confirmed by the owner, tagged `phase-3-done` (local, not pushed). Next: Phase 4 (see "Next phase" below). Read this file, LOG.md, docs/phase-status.md first.
 
 ## The frozen corpus (verify with `python -m pytest -q` and `sha256sum data/processed/*`)
 | file | sha256 |
@@ -24,7 +24,8 @@ D23: 17 of 26 places pass at chunk level (18 at raw level; Kodaikanal fails at c
 Accepted deviations (D48 vii, xvi): 10k-20k chunks unreachable (1,696); 3 source types, one blog host; 0 published chunks in the
 18-month window (freshness comes only from the live layer, D32); no Reddit, no official, no YouTube.
 
-## Phase 3 state (2026-10-20: ENRICHMENT AND INDEXES BUILT; waiting for the owner's confirmation before the phase-3-done tag)
+## Phase 3 state (2026-10-20: COMPLETE, tag phase-3-done)
+GOLD SCORE: there is NONE. `python scripts/label_sample.py --score` prints "no labelled rows ... (30 blank)": both gold_sample.csv (new) and gold_sample_old.csv have 0 labelled rows. The owner confirmed Phase 3 without labelling, so aspect and is_warning accuracy against hand labels is UNMEASURED; the only agreement numbers are LLM-vs-rule-based (not accuracy). With 30 chunks any future score would be small-sample (a 95% interval of roughly +-17 points at 80% accuracy).
 What was done (details and commands in LOG.md; decisions D49 to D67): all 1,100 chunks of the 17 D33-eligible places (blog off) were enriched with prompt enrich-v4 on openai/gpt-oss-20b
 (hosted free tier, D59): 1,062 model-written, 38 fallbacks (37 `ungrounded`, 1 `note_long`). "Passed its gate" means JSON validity 100%, fallback rate, leak hits 0 and exact call reconciliation; it says nothing about retrieval quality, which is measured in Phase 4/6. Tokens: 836 tokens a chunk (919,711 in all, 1,180 POSTs). The
 assembled corpus is data/enriched/chunks.jsonl (1,696 rows, sha256 e4885c84031e871a2765b706dbdd9f4c0780c1b6f8ee1fb98479e9be18185135; gitignored) with data/enriched/provenance.jsonl
@@ -43,7 +44,19 @@ Build time on CPU: dense_plain 2,171 s (0.781 rows/s), dense_contextual 2,344 s 
    Three hand-run queries RAN (all four tables printed); that shows the code runs, not that retrieval is good. It is a smoke test, not an evaluation (Phase 4/6).
 4. Frozen data: data/processed is read-only; chunks.jsonl is still ee11755106409fd0d6ae8656453fc1ec70560593a9c25348572f01ec804a0003. Enriched chunks and indexes are gitignored (O12).
 5. Never print or log the URL, key or headers: both LLM clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
-6. Not done in Phase 3: the early sample file for Valincia (blocked by O12), the gold score, the final tag.
+6. Not done in Phase 3: the early sample file for Valincia (blocked by O12) and the gold score (sheet unlabelled).
+
+## Next phase: Phase 4 (test collection and evaluation harness; owner Nivithasri)
+Start in PLAN MODE and wait for approval. Do not start Phase 5. Inputs: the four indexes (`src/retrieval/search.py` `Index.table`), data/enriched/chunks.jsonl + provenance.jsonl, data/manifests/d33_excluded.json.
+First steps:
+1. Queries (`eval/queries.json`, contract fields id, text, split, type, time_sensitive, freshness_slice): 30 to 40 (D7/O1; prefer 40 if labelling time allows), split dev/test (about 10 dev, rest test), covering family, backpacker, honeymoon, pilgrimage, monsoon and budget trips. About 8 are the freshness slice (closures, timings, crowding), reported separately because the frozen corpus has no published chunk in the 18-month window (D32). Every query carries `time_sensitive` true/false by hand (reference for Phase 6's classifier). D68: no query names any of the 9 excluded places (Alappuzha, Auroville, Bhadrachalam, Kodaikanal, Munnar, Rameswaram, Srisailam, Varkala, Wayanad) or a hold-out (Chikmagalur, Araku Valley, Thekkady, Thanjavur); write queries before looking at any ranking, and never tune on test.
+2. Pooling script: top 10 per query from bm25_contextual, bm25_plain, dense_plain, dense_contextual and a simple fusion; pool over ALL 1,696 chunks (D68), record which round and which system contributed each chunk, report the excluded-place share of every top 10.
+3. Judging: 0/1/2 labels by the owner for every pooled chunk (`eval/qrels.json` by contract; per O2 write `qrels_dev.json` and `qrels_test.json` and a loader that REFUSES test qrels unless `--split test` is passed; record the pooling round per chunk; D5: a second pooling round from the final pipeline after Phase 6). Do not inspect test qrels while tuning (CLAUDE.md rule 3).
+4. `eval/run_eval.py --retriever <module:function> --split dev|test` for any function following `retrieve(query, filters=None, k=10)`: nDCG@10, MRR, Recall@20, P@5, freshness share (published dates only within 18 months of EVAL_REFERENCE_DATE 2026-10-18; the share will be ~0, say so), diversity (distinct source types and places in the top 10), unjudged@10 per run (D5), results overall, per query type and for the freshness slice; the excluded-place share of the top 10 (D68). Add a thin adapter exposing the four indexes as retrievers so Phase 6 and the owner can run baselines today.
+5. D69 hooks for Phase 6 (data only in Phase 4): keep a `provenance` column per pooled chunk (llm vs fallback vs rule_only) so results can be stratified; mark place-named versus place-free queries in `type` or an extra field via a decisions.md entry (contract change); never apply aspect/place_type filters to rule_only/fallback rows unflagged; do not use `mentioned_places` as a signal until Valincia acknowledges D50.
+6. Cohen's kappa (O4): Valincia independently labels a shared subset of the judgments; send her the subset without my labels, compute kappa when she returns it. Needs O12 for sharing text, or she judges from the owner's screen/export; decide with the owner. If no second labeller is available, use delayed self-agreement and say so (O4).
+7. Tests for the loader refusal, each metric on toy qrels (known answers), and a mutation check per metric; `pytest -q`, `ruff check .`; update LOG.md and docs/phase-status.md; tag `phase-4-done` only when the owner confirms.
+Done when: one command prints all metrics for any retrieval function.
 
 ## Daily routine for the full enrichment run (Phase 3; the run FINISHED on 2026-10-20, kept as a record of how it was operated)
 1. The one command, from the repo root, any time after 00:00 UTC (05:30 India time): `python scripts/enrich.py --full --eligible-only`. It resumes by itself from
