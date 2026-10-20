@@ -1,4 +1,4 @@
-"""Build and check the Phase 5 routing data (D76 to D81). Offline, deterministic, no network.
+"""Build and check the Phase 5 routing data (D76 to D83). Offline, deterministic, no network.
 
     python scripts/build_routing.py calibrate   # fit, write config/routing_params.json
     python scripts/build_routing.py matrix      # write index/travel_matrix.json
@@ -6,6 +6,8 @@
     python scripts/build_routing.py sanity      # run the sanity cases, report every miss
     python scripts/build_routing.py all         # calibrate, matrix, season, manifest
     python scripts/build_routing.py report      # nodes, hill flags, hubs, calibration errors
+
+A rebuild needs the gitignored data/raw (Wikidata, Overpass, Open-Meteo) and data/enriched files.
 """
 from __future__ import annotations
 
@@ -55,20 +57,27 @@ def calibration(nodes: list[dict], params: dict):
     routes = json.loads(tm.ROUTES_PATH.read_text(encoding="utf-8"))["routes"]
     by_id = {n["id"]: n for n in nodes}
     rows = tm.route_rows(routes, by_id)
-    return rows, tm.fit(rows)
+    return rows, tm.fit(rows, params["band_km"])
 
 
-def print_calibration(rows, fitted) -> dict:
+def print_calibration(rows, fitted, band_km: float) -> dict:
     errors = tm.route_errors(rows, fitted)
     print(f"fitted (PROVISIONAL, agreement with UNVERIFIED reference values): {fitted}")
     print("route | split | edge | ref km -> km | ref h -> h | err% km / h")
     for e in errors:
+        flag = "  <-- HELD-BACK ROUTE OFF BY MORE THAN 25%" if (
+            e["split"] == "validate" and abs(e["h_err_pct"]) > 25) else ""
         print(f"{e['a']}-{e['b']} | {e['split']} | {'hill' if e['hill'] else 'plain'} | "
               f"{e['ref_km']} -> {e['km']} | {e['ref_h']} -> {e['hours']} | "
-              f"{e['km_err_pct']:+.1f} / {e['h_err_pct']:+.1f}")
+              f"{e['km_err_pct']:+.1f} / {e['h_err_pct']:+.1f}{flag}")
     summary = {"fit": tm.error_summary([e for e in errors if e["split"] == "fit"]),
                "validate": tm.error_summary([e for e in errors if e["split"] == "validate"]),
-               "leave_one_out": tm.leave_one_out(rows)}
+               "leave_one_out": tm.leave_one_out(rows, band_km),
+               "validate_off_by_over_25_pct": tm.flag_large_errors(errors)}
+    plain = [e for e in errors if not e["hill"]]
+    hill = [e for e in errors if e["hill"]]
+    summary["fit_plain"] = tm.error_summary([e for e in plain if e["split"] == "fit"])
+    summary["fit_hill"] = tm.error_summary([e for e in hill if e["split"] == "fit"])
     for k, v in summary.items():
         print(f"{k}: {v}")
     return summary
@@ -77,40 +86,49 @@ def print_calibration(rows, fitted) -> dict:
 def cmd_calibrate() -> None:
     _, params, _, nodes, _ = context()
     rows, fitted = calibration(nodes, params)
-    summary = print_calibration(rows, fitted)
+    summary = print_calibration(rows, fitted, params["band_km"])
     params["fitted"] = {**fitted, "summary": summary, "status": "PROVISIONAL"}
     tm.PARAMS_PATH.write_text(dump(params), encoding="utf-8", newline="\n")
     print(f"wrote {tm.PARAMS_PATH.relative_to(ROOT)}")
 
 
-def cmd_matrix() -> dict:
+def build_matrix_doc() -> dict:
     _, params, airports, nodes, report = context()
     if not params.get("fitted"):
         raise SystemExit("run `calibrate` first")
-    hours, km = tm.matrix_pairs(nodes, params["fitted"], params["min_hours"])
-    tri = tm.triangle_violations(nodes, hours)
-    meta = {"status": "PROVISIONAL", "decision": "D76-D79", "attribution": ATTRIBUTION,
-            "params": {k: v for k, v in params["fitted"].items() if k != "summary"},
+    fitted = params["fitted"]
+    hours, km = tm.matrix_pairs(nodes, fitted, params["min_hours"])
+    meta = {"status": "PROVISIONAL", "decision": "D76-D83", "attribution": ATTRIBUTION,
+            "params": {k: v for k, v in fitted.items() if k != "summary"},
             "nodes": len(nodes), "hubs": len(report["hubs"]), "pairs": len(hours),
-            "triangle_violations": tri}
-    MATRIX_OUT.write_text(dump({"meta": meta, "nodes": nodes, "hours": hours, "km": km}),
-                          encoding="utf-8", newline="\n")
-    print(f"wrote {MATRIX_OUT.relative_to(ROOT)}: {len(nodes)} nodes, {len(hours)} pairs, "
-          f"triangle violations {tri}")
-    return meta
+            "triangle_violations": tm.triangle_violations(nodes, hours),
+            "airport_aliases": tm.airport_aliases(nodes, airports, params["hub_min_km"])}
+    return {"meta": meta, "nodes": nodes, "hours": hours, "km": km}
+
+
+def build_season_doc() -> dict:
+    _, params, airports, nodes, _ = context()
+    dest = [n for n in nodes if n["kind"] == "destination"]
+    places = season_mod.build_season(dest, params, season_mod.load_evidence(), airports=airports)
+    meta = {"status": "PROVISIONAL", "decision": "D80, D83", "attribution": ATTRIBUTION,
+            "thresholds": params["season_thresholds"], "rainy_day_mm": params["rainy_day_mm"],
+            "aliases": {n["name"]: n["aliases"] for n in dest}, "places": len(places)}
+    return {"meta": meta, "places": places}
+
+
+def cmd_matrix() -> None:
+    doc = build_matrix_doc()
+    MATRIX_OUT.write_text(dump(doc), encoding="utf-8", newline="\n")
+    m = doc["meta"]
+    print(f"wrote {MATRIX_OUT.relative_to(ROOT)}: {m['nodes']} nodes, {m['pairs']} pairs, "
+          f"triangle violations {m['triangle_violations']}, airport aliases "
+          f"{sorted(m['airport_aliases'])}")
 
 
 def cmd_season() -> None:
-    registry, params, airports, nodes, _ = context()
-    dest = [n for n in nodes if n["kind"] == "destination"]
-    evidence = season_mod.load_evidence()
-    places = season_mod.build_season(dest, params, evidence, airports=airports)
-    aliases = {n["name"]: n["aliases"] for n in dest}
-    meta = {"status": "PROVISIONAL", "decision": "D80", "attribution": ATTRIBUTION,
-            "thresholds": params["season_thresholds"], "rainy_day_mm": params["rainy_day_mm"],
-            "aliases": aliases, "places": len(places)}
-    SEASON_OUT.write_text(dump({"meta": meta, "places": places}), encoding="utf-8", newline="\n")
-    print(f"wrote {SEASON_OUT.relative_to(ROOT)}: {len(places)} places x 12 months")
+    doc = build_season_doc()
+    SEASON_OUT.write_text(dump(doc), encoding="utf-8", newline="\n")
+    print(f"wrote {SEASON_OUT.relative_to(ROOT)}: {len(doc['places'])} places x 12 months")
 
 
 def cmd_sanity() -> None:
@@ -128,7 +146,7 @@ def cmd_sanity() -> None:
         if c.get("hill_slower_than_plain"):
             ia, ib = matrix.resolve(c["a"]), matrix.resolve(c["b"])
             na, nb = matrix.nodes[ia], matrix.nodes[ib]
-            _, plain_h = tm.estimate(na["lat"], na["lon"], nb["lat"], nb["lon"], False, fitted)
+            _, plain_h = tm.estimate(na["lat"], na["lon"], nb["lat"], nb["lon"], 0, fitted)
             ok = ok and h > plain_h
             extra = f" (plain model {plain_h:.2f} h)"
         misses += not ok
@@ -172,7 +190,7 @@ def cmd_report() -> None:
     for name, why in report["hill_nodes"]:
         print(f"  {name}: {why}")
     rows, fitted = calibration(nodes, params)
-    print_calibration(rows, fitted)
+    print_calibration(rows, fitted, params["band_km"])
 
 
 def main() -> int:

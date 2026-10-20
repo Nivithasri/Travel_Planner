@@ -1,11 +1,18 @@
-"""Nodes, the travel-time model, the calibration fit and the matrix (Phase 5; D76 to D79).
+"""Nodes, the travel-time model, the calibration fit and the matrix (Phase 5; D76 to D83).
 
 Offline and deterministic: the registry, the saved Overpass airports, the saved Wikidata entities
 and config/routing_params.json are the only inputs.
+
+Model (D77, D78 amended after the review, D82):
+    road km  = great-circle km x road_factor
+    plain h  = km / speed_short                           for km <= band_km
+             = band_km / speed_short + (km - band_km) / speed_long   beyond (continuous)
+    hours    = max(min_hours, plain h + ghat_surcharge_h x number of hill endpoints)
 """
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from src.common.schemas import REPO_ROOT
@@ -17,6 +24,8 @@ REGISTRY_PATH = REPO_ROOT / "data" / "registry" / "core_places.json"
 WIKIDATA_RAW = REPO_ROOT / "data" / "raw" / "wikidata"
 _METRE = "http://www.wikidata.org/entity/Q11573"
 _HUB_SUFFIX = ("international airport", "airport", "airstrip", "air force station")
+ALIAS_MAX_CHARS = 40
+ALIAS_MAX_WORDS = 5
 
 
 def load_params(path: Path = PARAMS_PATH) -> dict:
@@ -49,13 +58,46 @@ def hill_flag(name: str, elevation_m: float | None, params: dict) -> tuple[bool,
     return False, "no elevation" if elevation_m is None else f"elevation {elevation_m:g} m"
 
 
-def hub_alias(name: str) -> str:
-    out = name.strip()
+# ==== names and aliases ===========================================================
+
+def clean_name(name: str) -> str:
+    """Collapse whitespace and tighten ' ,' to ','."""
+    return re.sub(r"\s+,", ",", " ".join(str(name).split()))
+
+
+def _strip_suffix(text: str) -> str:
+    out = text.strip()
     for suffix in _HUB_SUFFIX:
         if out.lower().endswith(" " + suffix):
             return out[: -len(suffix)].strip()
     return out
 
+
+def hub_alias(name: str) -> str:
+    """The part of an airport name before the first comma, without the airport words (B4)."""
+    return _strip_suffix(clean_name(name).partition(",")[0])
+
+
+def hub_aliases(name: str, iata: str) -> list[str]:
+    """IATA code, the stripped head of the name, and the part after a comma (a town name)."""
+    head, _, tail = clean_name(name).partition(",")
+    out = {iata}
+    for part in (head, tail):
+        part = _strip_suffix(part)
+        if part:
+            out.add(part)
+    return sorted(out)
+
+
+def clean_aliases(aliases: list[str]) -> list[str]:
+    """Drop junk aliases (sentences copied from Wikidata): over ALIAS_MAX_CHARS characters or
+    ALIAS_MAX_WORDS words. The frozen registry is not changed (B4)."""
+    keep = {clean_name(a) for a in aliases}
+    return sorted(a for a in keep if a and len(a) <= ALIAS_MAX_CHARS
+                  and len(a.split()) <= ALIAS_MAX_WORDS)
+
+
+# ==== nodes =======================================================================
 
 def select_hubs(airports: dict[str, dict], destinations: list[tuple[float, float]],
                 holdouts: list[tuple[float, float]], min_km: float) -> list[str]:
@@ -83,31 +125,58 @@ def build_nodes(registry, airports: dict[str, dict], params: dict,
             flagged.append((e.name, why))
         nodes.append({"id": place_dir(e.name), "name": e.name, "kind": "destination",
                       "state": e.state, "lat": e.lat, "lon": e.lon, "hill": hill,
-                      "aliases": sorted(e.aliases)})
+                      "aliases": clean_aliases(e.aliases)})
     hubs = select_hubs(airports, [(e.lat, e.lon) for e in dest], [(e.lat, e.lon) for e in held],
                        params["hub_min_km"])
     for iata in hubs:
         a = airports[iata]
-        nodes.append({"id": f"hub-{iata.lower()}", "name": a["name"], "kind": "hub",
-                      "state": None, "lat": a["lat"], "lon": a["lon"], "hill": False,
-                      "iata": iata, "aliases": sorted({hub_alias(a["name"]), iata})})
+        nodes.append({"id": f"hub-{iata.lower()}", "name": clean_name(a["name"]),
+                      "kind": "hub", "state": None, "lat": a["lat"], "lon": a["lon"],
+                      "hill": False, "iata": iata, "aliases": hub_aliases(a["name"], iata)})
     report = {"destinations": len(dest), "hubs": hubs, "hill_nodes": flagged,
               "excluded_military": sorted(k for k, v in airports.items() if v.get("military"))}
     return nodes, report
 
 
+def airport_aliases(nodes: list[dict], airports: dict[str, dict], max_km: float) -> dict[str, str]:
+    """B3, D83: civil allowlist airports that are not hub nodes -> the nearest destination node id
+    when it is within `max_km`. By the hub rule (D79) every such airport is within 25 km of one,
+    so nearest_airport codes such as MAA or COK resolve in travel_time. The airport stands for
+    that destination (an error of at most `max_km`)."""
+    dest = [n for n in nodes if n["kind"] == "destination"]
+    hubs = {n["iata"] for n in nodes if n["kind"] == "hub"}
+    out = {}
+    for iata, a in sorted(airports.items()):
+        if a.get("military") or iata in hubs:
+            continue
+        dist, node_id = min((haversine_km(a["lat"], a["lon"], n["lat"], n["lon"]), n["id"])
+                            for n in dest)
+        if dist <= max_km:
+            out[iata] = node_id
+    return out
+
+
 # ==== travel-time model ===========================================================
 
-def edge_hill(a: dict, b: dict) -> bool:
-    return bool(a["hill"] or b["hill"])
+def hill_endpoints(a: dict, b: dict) -> int:
+    return int(bool(a["hill"])) + int(bool(b["hill"]))
 
 
-def estimate(lat1: float, lon1: float, lat2: float, lon2: float, hill: bool,
+def plain_hours(km: float, fitted: dict) -> float:
+    """Two-band plain driving time, continuous at band_km (D82)."""
+    band = fitted["band_km"]
+    if km <= band:
+        return km / fitted["speed_short_kmh"]
+    return band / fitted["speed_short_kmh"] + (km - band) / fitted["speed_long_kmh"]
+
+
+def estimate(lat1: float, lon1: float, lat2: float, lon2: float, n_hill: int,
              fitted: dict, min_hours: float = 0.25) -> tuple[float, float]:
-    """(road km, hours) = great-circle km x factor, then / speed (D77, D78)."""
-    prefix = "hill_" if hill else ""
-    km = haversine_km(lat1, lon1, lat2, lon2) * fitted[prefix + "road_factor"]
-    return km, max(min_hours, km / fitted[prefix + "speed_kmh"])
+    """(road km, hours): great-circle km x factor, two-band plain time, plus the ghat surcharge
+    once per hill endpoint (D78, D82)."""
+    km = haversine_km(lat1, lon1, lat2, lon2) * fitted["road_factor"]
+    hours = plain_hours(km, fitted) + fitted["ghat_surcharge_h"] * n_hill
+    return km, max(min_hours, hours)
 
 
 def _median(values: list[float]) -> float:
@@ -121,30 +190,48 @@ def route_rows(routes: list[dict], nodes: dict[str, dict]) -> list[dict]:
     for r in routes:
         a, b = nodes[r["a"]], nodes[r["b"]]
         gc = haversine_km(a["lat"], a["lon"], b["lat"], b["lon"])
-        rows.append({**r, "gc_km": gc, "hill": edge_hill(a, b)})
+        n_hill = hill_endpoints(a, b)
+        rows.append({**r, "gc_km": gc, "n_hill": n_hill, "hill": n_hill > 0})
     return rows
 
 
-def fit(rows: list[dict]) -> dict:
-    """Medians over the 'fit' routes: factor = ref_km / great-circle km, speed = ref_km / ref_h,
-    separately for plain and hill edges (D77, D78). Robust to a few wrong reference values."""
-    out = {}
-    for prefix, hill in (("", False), ("hill_", True)):
-        use = [r for r in rows if r["split"] == "fit" and r["hill"] == hill]
-        if not use:
-            raise ValueError(f"no fit routes for {'hill' if hill else 'plain'} edges")
-        out[prefix + "road_factor"] = round(_median([r["ref_km"] / r["gc_km"] for r in use]), 4)
-        out[prefix + "speed_kmh"] = round(_median([r["ref_km"] / r["ref_h"] for r in use]), 2)
-        out[prefix + "n_fit"] = len(use)
+def fit(rows: list[dict], band_km: float = 150.0) -> dict:
+    """Medians over the 'fit' routes (D77, D82, D78 amended). Plain routes (no hill endpoint):
+    road_factor = ref_km / great-circle km; speed_short = ref_km / ref_h for routes up to band_km;
+    speed_long = marginal speed beyond the band, (ref_km - band) / (ref_h - band / speed_short).
+    Hill routes: ghat_surcharge_h = median over routes of (ref_h - plain model hours) per hill
+    endpoint, never below 0. Robust to a few wrong reference values."""
+    plain = [r for r in rows if r["split"] == "fit" and r["n_hill"] == 0]
+    hill = [r for r in rows if r["split"] == "fit" and r["n_hill"] > 0]
+    short = [r for r in plain if r["ref_km"] <= band_km]
+    long_ = [r for r in plain if r["ref_km"] > band_km]
+    for name, group in (("short plain", short), ("long plain", long_), ("hill", hill)):
+        if not group:
+            raise ValueError(f"no fit routes for {name} edges")
+    out = {"band_km": band_km,
+           "road_factor": round(_median([r["ref_km"] / r["gc_km"] for r in plain]), 4)}
+    out["speed_short_kmh"] = round(_median([r["ref_km"] / r["ref_h"] for r in short]), 2)
+    marginal = []
+    for r in long_:
+        extra_h = r["ref_h"] - band_km / out["speed_short_kmh"]
+        if extra_h > 0:
+            marginal.append((r["ref_km"] - band_km) / extra_h)
+    if not marginal:
+        raise ValueError("no usable long plain routes")
+    out["speed_long_kmh"] = round(_median(marginal), 2)
+    base = {**out, "ghat_surcharge_h": 0.0}
+    resid = [(r["ref_h"] - plain_hours(r["gc_km"] * out["road_factor"], base)) / r["n_hill"]
+             for r in hill]
+    out["ghat_surcharge_h"] = round(max(0.0, _median(resid)), 3)
+    out.update({"n_fit_short": len(short), "n_fit_long": len(long_), "n_fit_hill": len(hill)})
     return out
 
 
 def route_errors(rows: list[dict], fitted: dict, min_hours: float = 0.25) -> list[dict]:
     out = []
     for r in rows:
-        prefix = "hill_" if r["hill"] else ""
-        km = r["gc_km"] * fitted[prefix + "road_factor"]
-        h = max(min_hours, km / fitted[prefix + "speed_kmh"])
+        km = r["gc_km"] * fitted["road_factor"]
+        h = max(min_hours, plain_hours(km, fitted) + fitted["ghat_surcharge_h"] * r["n_hill"])
         out.append({"a": r["a"], "b": r["b"], "split": r["split"], "hill": r["hill"],
                     "ref_km": r["ref_km"], "km": round(km, 1), "ref_h": r["ref_h"],
                     "hours": round(h, 2),
@@ -163,14 +250,22 @@ def error_summary(errors: list[dict]) -> dict:
             "mape_km_pct": round(sum(abs(e["km_err_pct"]) for e in errors) / n, 1)}
 
 
-def leave_one_out(rows: list[dict]) -> dict:
-    """Refit without each fit route, predict it, summarise the errors (fit routes only)."""
+def flag_large_errors(errors: list[dict], split: str = "validate",
+                      limit_pct: float = 25.0) -> list[str]:
+    """Routes of `split` whose hours are off by more than `limit_pct` (B2)."""
+    return [f"{e['a']}-{e['b']} {e['h_err_pct']:+.1f}%" for e in errors
+            if e["split"] == split and abs(e["h_err_pct"]) > limit_pct]
+
+
+def leave_one_out(rows: list[dict], band_km: float = 150.0) -> dict:
+    """Refit without each fit route, predict it, summarise the errors (fit routes only).
+    A route whose removal empties a group is skipped."""
     errs = []
     for i, r in enumerate(rows):
         if r["split"] != "fit":
             continue
         try:
-            f = fit([x for j, x in enumerate(rows) if j != i])
+            f = fit([x for j, x in enumerate(rows) if j != i], band_km)
         except ValueError:
             continue
         errs.extend(route_errors([r], f))
@@ -186,8 +281,8 @@ def matrix_pairs(nodes: list[dict], fitted: dict, min_hours: float = 0.25) -> tu
     hours, km = {}, {}
     for i, a in enumerate(nodes):
         for b in nodes[i + 1:]:
-            k_, h_ = estimate(a["lat"], a["lon"], b["lat"], b["lon"], edge_hill(a, b), fitted,
-                              min_hours)
+            k_, h_ = estimate(a["lat"], a["lon"], b["lat"], b["lon"], hill_endpoints(a, b),
+                              fitted, min_hours)
             key = pair_key(a["id"], b["id"])
             hours[key], km[key] = round(h_, 3), round(k_, 1)
     return dict(sorted(hours.items())), dict(sorted(km.items()))

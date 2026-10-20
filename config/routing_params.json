@@ -1,31 +1,47 @@
 {
+ "band_km": 150,
  "fitted": {
-  "hill_n_fit": 6,
-  "hill_road_factor": 1.4756,
-  "hill_speed_kmh": 35.75,
-  "n_fit": 18,
+  "band_km": 150,
+  "ghat_surcharge_h": 1.199,
+  "n_fit_hill": 6,
+  "n_fit_long": 10,
+  "n_fit_short": 8,
   "road_factor": 1.1497,
-  "speed_kmh": 49.38,
+  "speed_long_kmh": 71.51,
+  "speed_short_kmh": 44.49,
   "status": "PROVISIONAL",
   "summary": {
    "fit": {
-    "mae_h": 0.58,
-    "mape_h_pct": 16.2,
-    "mape_km_pct": 6.9,
+    "mae_h": 0.36,
+    "mape_h_pct": 11.4,
+    "mape_km_pct": 9.1,
     "n": 24
    },
+   "fit_hill": {
+    "mae_h": 0.41,
+    "mape_h_pct": 13.0,
+    "mape_km_pct": 17.9,
+    "n": 6
+   },
+   "fit_plain": {
+    "mae_h": 0.34,
+    "mape_h_pct": 10.9,
+    "mape_km_pct": 6.2,
+    "n": 18
+   },
    "leave_one_out": {
-    "mae_h": 0.64,
-    "mape_h_pct": 17.8,
-    "mape_km_pct": 7.6,
+    "mae_h": 0.43,
+    "mape_h_pct": 13.6,
+    "mape_km_pct": 9.1,
     "n": 24
    },
    "validate": {
-    "mae_h": 0.98,
-    "mape_h_pct": 19.0,
-    "mape_km_pct": 10.4,
+    "mae_h": 0.58,
+    "mape_h_pct": 13.5,
+    "mape_km_pct": 10.7,
     "n": 6
-   }
+   },
+   "validate_off_by_over_25_pct": []
   }
  },
  "hill_elevation_m": 1000,
@@ -43,7 +59,6 @@
   "Ooty",
   "Kodaikanal"
  ],
- "band_km": 150,
  "min_hours": 0.25,
  "note": "Fitted values are written by `python scripts/build_routing.py calibrate` from config/calibration_routes.json (UNVERIFIED reference values, D77). Static values below were fixed before any fit (D78, D79, D80).",
  "rainy_day_mm": 2.5,
