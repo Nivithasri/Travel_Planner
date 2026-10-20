@@ -6,3 +6,8 @@
 *.py text eol=lf
 data/manifests/*.json text eol=lf
 data/manifests/*.md text eol=lf
+index/travel_matrix.json text eol=lf
+index/season_data.json text eol=lf
+config/routing_*.json text eol=lf
+config/calibration_routes.json text eol=lf
+config/airports_allowlist.json text eol=lf

@@ -94,4 +94,4 @@ data/manifests/raw_manifest.jsonl (url, source, place, retrieved_at, sha256, byt
   Hold-outs are not nodes. Parameters are PROVISIONAL (D77). No chunk text.
 - index/season_data.json: {meta, places: {name: {confidence, nearest_airport, months: {"1".."12": {climate, verdict, reasons, access_risk, evidence{model_written, fallback, rule_only, tag_counts},
   warning_chunk_ids}}}}}. Chunk ids only, no text.
-- check_season returns: place, month, verdict, reasons, access_risk, climate, evidence, warning_chunk_ids, confidence, caveats.
+- check_season returns: place, month, verdict, reasons, access_risk, climate, evidence (model_written | fallback | rule_only counts), warning_chunk_ids, warning_sources, confidence, nearest_airport, caveats.
