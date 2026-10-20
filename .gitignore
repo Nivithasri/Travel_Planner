@@ -16,3 +16,4 @@ data/processed/*
 !data/processed/.gitkeep
 data/enriched/
 models/
+eval/sheets/
