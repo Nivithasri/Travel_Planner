@@ -917,3 +917,13 @@ def test_trust_provider_skips_the_local_daily_checks_but_keeps_counting():
     entry = lax.before_call(100)  # no local stop: only the provider's 429 can stop it now
     lax.after_call(entry, 100, None)
     assert lax.day_tokens == 900  # the spend is still recorded
+
+
+def test_the_longest_429_wait_is_configurable(tmp_path):
+    answers = [HTTP(429, {"error": {"message": "try again in 8m"}}, headers={"retry-after": "480"}),
+               completion("fine")]
+    client, post, clk = make(tmp_path, answers, max_retry_after_s=600.0)
+    assert client.chat(MESSAGES, MODEL, options=OPTIONS) == "fine" and clk.slept == [480.0]
+    client, post, clk = make(tmp_path / "b", [HTTP(429, {}, headers={"retry-after": "480"})])
+    with pytest.raises(QuotaExhausted):  # the default ceiling of 290 s
+        client.chat(MESSAGES, MODEL, options=OPTIONS)

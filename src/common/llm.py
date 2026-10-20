@@ -708,7 +708,8 @@ class OpenAICompatClient(OllamaClient):
 
     def __init__(self, base_url: str, api_key: str, cache: DiskCache, *,
                  limiter: RateLimiter | None = None, json_mode: str = "json_object",
-                 max_tokens_cap: int = MAX_COMPLETION_TOKENS_CAP, **kwargs: Any):
+                 max_tokens_cap: int = MAX_COMPLETION_TOKENS_CAP,
+                 max_retry_after_s: float = MAX_RETRY_AFTER_S, **kwargs: Any):
         super().__init__(base_url, cache, **kwargs)
         if not api_key:
             raise ValueError("an API key is required")
@@ -716,6 +717,7 @@ class OpenAICompatClient(OllamaClient):
         self.limiter = limiter
         self.json_mode = json_mode
         self.max_tokens_cap = max_tokens_cap
+        self.max_retry_after_s = max_retry_after_s  # a longer Retry-After is a quota stop
         self.usage: Counter = Counter()  # prompt, completion, reasoning, total, calls
         self.last_usage: dict[str, int] = {}
         self._last_headers: Any = {}
@@ -799,7 +801,7 @@ class OpenAICompatClient(OllamaClient):
             detail = " ".join(self._scrub(resp.text[:300]).split())  # which limit, as the API says
             if wait is None:
                 raise _Retryable(f"HTTP 429 without Retry-After: {detail}")
-            if wait > MAX_RETRY_AFTER_S:
+            if wait > self.max_retry_after_s:
                 lim = self.limiter
                 raise QuotaExhausted(
                     f"HTTP 429: the API asks to wait {int(wait)} s ({detail})", reset_in_s=wait,

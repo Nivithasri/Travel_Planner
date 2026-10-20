@@ -276,9 +276,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="share of LLM_TPD to use per UTC day (default 0.85; 0.5 to 1.0 allowed)")
     ap.add_argument("--trust-provider", action="store_true",
                     help="skip the client daily budget; the API 429 decides and names the limit")
+    ap.add_argument("--max-wait", type=float, default=290.0, metavar="S",
+                    help="wait out a 429 of up to S seconds (default 290; up to 1800)")
     ap.add_argument("--max-failures", type=int, default=5,
                     help="stop after this many consecutive transport failures (default 5)")
     args = ap.parse_args(argv)
+    if not 10 <= args.max_wait <= 1800:
+        ap.error("--max-wait must be between 10 and 1800 seconds")
     if not 0.5 <= args.tpd_share <= 1.0:
         ap.error("--tpd-share must be between 0.5 and 1.0")
     if not (args.sample or args.pilot or args.gold or args.full or args.assemble):
@@ -330,7 +334,8 @@ def main(argv: list[str] | None = None) -> int:
         return requests.post(*a, **k)
 
     client = OpenAICompatClient.from_settings(post=counting_post, tpd_share=args.tpd_share,
-                                              trust_provider=args.trust_provider)
+                                              trust_provider=args.trust_provider,
+                                              max_retry_after_s=args.max_wait)
     model, lim = s.generator_model, client.limiter
     ckpt = checkpoint_path(model)
     print(f"generator {model}; judge {s.judge_model} is not used in Phase 3; prompt "
