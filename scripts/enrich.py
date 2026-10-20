@@ -273,12 +273,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--redo", nargs="+", metavar="CHUNK_ID",
                     help="recompute these chunks (their records move to *.superseded.jsonl)")
     ap.add_argument("--tpd-share", type=float, default=0.85, metavar="F",
-                    help="share of LLM_TPD to use per UTC day (default 0.85; 0.5 to 0.97 allowed)")
+                    help="share of LLM_TPD to use per UTC day (default 0.85; 0.5 to 1.0 allowed)")
     ap.add_argument("--max-failures", type=int, default=5,
                     help="stop after this many consecutive transport failures (default 5)")
     args = ap.parse_args(argv)
-    if not 0.5 <= args.tpd_share <= 0.97:
-        ap.error("--tpd-share must be between 0.5 and 0.97")
+    if not 0.5 <= args.tpd_share <= 1.0:
+        ap.error("--tpd-share must be between 0.5 and 1.0")
     if not (args.sample or args.pilot or args.gold or args.full or args.assemble):
         ap.error("choose one of --sample N, --pilot, --gold, --full, --assemble")
 
