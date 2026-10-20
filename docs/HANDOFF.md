@@ -5,7 +5,8 @@ Phase 2 (cleaning and chunking) is COMPLETE: the corpus is FROZEN (2026-10-19T16
 `data/processed/FROZEN` exists; the hook blocks Edit/Write on every path under data/processed and `scripts/process.py --write`
 refuses. NEVER modify data/processed/* (CLAUDE.md rule 2). Nothing has been pushed since the Step 0 tag fix: `phase-1-done` is on
 61f1355 (remote updated by an owner-authorized force push of that one tag); `phase-2-done` is local only. Push only when asked.
-Phase 3 (enrichment and indexing) is COMPLETE, confirmed by the owner, tagged `phase-3-done` (local, not pushed). Next: Phase 4 (see "Next phase" below). Read this file, LOG.md, docs/phase-status.md first.
+Phase 3 (enrichment and indexing) is COMPLETE, confirmed by the owner, tagged `phase-3-done` (local, not pushed).
+Phase 4 (test collection and harness) is IN PROGRESS and STOPPED AT LABELLING (2026-10-20): see "Phase 4 state" below. No phase-4 tag. Read this file, LOG.md, docs/phase-status.md first.
 
 ## The frozen corpus (verify with `python -m pytest -q` and `sha256sum data/processed/*`)
 | file | sha256 |
@@ -33,8 +34,7 @@ assembled corpus is data/enriched/chunks.jsonl (1,696 rows, sha256 e4885c84031e8
 index/ (gitignored): bm25_contextual, bm25_plain, dense_plain.npy, dense_contextual.npy (1,696 x 1,024 float32, normalised), ids.json, index_manifest.json; `python scripts/build_index.py
 --verify` prints VERIFIED. Committed manifests (hashes, counts, params, versions, weight-file sha256s; no text): data/manifests/enriched_manifest.json and index_manifest.json.
 Build time on CPU: dense_plain 2,171 s (0.781 rows/s), dense_contextual 2,344 s (0.724 rows/s), BM25 under 1 s each.
-1. OWNER ACTIONS. (a) Confirm that Phase 3 can be tagged (`git tag phase-3-done` is NOT done). (b) Add `EMBED_LOCAL_DIR=models/bge-m3-full` to .env (still missing; until then
-   `scripts/query_index.py` and `build_index.py` need `--model-dir models/bge-m3-full`). (c) Remove the duplicate old GENERATOR_MODEL/JUDGE_MODEL lines in .env. (d) Fill
+1. OWNER ACTIONS. (a) DONE: phase-3-done is tagged. (b) EMBED_LOCAL_DIR is in .env now (the pool build used it). (c) Remove the duplicate old GENERATOR_MODEL/JUDGE_MODEL lines in .env. (d) Fill
    data/enriched/gold_sample.csv (30 chunks, labels empty; regenerated in the fix round from model-written, non-blog chunks that were never in a pilot or the old sheet, which is kept as
    gold_sample_old.csv) and run `python scripts/label_sample.py --score`; it needs no API call (labels come from the checkpoint). (e) The provider's terms and Valincia's/other accounts' use are the owner's call (D49, D65, D67); O12 still blocks sharing.
 2. USE OF THE OUTPUT. Rows with provenance `rule_only` (571) and `fallback` (38) carry RULE-BASED fields (aspect, place_type, season_tags, is_warning) and a template context note, not model
@@ -46,17 +46,24 @@ Build time on CPU: dense_plain 2,171 s (0.781 rows/s), dense_contextual 2,344 s 
 5. Never print or log the URL, key or headers: both LLM clients scrub every error and debug record (tests). data/enriched/debug_raw.jsonl is UNTRUSTED model output.
 6. Not done in Phase 3: the early sample file for Valincia (blocked by O12) and the gold score (sheet unlabelled).
 
-## Next phase: Phase 4 (test collection and evaluation harness; owner Nivithasri)
-Start in PLAN MODE and wait for approval. Do not start Phase 5. Inputs: the four indexes (`src/retrieval/search.py` `Index.table`), data/enriched/chunks.jsonl + provenance.jsonl, data/manifests/d33_excluded.json.
-First steps:
-1. Queries (`eval/queries.json`, contract fields id, text, split, type, time_sensitive, freshness_slice): 30 to 40 (D7/O1; prefer 40 if labelling time allows), split dev/test (about 10 dev, rest test), covering family, backpacker, honeymoon, pilgrimage, monsoon and budget trips. About 8 are the freshness slice (closures, timings, crowding), reported separately because the frozen corpus has no published chunk in the 18-month window (D32). Every query carries `time_sensitive` true/false by hand (reference for Phase 6's classifier). D68: no query names any of the 9 excluded places (Alappuzha, Auroville, Bhadrachalam, Kodaikanal, Munnar, Rameswaram, Srisailam, Varkala, Wayanad) or a hold-out (Chikmagalur, Araku Valley, Thekkady, Thanjavur); write queries before looking at any ranking, and never tune on test.
-2. Pooling script: top 10 per query from bm25_contextual, bm25_plain, dense_plain, dense_contextual and a simple fusion; pool over ALL 1,696 chunks (D68), record which round and which system contributed each chunk, report the excluded-place share of every top 10.
-3. Judging: 0/1/2 labels by the owner for every pooled chunk (`eval/qrels.json` by contract; per O2 write `qrels_dev.json` and `qrels_test.json` and a loader that REFUSES test qrels unless `--split test` is passed; record the pooling round per chunk; D5: a second pooling round from the final pipeline after Phase 6). Do not inspect test qrels while tuning (CLAUDE.md rule 3).
-4. `eval/run_eval.py --retriever <module:function> --split dev|test` for any function following `retrieve(query, filters=None, k=10)`: nDCG@10, MRR, Recall@20, P@5, freshness share (published dates only within 18 months of EVAL_REFERENCE_DATE 2026-10-18; the share will be ~0, say so), diversity (distinct source types and places in the top 10), unjudged@10 per run (D5), results overall, per query type and for the freshness slice; the excluded-place share of the top 10 (D68). Add a thin adapter exposing the four indexes as retrievers so Phase 6 and the owner can run baselines today.
-5. D69 hooks for Phase 6 (data only in Phase 4): keep a `provenance` column per pooled chunk (llm vs fallback vs rule_only) so results can be stratified; mark place-named versus place-free queries in `type` or an extra field via a decisions.md entry (contract change); never apply aspect/place_type filters to rule_only/fallback rows unflagged; do not use `mentioned_places` as a signal until Valincia acknowledges D50.
-6. Cohen's kappa (O4): Valincia independently labels a shared subset of the judgments; send her the subset without my labels, compute kappa when she returns it. Needs O12 for sharing text, or she judges from the owner's screen/export; decide with the owner. If no second labeller is available, use delayed self-agreement and say so (O4).
-7. Tests for the loader refusal, each metric on toy qrels (known answers), and a mutation check per metric; `pytest -q`, `ruff check .`; update LOG.md and docs/phase-status.md; tag `phase-4-done` only when the owner confirms.
-Done when: one command prints all metrics for any retrieval function.
+## Phase 4 state (STOPPED AT LABELLING; owner: Nivithasri)
+Decisions D70 to D74 (+ amendments to D70 and D72) in docs/decisions.md; contract change in docs/contracts.md (query fields place_scope, places; qrels_dev/qrels_test).
+WHAT EXISTS (all committed; tests 759 passed, ruff clean, chunks.jsonl sha256 ee117551..., request log 443):
+- eval/queries.json (40; dev 13 / test 27, NOT 12/28: the owner's three moves made it 13, D70; slice 10; time_sensitive 12; place_scope named 23 / free 17, lexical). scripts/check_queries.py.
+- docs/labelling_rubric.md (read it before labelling). eval/pool.json (ids only): 963 judgments, dev 326, test 637. Sheets: eval/sheets/judge_dev.csv, judge_test.csv (gitignored, chunk text, blind).
+- eval/metrics.py, eval/qrels.py (load_qrels("test") raises unless allow_test=True; only `run_eval.py --split test` passes it), eval/run_eval.py, eval/adapters.py (bm25_contextual, bm25_plain, dense_plain, dense_contextual, rrf4).
+- scripts/import_labels.py, scripts/kappa.py, eval/kappa_subset.json (100 pairs, reference + wikivoyage only), eval/sheets/kappa_partner.csv (blind, empty labels, gitignored). scripts/pool.py. scripts/mutation_checks.py --eval (M20-M29).
+WHAT DOES NOT EXIST: any label, eval/qrels_dev.json, eval/qrels_test.json, any baseline number, any kappa value. run_eval has run only on toy data.
+OWNER DOES: (1) label eval/sheets/judge_dev.csv (326 rows) and judge_test.csv (637 rows): fill the `label` column with 0, 1 or 2 (optional `note`), per docs/labelling_rubric.md; excluded-place chunks are judged like any other.
+(2) Send eval/sheets/kappa_partner.csv (100 rows, Wikipedia/Wikivoyage text, private; O12) to the partner; she fills `label`. If she cannot, report no kappa.
+COMMANDS AFTER LABELLING (in this order; never rebuild the pool: `python scripts/pool.py build` refuses without --force):
+  python scripts/import_labels.py dev                  # validates, writes eval/qrels_dev.json (refuses overwrite without --force)
+  python scripts/import_labels.py test                 # writes eval/qrels_test.json; do not open it while tuning (rule 3)
+  python eval/run_eval.py --retriever eval.adapters:bm25_contextual --split dev   # likewise bm25_plain, dense_plain, dense_contextual, rrf4
+  python eval/run_eval.py --retriever eval.adapters:rrf4 --split test    # ONE final test run per retriever, reported as is, no tuning
+  python scripts/kappa.py compute --partner <partner's filled CSV>        # unweighted + linear-weighted kappa; "kappa not computed" without the partner
+Then: record the numbers in LOG.md with these commands, tick docs/phase-status.md, rewrite this file, run `python scripts/mutation_checks.py` once (M1-M29), commit explicit paths, tag `phase-4-done` only when the owner confirms.
+CAUTIONS: Recall@20 is a LOWER BOUND (pool depth 10; read unjudged@20). Queries with no relevant chunk are excluded from nDCG/MRR/Recall means and counted (0rel column). Freshness share is 0 for every retriever (no published chunk in the window, D32). D69: never apply aspect/place_type filters to rule_only/fallback rows unflagged; mentioned_places is not a signal (D50). D5: a second pooling round after Phase 6. Do not start Phase 5 in the same session.
 
 ## Daily routine for the full enrichment run (Phase 3; the run FINISHED on 2026-10-20, kept as a record of how it was operated)
 1. The one command, from the repo root, any time after 00:00 UTC (05:30 India time): `python scripts/enrich.py --full --eligible-only`. It resumes by itself from

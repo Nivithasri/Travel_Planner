@@ -42,9 +42,15 @@ Tick only after verification commands were run (see LOG.md).
 - [x] Tag phase-3-done (local, not pushed)
 - [x] Done when: a script takes a query and returns ranked chunks from each index (query_index.py, four tables).
 
-## Phase 4: Test collection and evaluation harness
-- [ ] Tasks (see docs/plan.md)
-- [ ] Done when: one command prints all metrics for any retrieval function.
+## Phase 4: Test collection and evaluation harness (IN PROGRESS, stopped at labelling 2026-10-20; no tag)
+- [x] 40 queries (dev 13, test 27, slice 10, D70), scripts/check_queries.py passes, docs/labelling_rubric.md
+- [x] eval/metrics.py, eval/qrels.py (test refused unless --split test), eval/run_eval.py, eval/adapters.py: tested on toy collections only (759 tests pass)
+- [x] Round-1 pool eval/pool.json: 963 judgments (dev 326, test 637); blind sheets eval/sheets/judge_{dev,test}.csv (gitignored)
+- [x] scripts/import_labels.py, scripts/kappa.py, kappa subset of 100 (eval/kappa_subset.json), mutations M20-M29 all caught
+- [ ] OWNER: label the two sheets (0/1/2), then import_labels dev/test
+- [ ] qrels_dev.json, qrels_test.json: do not exist
+- [ ] Baseline runs on dev and one test run, kappa value (needs the partner), LOG numbers for them, tag phase-4-done (owner confirms)
+- [ ] Done when: one command prints all metrics for any retrieval function. (The command exists; it has not run on real qrels.)
 
 ## Phase 5: Routing reference data
 - [ ] Tasks (see docs/plan.md)
