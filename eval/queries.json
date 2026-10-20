@@ -1,0 +1,449 @@
+[
+ {
+  "id": "Q01",
+  "text": "Is Mysuru a good base for a family with young kids for 3 days?",
+  "split": "dev",
+  "type": "family",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Mysuru"
+  ]
+ },
+ {
+  "id": "Q02",
+  "text": "Family-friendly things to do in Hyderabad with children and grandparents",
+  "split": "test",
+  "type": "family",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Hyderabad"
+  ]
+ },
+ {
+  "id": "Q03",
+  "text": "Beach destination in South India that is safe for toddlers",
+  "split": "dev",
+  "type": "family",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q04",
+  "text": "Ooty toy train and gardens with small children",
+  "split": "test",
+  "type": "family",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Ooty"
+  ]
+ },
+ {
+  "id": "Q05",
+  "text": "Hill station with easy walks for elderly parents",
+  "split": "test",
+  "type": "family",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q06",
+  "text": "Backpacking Hampi on a budget: where to stay and how to get around",
+  "split": "dev",
+  "type": "backpacker",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Hampi"
+  ]
+ },
+ {
+  "id": "Q07",
+  "text": "Gokarna beaches for backpackers, which ones are quiet",
+  "split": "test",
+  "type": "backpacker",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Gokarna"
+  ]
+ },
+ {
+  "id": "Q08",
+  "text": "Solo traveller safety tips in Bengaluru and Chennai",
+  "split": "test",
+  "type": "backpacker",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Bengaluru",
+   "Chennai"
+  ]
+ },
+ {
+  "id": "Q09",
+  "text": "Offbeat places in Karnataka away from tourist crowds",
+  "split": "dev",
+  "type": "backpacker",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q10",
+  "text": "Hostels and cheap stays in Pondicherry for young travellers",
+  "split": "test",
+  "type": "backpacker",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Pondicherry"
+  ]
+ },
+ {
+  "id": "Q11",
+  "text": "Romantic honeymoon in Kodagu coffee estates",
+  "split": "dev",
+  "type": "honeymoon",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Kodagu"
+  ]
+ },
+ {
+  "id": "Q12",
+  "text": "Romantic evenings and sunset spots in Kanniyakumari",
+  "split": "test",
+  "type": "honeymoon",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Kanniyakumari"
+  ]
+ },
+ {
+  "id": "Q13",
+  "text": "Honeymoon in South India with beaches and quiet resorts",
+  "split": "test",
+  "type": "honeymoon",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q14",
+  "text": "Private and luxury stays near Mysuru palace for couples",
+  "split": "test",
+  "type": "honeymoon",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Mysuru"
+  ]
+ },
+ {
+  "id": "Q15",
+  "text": "Couple trip with scenic drives and waterfalls",
+  "split": "test",
+  "type": "honeymoon",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q16",
+  "text": "Tirupati darshan tips and temple timings",
+  "split": "dev",
+  "type": "pilgrimage",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "named",
+  "places": [
+   "Tirupati"
+  ]
+ },
+ {
+  "id": "Q17",
+  "text": "Meenakshi temple Madurai visiting hours and dress code",
+  "split": "test",
+  "type": "pilgrimage",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "named",
+  "places": [
+   "Madurai"
+  ]
+ },
+ {
+  "id": "Q18",
+  "text": "Famous temple circuit in Tamil Nadu for a pilgrimage",
+  "split": "dev",
+  "type": "pilgrimage",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q19",
+  "text": "Mahabalipuram shore temple and rock-cut monuments history",
+  "split": "test",
+  "type": "pilgrimage",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Mahabalipuram"
+  ]
+ },
+ {
+  "id": "Q20",
+  "text": "Ancient temples and heritage sites to visit in Karnataka",
+  "split": "test",
+  "type": "pilgrimage",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q21",
+  "text": "Is Kochi worth visiting in monsoon season?",
+  "split": "dev",
+  "type": "monsoon",
+  "time_sensitive": true,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Kochi"
+  ]
+ },
+ {
+  "id": "Q22",
+  "text": "Gokarna in the rainy season, are the beaches open?",
+  "split": "test",
+  "type": "monsoon",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "named",
+  "places": [
+   "Gokarna"
+  ]
+ },
+ {
+  "id": "Q23",
+  "text": "Best places to enjoy the rains in the Western Ghats",
+  "split": "test",
+  "type": "monsoon",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q24",
+  "text": "Kodagu in July: waterfalls, road closures and leeches",
+  "split": "test",
+  "type": "monsoon",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "named",
+  "places": [
+   "Kodagu"
+  ]
+ },
+ {
+  "id": "Q25",
+  "text": "Where to travel in South India in June and July",
+  "split": "test",
+  "type": "monsoon",
+  "time_sensitive": true,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q26",
+  "text": "How much does a 3-day trip to Chennai cost on a tight budget?",
+  "split": "test",
+  "type": "budget",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Chennai"
+  ]
+ },
+ {
+  "id": "Q27",
+  "text": "Cheap eats and street food in Hyderabad",
+  "split": "test",
+  "type": "budget",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Hyderabad"
+  ]
+ },
+ {
+  "id": "Q28",
+  "text": "Budget two-week South India itinerary by train and bus",
+  "split": "dev",
+  "type": "budget",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q29",
+  "text": "Visakhapatnam beaches and low-cost sightseeing",
+  "split": "test",
+  "type": "budget",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Visakhapatnam"
+  ]
+ },
+ {
+  "id": "Q30",
+  "text": "Free or low entry fee heritage sites in South India",
+  "split": "test",
+  "type": "budget",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q31",
+  "text": "Nature and culture, mid-budget, one week",
+  "split": "dev",
+  "type": "vague",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q32",
+  "text": "Something relaxing after a hectic work year",
+  "split": "test",
+  "type": "vague",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q33",
+  "text": "History lover who also likes good food",
+  "split": "dev",
+  "type": "vague",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q34",
+  "text": "Warangal fort and temples day trip",
+  "split": "test",
+  "type": "vague",
+  "time_sensitive": false,
+  "freshness_slice": false,
+  "place_scope": "named",
+  "places": [
+   "Warangal"
+  ]
+ },
+ {
+  "id": "Q35",
+  "text": "Is Hampi open to visitors, any closed or restricted monuments right now?",
+  "split": "test",
+  "type": "freshness",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "named",
+  "places": [
+   "Hampi"
+  ]
+ },
+ {
+  "id": "Q36",
+  "text": "Current ticket price and opening time of Mysuru Palace",
+  "split": "test",
+  "type": "freshness",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "named",
+  "places": [
+   "Mysuru"
+  ]
+ },
+ {
+  "id": "Q37",
+  "text": "Is the Vivekananda Rock ferry running, latest timings",
+  "split": "dev",
+  "type": "freshness",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q38",
+  "text": "Chennai Marina beach flooding or cyclone closures",
+  "split": "test",
+  "type": "freshness",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "named",
+  "places": [
+   "Chennai"
+  ]
+ },
+ {
+  "id": "Q39",
+  "text": "Which South Indian beaches are closed or unsafe for swimming right now?",
+  "split": "dev",
+  "type": "freshness",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "free",
+  "places": []
+ },
+ {
+  "id": "Q40",
+  "text": "Temple closures or dress-code changes at major South India temples this year",
+  "split": "test",
+  "type": "freshness",
+  "time_sensitive": true,
+  "freshness_slice": true,
+  "place_scope": "free",
+  "places": []
+ }
+]

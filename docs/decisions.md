@@ -720,3 +720,6 @@ D73 (2026-10-20) Metric conventions (eval/metrics.py, own implementation). Relev
    10, mean grade and precision per class; no re-ranking by provenance). Chunk fields come from data/enriched/chunks.jsonl and provenance.jsonl, not from the retriever's dicts. Status: accepted.
 D74 (2026-10-20) Kappa subset (O4, owner-approved). About 100 judgments, drawn seeded from the pool, Wikipedia and Wikivoyage chunks only (no blog), exported as a private CSV without the owner's labels. If the partner
    is unavailable, no kappa is reported (nothing is substituted). Unweighted and linear-weighted kappa are both computed. Status: accepted.
+D70 (amendment 2026-10-20) place_scope is LEXICAL: "named" means the query TEXT contains a registry place name or alias, "free" means it contains none (D69 asks whether a note that repeats
+   the place name can help). Q37 ("Is the Vivekananda Rock ferry running, latest timings") names only a landmark, so it is "free" with places []; its expected answer scope is still Kanniyakumari. With that,
+   place_scope counts are named 23, free 17 (dev: named 5, free 8). scripts/check_queries.py enforces the lexical rule both ways. Query text is exactly as approved. Status: accepted.
