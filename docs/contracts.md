@@ -89,9 +89,14 @@ data/live/places/<slug>.json (status), data/live/registry.json (resolved places)
 data/registry/core_places.json is committed and fixed: the scripts that built it were removed (D46, D47), so no code writes it; changing it needs a decisions.md entry. Committed manifest:
 data/manifests/raw_manifest.jsonl (url, source, place, retrieved_at, sha256, bytes; no content).
 
-## Routing and season data (Phase 5; D76 to D81)
-- index/travel_matrix.json: {meta, nodes: [{id, name, kind: destination|hub, state, lat, lon, hill, iata?}], hours: {"<idA>|<idB>": float}, km: {...}}. Pairs stored once (ids sorted), both orders resolve.
-  Hold-outs are not nodes. Parameters are PROVISIONAL (D77). No chunk text.
-- index/season_data.json: {meta, places: {name: {confidence, nearest_airport, months: {"1".."12": {climate, verdict, reasons, access_risk, evidence{model_written, fallback, rule_only, tag_counts},
-  warning_chunk_ids}}}}}. Chunk ids only, no text.
+## Routing and season data (Phase 5; D76 to D83)
+- index/travel_matrix.json: {meta, nodes, hours, km}. meta: status PROVISIONAL, decision, attribution, params {band_km, road_factor, speed_short_kmh, speed_long_kmh, ghat_surcharge_h, n_fit_*},
+  nodes, hubs, pairs, triangle_violations, airport_aliases {IATA: destination node id} (D83). nodes: [{id, name, kind: destination|hub, state (null for hubs), lat, lon, hill, aliases, iata? (hubs)}].
+  hours/km: {"<idA>|<idB>": float}, ids sorted, each unordered pair once, both orders resolve. Model: km = great-circle x road_factor; plain hours = km / speed_short up to band_km, then band_km / speed_short
+  + (km - band_km) / speed_long; hours = plain hours + ghat_surcharge_h per hill endpoint (D78 amended, D82). Hold-outs are not nodes. No chunk text.
+- index/season_data.json: {meta, places}. meta: status, decision, attribution, thresholds, rainy_day_mm, aliases {place: [alias]} (junk aliases dropped, D83), places. places[name]: {confidence, climate_file, hill,
+  warning_counts {model_written, fallback, rule_only}, nearest_airport {iata, name, km}, months: {"1".."12": {climate {tmax_c, tmin_c, rain_mm, rainy_days, years}, verdict, reasons, access_risk,
+  evidence {model_written|fallback|rule_only: {chunks, season_tagged, all_year}}, warning_chunk_ids (model-written warnings only, at most 5, by chunk_id), warning_sources {chunk_id: "model_written"}}}}.
+  Chunk ids only, no text. A rebuild needs the gitignored data/raw and data/enriched files; the committed files are what it produces (checked by a test when the data is present).
+- travel_time(a, b) -> float hours: names, registry aliases, hub names/aliases/IATA, node ids, and airport codes in airport_aliases (COK, HYD, IXM, MAA, MYQ, PNY, TIR, WGC) which stand for the nearest destination.
 - check_season returns: place, month, verdict, reasons, access_risk, climate, evidence (model_written | fallback | rule_only counts), warning_chunk_ids, warning_sources, confidence, nearest_airport, caveats.

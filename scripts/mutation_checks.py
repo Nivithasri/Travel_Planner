@@ -136,12 +136,12 @@ def run_tests(tests: list[str] = TESTS) -> tuple[str, list[str]]:
 ROUTING_TESTS = ["tests/test_airports.py", "tests/test_travel_model.py",
                  "tests/test_travel_time.py", "tests/test_season.py"]
 
-# Phase 5 (D76 to D81): each mutation is run against the routing and season tests (M30 to M37).
+# Phase 5 (D76 to D83): each mutation is run against the routing and season tests (M30 to M41).
 ROUTING_MUTATIONS = [
-    ("M30 hill factor ignored (hill edges use the plain parameters)",
+    ("M30 ghat surcharge ignored (hill endpoints cost nothing extra)",
      "src/tools/travel_model.py",
-     '    prefix = "hill_" if hill else ""\n    km = haversine_km',
-     '    prefix = ""\n    km = haversine_km'),
+     'hours = plain_hours(km, fitted) + fitted["ghat_surcharge_h"] * n_hill\n    return km',
+     'hours = plain_hours(km, fitted) + 0 * n_hill\n    return km'),
     ("M31 pair key not sorted (asymmetric lookup)", "src/tools/travel_model.py",
      'return "|".join(sorted((a, b)))', 'return "|".join((a, b))'),
     ("M32 hold-outs admitted as nodes", "src/tools/travel_model.py",
@@ -159,6 +159,17 @@ ROUTING_MUTATIONS = [
     ("M37 hub distance rule inverted (keeps airports near destinations)",
      "src/tools/travel_model.py",
      'lon) > min_km for lat, lon in points', 'lon) < min_km for lat, lon in points'),
+    ("M38 two-band speed ignored (the short-band speed is used for every distance)",
+     "src/tools/travel_model.py",
+     '    if km <= band:\n        return km / fitted["speed_short_kmh"]\n',
+     '    if True:\n        return km / fitted["speed_short_kmh"]\n'),
+    ("M39 airport aliases not loaded (nearest_airport codes unknown in travel_time)",
+     "src/tools/travel_time.py",
+     "            self.names.setdefault(_norm(iata), node_id)\n", "            continue\n"),
+    ("M40 partial months counted as full years", "src/tools/season.py",
+     "if mm == m and n == calendar.monthrange(y, mm)[1])", "if mm == m)"),
+    ("M41 rule-based and fallback warnings listed too", "src/tools/season.py",
+     'r["is_warning"] and r["source"] == "model_written"\n', 'r["is_warning"]\n'),
 ]
 
 
@@ -167,7 +178,7 @@ def main() -> int:
     rows = []
     plan = [(m, EVAL_TESTS) for m in EVAL_MUTATIONS]
     routing = [(m, ROUTING_TESTS) for m in ROUTING_MUTATIONS]
-    if "--routing" in sys.argv[1:]:  # --routing runs only M30 to M37
+    if "--routing" in sys.argv[1:]:  # --routing runs only M30 to M41
         plan = routing
     elif "--eval" in sys.argv[1:]:  # --eval runs only M20 to M29
         pass
