@@ -1,0 +1,42 @@
+{
+ "full": {
+  "bm25_contextual": {
+   "overall": 0.5706271994448627,
+   "place_scope=free": 0.5756394530594069,
+   "place_scope=named": 0.5626075936615921
+  },
+  "bm25_control": {
+   "overall": 0.5512157327980993,
+   "place_scope=free": 0.5637425296736844,
+   "place_scope=named": 0.5311728577971632
+  },
+  "bm25_plain": {
+   "overall": 0.5424683769139093,
+   "place_scope=free": 0.5630113557068396,
+   "place_scope=named": 0.509599610845221
+  },
+  "dense_contextual": {
+   "overall": 0.8290139750505657,
+   "place_scope=free": 0.8053868182004517,
+   "place_scope=named": 0.8668174260107484
+  },
+  "dense_control": {
+   "overall": 0.7248455258256917,
+   "place_scope=free": 0.6519794430237665,
+   "place_scope=named": 0.841431258308772
+  },
+  "dense_plain": {
+   "overall": 0.7011021469964659,
+   "place_scope=free": 0.657183300451888,
+   "place_scope=named": 0.7713723014677907
+  }
+ },
+ "model_written_only": {
+  "bm25_contextual": 0.5299714219540963,
+  "bm25_control": 0.5354531744621005,
+  "bm25_plain": 0.518986576009653,
+  "dense_contextual": 0.8219340240650378,
+  "dense_control": 0.7796641264572456,
+  "dense_plain": 0.8004432715105311
+ }
+}

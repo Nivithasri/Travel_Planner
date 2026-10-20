@@ -19,3 +19,4 @@ data/processed/*
 data/enriched/
 models/
 eval/sheets/
+work/
