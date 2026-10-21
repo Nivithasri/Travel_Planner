@@ -114,7 +114,8 @@ def to_csv(rows: list[dict]) -> str:
     return "\n".join(out) + "\n"
 
 
-def run(rows_spec: list[list[str]], split: str, out_dir: Path | None) -> int:
+def run(rows_spec: list[list[str]], split: str, out_dir: Path | None,
+        stem: str = "ablation") -> int:
     reference = load_reference_date()
     if reference is None:
         print("EVAL_REFERENCE_DATE is not set in .env (D4)")
@@ -139,8 +140,8 @@ def run(rows_spec: list[list[str]], split: str, out_dir: Path | None) -> int:
     md = to_markdown(table, sig, split)
     print("\n" + md)
     if out_dir:
-        (out_dir / f"ablation_{split}.md").write_text(md + "\n", encoding="utf-8")
-        (out_dir / f"ablation_{split}.csv").write_text(to_csv(table), encoding="utf-8")
+        (out_dir / f"{stem}_{split}.md").write_text(md + "\n", encoding="utf-8")
+        (out_dir / f"{stem}_{split}.csv").write_text(to_csv(table), encoding="utf-8")
     return 0
 
 
@@ -152,10 +153,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--split", required=True, choices=("dev", "test"))
     ap.add_argument("--rows", type=Path, required=True, help="JSON [[name, module:function], ...]")
     ap.add_argument("--json", type=Path, help="directory for per-row JSON and the table")
+    ap.add_argument("--name", default="ablation",
+                    help="table file stem: <name>_<split>.md/.csv (default ablation)")
     args = ap.parse_args(argv)
     rows_spec = json.loads(args.rows.read_text(encoding="utf-8"))
     out_dir = args.json or (REPO_ROOT / "eval" / "ablation")
-    return run(rows_spec, args.split, out_dir)
+    return run(rows_spec, args.split, out_dir, args.name)
 
 
 if __name__ == "__main__":

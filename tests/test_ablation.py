@@ -81,3 +81,27 @@ def test_headline_row_carries_the_condensed_column():
     assert ablation.headline_row("A", res)["cond_ndcg@10"] is None  # no qrels given
     row = ablation.headline_row("A", res, {"q1": {"a": 2}})
     assert row["cond_ndcg@10"] == pytest.approx(1.0)
+
+
+def test_run_names_the_table_files_after_the_stem_not_the_last_row(tmp_path, monkeypatch):
+    # regression: the row loop variable once shadowed the file-name parameter
+    from datetime import date
+
+    from eval import run_eval
+
+    def with_ranked(res):
+        return {**res, "per_query": [{**r, "ranked": []} for r in res["per_query"]]}
+
+    results = iter([with_ranked(ROW_A), with_ranked(ROW_B)])
+    monkeypatch.setattr(ablation, "load_reference_date", lambda: date(2026, 10, 18))
+    monkeypatch.setattr(ablation, "load_queries", lambda split: [])
+    monkeypatch.setattr(ablation, "load_qrels", lambda split, allow_test=False: {})
+    monkeypatch.setattr(ablation, "load_chunk_info", lambda *a: {})
+    monkeypatch.setattr(ablation, "load_excluded", lambda: set())
+    monkeypatch.setattr(ablation, "load_retriever", lambda spec: None)
+    monkeypatch.setattr(run_eval, "evaluate", lambda *a, **k: next(results))
+    rc = ablation.run([["rowA", "x:y"], ["rowB", "x:y"]], "dev", tmp_path, "mystem")
+    assert rc == 0
+    assert (tmp_path / "mystem_dev.md").exists() and (tmp_path / "mystem_dev.csv").exists()
+    assert not (tmp_path / "rowB_dev.md").exists()
+    assert (tmp_path / "dev_rowA.json").exists() and (tmp_path / "dev_rowB.json").exists()

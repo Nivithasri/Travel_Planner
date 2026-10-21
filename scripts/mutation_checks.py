@@ -249,6 +249,8 @@ RETRIEVAL_MUTATIONS = [
     ("M67 rerank cache lookup skipped (every pair re-scored)", "src/retrieval/rerank.py",
      "            hit = self.cache.get(CACHE_KIND, self.model_id, key, default=None)\n",
      "            hit = None\n"),
+    ("M68 table files named after the last row (the shadowed-name bug)", "eval/ablation.py",
+     '        (out_dir / f"{stem}_{split}.md")', '        (out_dir / f"{name}_{split}.md")'),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),
