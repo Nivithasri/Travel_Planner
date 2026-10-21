@@ -281,3 +281,35 @@ def test_tau_is_the_highest_ndcg_with_ties_to_the_smaller_tau():
     assert tc.choose_tau({0.06: 0.574, 0.11: 0.572, 0.63: 0.578}) == 0.63
     assert tc.choose_tau({0.06: 0.58, 0.11: 0.58, 0.63: 0.57}) == 0.06  # tie -> smaller
     assert tc.choose_tau({0.06: None, 0.11: 0.5}) == 0.11
+
+
+# ---- which tau values need rewrites (scripts/corrective_rewrites.py) ---------------------------
+
+def _load_script(name):
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location(
+        name, Path(__file__).resolve().parents[1] / "scripts" / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_dev_uses_three_percentile_candidates_of_the_dev_scores():
+    cr = _load_script("corrective_rewrites")
+    confs = [0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9]
+    taus = cr.taus_for("dev", confs, None)
+    assert len(taus) == 3 and taus == sorted(taus) and taus == cr.tau_candidates(confs)
+
+
+def test_test_split_uses_only_the_dev_chosen_tau_whatever_its_scores_are():
+    cr = _load_script("corrective_rewrites")
+    for confs in ([0.9] * 5, [0.001] * 5, [0.1, 0.5, 0.9]):
+        assert cr.taus_for("test", confs, 0.6314) == [0.6314]  # test scores never move tau
+
+
+def test_test_split_without_a_dev_tau_is_an_error():
+    cr = _load_script("corrective_rewrites")
+    with pytest.raises(ValueError, match="dev-chosen tau"):
+        cr.taus_for("test", [0.5], None)

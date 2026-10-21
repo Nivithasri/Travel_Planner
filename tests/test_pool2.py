@@ -143,3 +143,19 @@ def test_pooling_code_never_references_relevance_judgments(rel):
     src = (ROOT / rel).read_text(encoding="utf-8")
     for forbidden in ("qrels_test", "load_qrels", "allow_test", "qrels_dev"):
         assert forbidden not in src, f"{rel} mentions {forbidden}"
+
+
+def test_a_single_split_can_be_written_without_touching_the_other_sheet(tmp_path, monkeypatch):
+    # an owner may already be labelling the dev sheet: `sheets --only test` must leave it alone
+    pool2s = load_script("pool2")
+    written = []
+    monkeypatch.setattr(pool2s, "SHEETS", tmp_path)
+    monkeypatch.setattr(pool2s, "ATTRIBUTION", tmp_path / "attr.json")
+    (tmp_path / "attr.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "chunks.jsonl").write_text("", encoding="utf-8")
+    monkeypatch.setattr(pool2s, "ENRICHED", tmp_path / "chunks.jsonl")
+    monkeypatch.setattr(pool2s.pooling, "sheet_rows", lambda *a, **k: [{"x": 1}])
+    monkeypatch.setattr(pool2s.pooling, "write_sheet",
+                        lambda path, rows: written.append(Path(path).name))
+    out = pool2s.write_sheets({"gaps": {}}, QUERIES, only="test")
+    assert written == ["judge2_test.csv"] and out["dev"].startswith("left as it is")

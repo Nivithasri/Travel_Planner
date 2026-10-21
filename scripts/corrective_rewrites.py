@@ -56,6 +56,17 @@ def tau_candidates(confidences: list[float]) -> list[float]:
     return [round(float(np.percentile(confidences, p)), 4) for p in PERCENTILES]
 
 
+def taus_for(split: str, confidences: list[float], chosen: float | None) -> list[float]:
+    """The tau values whose rewrites are needed. DEV: the three percentile candidates of the dev
+    scores (tau is tuned on dev only, rule 3). TEST: only the tau already chosen on dev; the test
+    scores never choose or move a threshold."""
+    if split == "dev":
+        return tau_candidates(confidences)
+    if chosen is None:
+        raise ValueError("the dev-chosen tau (eval/corrective_tau.json) is needed for test")
+    return [chosen]
+
+
 def needed(signals: dict[str, dict], taus: list[float]) -> dict[str, tuple[str, list[str]]]:
     """{rewrite key: (query, triggers)} over every tau candidate."""
     out = {}
@@ -71,22 +82,27 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--execute", action="store_true", help="make the LLM calls (needs approval)")
     ap.add_argument("--out", type=Path, default=V.REWRITES_FILE)
+    ap.add_argument("--split", choices=("dev", "test"), default="dev",
+                    help="test: rewrites for the queries that trigger at the dev-chosen tau only")
     args = ap.parse_args(argv)
 
-    queries = load_queries("dev")  # tau is tuned on dev only (rule 3)
+    queries = load_queries(args.split)
     lam = V.chosen_lambda()
     scorer = V.get_ce_scorer()
     signals = first_pass(queries, scorer, lam)
     confs = [s["confidence"] for s in signals.values()]
-    taus = tau_candidates(confs)
+    chosen = V.chosen_tau() if args.split == "test" else None
+    taus = taus_for(args.split, confs, chosen)
 
-    print(f"dev first pass (row 8, lambda {lam}): best reranker score as a sigmoid, distinct URLs "
-          "in the top 5, contradiction flag")
+    print(f"{args.split} first pass (row 8, lambda {lam}): best reranker score as a sigmoid, "
+          "distinct URLs in the top 5, contradiction flag")
     for text, s in sorted(signals.items(), key=lambda t: t[1]["id"]):
         urls = grader.distinct_sources(s["top"])
         print(f"  {s['id']}  conf {s['confidence']:.4f}  urls {urls}  "
               f"contradiction {grader.contradiction(s['top'])}")
-    print(f"\ntau candidates (percentiles {PERCENTILES} of the 13 dev scores): {taus}")
+    how = (f"candidates (percentiles {PERCENTILES} of the dev scores)" if args.split == "dev"
+           else "fixed on dev")
+    print(f"\ntau {how}: {taus}")
     for tau in taus:
         rows = {s["id"]: grader.fired(s["confidence"], s["top"], tau) for s in signals.values()}
         hit = {i: t for i, t in rows.items() if t}

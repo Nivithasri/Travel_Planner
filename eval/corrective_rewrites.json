@@ -8,10 +8,43 @@
   "prompt": "crag-rewrite-v1"
  },
  "rewrites": {
+  "10dba2b51d03922f": {
+   "dropped": null,
+   "query": "Free or low entry fee heritage sites in South India",
+   "rewrite": "Free or low entry fee heritage sites in South India heritage attractions entry fee 2024",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
   "123c55f9f17e6eeb": {
    "dropped": null,
    "query": "Is the Vivekananda Rock ferry running, latest timings",
    "rewrite": "Vivekananda Rock ferry schedule latest timings 2024",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "16991d8e32910b47": {
+   "dropped": null,
+   "query": "Solo traveller safety tips in Bengaluru and Chennai",
+   "rewrite": "Solo traveller safety tips Bengaluru Chennai 2024 travel guide",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "180f10c44e5600f5": {
+   "dropped": null,
+   "query": "Ooty toy train and gardens with small children",
+   "rewrite": "Ooty toy train schedule and gardens suitable for small children",
+   "triggers": [
+    "low_confidence",
+    "few_sources"
+   ]
+  },
+  "2005ffb75ac3d21b": {
+   "dropped": null,
+   "query": "Honeymoon in South India with beaches and quiet resorts",
+   "rewrite": "South India honeymoon beaches quiet resorts best 2024",
    "triggers": [
     "low_confidence"
    ]
@@ -24,12 +57,45 @@
     "low_confidence"
    ]
   },
+  "2a0dda0210bf1067": {
+   "dropped": null,
+   "query": "Couple trip with scenic drives and waterfalls",
+   "rewrite": "scenic drives and waterfalls in South India for couples",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
   "2e36cb4bb529546e": {
    "dropped": null,
    "query": "Which South Indian beaches are closed or unsafe for swimming right now?",
    "rewrite": "South Indian beaches currently closed or unsafe for swimming 2026 safety status",
    "triggers": [
     "low_confidence"
+   ]
+  },
+  "32e3b2d3ee483bf4": {
+   "dropped": null,
+   "query": "Hostels and cheap stays in Pondicherry for young travellers",
+   "rewrite": "cheap hostels Pondicherry young travellers reviews 2024",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "3abc885b13b97d1d": {
+   "dropped": null,
+   "query": "Where to travel in South India in June and July",
+   "rewrite": "South India travel destinations best visited in June July weather conditions tourist attractions",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "3b11cc65d14e7e4e": {
+   "dropped": null,
+   "query": "How much does a 3-day trip to Chennai cost on a tight budget?",
+   "rewrite": "3-day budget trip Chennai cost itinerary cheap accommodation food transport",
+   "triggers": [
+    "low_confidence",
+    "few_sources"
    ]
   },
   "4ae7241c23af1081": {
@@ -40,12 +106,85 @@
     "few_sources"
    ]
   },
+  "52aea5c0cb2e4455": {
+   "dropped": null,
+   "query": "Something relaxing after a hectic work year",
+   "rewrite": "best relaxing retreats in South India for post-work stress relief",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "5a1c13403f4dee98": {
+   "dropped": null,
+   "query": "Gokarna in the rainy season, are the beaches open?",
+   "rewrite": "Gokarna beaches open during monsoon season 2024",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "63aa5d29cade1589": {
+   "dropped": null,
+   "query": "Visakhapatnam beaches and low-cost sightseeing",
+   "rewrite": "Visakhapatnam beaches low cost sightseeing tourist attractions budget travel",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "65d316c53cd01e18": {
+   "dropped": null,
+   "query": "Warangal fort and temples day trip",
+   "rewrite": "Warangal fort day trip temples itinerary guide",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "6c086554955897e2": {
+   "dropped": null,
+   "query": "Mahabalipuram shore temple and rock-cut monuments history",
+   "rewrite": "Mahabalipuram shore temple history rock-cut monuments detailed chronology",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "70487e6ebd1da26c": {
+   "dropped": null,
+   "query": "Family-friendly things to do in Hyderabad with children and grandparents",
+   "rewrite": "Family-friendly activities in Hyderabad suitable for children and grandparents",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "76c6e7a86af722da": {
+   "dropped": null,
+   "query": "Current ticket price and opening time of Mysuru Palace",
+   "rewrite": "Mysuru Palace ticket price opening hours official website",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "77197b8c4d9fe332": {
+   "dropped": null,
+   "query": "Chennai Marina beach flooding or cyclone closures",
+   "rewrite": "Chennai Marina Beach flooding cyclone closures 2024",
+   "triggers": [
+    "low_confidence",
+    "few_sources"
+   ]
+  },
   "856748aa8f325f93": {
    "dropped": null,
    "query": "Is Mysuru a good base for a family with young kids for 3 days?",
    "rewrite": "Mysuru family-friendly attractions for kids 3 days itinerary",
    "triggers": [
     "low_confidence"
+   ]
+  },
+  "9792061d7653b9eb": {
+   "dropped": null,
+   "query": "Meenakshi temple Madurai visiting hours and dress code",
+   "rewrite": "Meenakshi Amman Temple Madurai visiting hours dress code official website",
+   "triggers": [
+    "few_sources"
    ]
   },
   "a95879ebc9c54956": {
@@ -64,12 +203,36 @@
     "few_sources"
    ]
   },
+  "bedf150a2c9c301c": {
+   "dropped": null,
+   "query": "Cheap eats and street food in Hyderabad",
+   "rewrite": "Hyderabad street food cheap eats best local vendors reviews",
+   "triggers": [
+    "few_sources"
+   ]
+  },
   "bf662f3e83da096b": {
    "dropped": null,
    "query": "Beach destination in South India that is safe for toddlers",
    "rewrite": "South India toddler-friendly beach destinations safety tips",
    "triggers": [
     "low_confidence"
+   ]
+  },
+  "d0324c65127b2999": {
+   "dropped": null,
+   "query": "Temple closures or dress-code changes at major South India temples this year",
+   "rewrite": "Temple dress code changes 2024 South India major temples",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "d072a771ee8e347d": {
+   "dropped": null,
+   "query": "Private and luxury stays near Mysuru palace for couples",
+   "rewrite": "luxury private villa stays near Mysuru Palace for couples",
+   "triggers": [
+    "few_sources"
    ]
   },
   "d9e04952fac967d1": {
@@ -84,6 +247,30 @@
    "dropped": null,
    "query": "History lover who also likes good food",
    "rewrite": "History lover South India best heritage sites with local cuisine recommendations",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "f11d288525ffbd28": {
+   "dropped": null,
+   "query": "Hill station with easy walks for elderly parents",
+   "rewrite": "Hill station in South India with easy walking trails suitable for elderly parents",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "f26a3d7e3b14b1b7": {
+   "dropped": null,
+   "query": "Gokarna beaches for backpackers, which ones are quiet",
+   "rewrite": "Gokarna beaches quiet for backpackers best secluded beaches",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "fcc522c6c86f7d90": {
+   "dropped": null,
+   "query": "Kodagu in July: waterfalls, road closures and leeches",
+   "rewrite": "Kodagu July waterfalls road closures leeches travel safety",
    "triggers": [
     "low_confidence"
    ]

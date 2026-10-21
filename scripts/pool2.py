@@ -105,7 +105,10 @@ def build(queries: list[dict]) -> dict:
     return {"meta": meta, **pool2}
 
 
-def write_sheets(pool2: dict, queries: list[dict]) -> dict[str, int | str]:
+def write_sheets(pool2: dict, queries: list[dict], only: str | None = None
+                 ) -> dict[str, int | str]:
+    """Write the blind sheets. `only` limits it to one split, so a sheet that is already being
+    labelled is never overwritten."""
     chunks = {c["chunk_id"]: c for c in map(json.loads, ENRICHED.read_text(
         encoding="utf-8").splitlines()) if c}
     attribution = json.loads(ATTRIBUTION.read_text(encoding="utf-8"))
@@ -114,6 +117,9 @@ def write_sheets(pool2: dict, queries: list[dict]) -> dict[str, int | str]:
                           for qid in qids)
     out: dict[str, int | str] = {}
     for split in ("dev", "test"):
+        if only and split != only:
+            out[split] = "left as it is (--only)"
+            continue
         if split == "test" and test_incomplete:
             out[split] = "NOT WRITTEN: a variant could not run on some test queries (see report)"
             continue
@@ -130,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("action", choices=("build", "report", "sheets"))
     ap.add_argument("--force", action="store_true", help="overwrite an existing eval/pool2.json")
+    ap.add_argument("--only", choices=("dev", "test"),
+                    help="sheets only: write just this split and leave the other sheet untouched")
     ap.add_argument("--warm", action="store_true",
                     help="build only: embed all queries without the reranker, write nothing")
     args = ap.parse_args(argv)
@@ -149,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         pool2 = json.loads(POOL2.read_text(encoding="utf-8"))
     if args.action == "sheets":
-        counts = write_sheets(pool2, queries)
+        counts = write_sheets(pool2, queries, args.only)
         print("sheets:", counts)
     pool1 = json.loads(POOL1.read_text(encoding="utf-8"))
     print(pooling2.report(pool2, queries, pooling2.judged_pairs(pool1),
