@@ -88,6 +88,15 @@ class Index:
         scores = self._dense[kind] @ self.query_vector(query)
         return self._rows(rank(scores, self.ids, k))
 
+    def dense_matrix(self, kind: str) -> tuple[np.ndarray, dict[str, int]]:
+        """(unit-norm matrix, {chunk_id: row}) of one dense variant, loaded once. Read-only use:
+        MMR's document-document similarity (D89)."""
+        if kind not in DENSE_KINDS:
+            raise ValueError(f"dense kind must be one of {DENSE_KINDS}")
+        if kind not in self._dense:
+            self._dense[kind] = np.load(self.index_dir / f"dense_{kind}.npy")
+        return self._dense[kind], {cid: i for i, cid in enumerate(self.ids)}
+
     # ---- shared ----------------------------------------------------------------------
     def table(self, name: str, query: str, k: int = 10) -> list[dict]:
         for table_name, family, kind in TABLES:

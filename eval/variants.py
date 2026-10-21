@@ -172,3 +172,52 @@ row6_fresh_w30 = _post_variant(PostConfig(use_filters=True, fresh_w=0.3))
 # diagnostics on the plain row-3 hybrid base, because row 4 is provisional until round 2
 hybrid_filters = _post_variant(PostConfig(use_filters=True), base="hybrid")
 hybrid_filters_fresh_w20 = _post_variant(PostConfig(use_filters=True, fresh_w=0.2), base="hybrid")
+
+
+# ---- row 8: MMR over the reranked top 30 (D88, D89) -------------------------------------------
+# Row 7 (the cross-encoder) is not built yet: run_mmr takes ANY scorer (query, ids) -> logits, so
+# MMR is tested and wired now and the real scorer plugs in with row 7. Until then proxy_scorer is
+# a STAND-IN (standardised dense cosine) used only to check the wiring; numbers made with it are
+# NOT row 8 and are never reported as such.
+import numpy as np  # noqa: E402
+
+from src.retrieval import mmr as mmr_mod  # noqa: E402
+from src.retrieval import rerank as rerank_mod  # noqa: E402
+
+
+def proxy_scorer(query: str, ids: list[str]) -> dict[str, float]:
+    """STAND-IN reranker scores: dense_contextual cosine to the query, standardised over the
+    candidates and scaled to logit size. Wiring checks only."""
+    index = get_index()
+    matrix, row_of = index.dense_matrix("contextual")
+    cos = np.array([float(matrix[row_of[c]] @ index.query_vector(query)) for c in ids])
+    z = (cos - cos.mean()) / (cos.std() or 1.0)
+    return {c: float(2.0 * v) for c, v in zip(ids, z)}
+
+
+def run_mmr(query: str, lam: float, scorer, k: int = 10, *, depth: int = rerank_mod.DEPTH):
+    """(rows, trace): the row-4 expanded ranking, its top `depth` re-ordered by `scorer`, then by
+    MMR at `lam`. Filters and freshness are not applied (row 5 failed its keep rule and row 6 is
+    off on dev, LOG 2026-10-21); row 4 itself is provisional until round 2 (D91)."""
+    parsed = parsed_by_text()
+    if query not in parsed:
+        raise KeyError("the query is not in eval/parsed_queries.json; run "
+                       "scripts/parse_queries.py")
+    parse = parsed[query]
+    index = get_index()
+    ranked = expanded_ids(index, CONTEXTUAL_TABLES, [query, *parse["sub_queries"]],
+                          depth=RRF_DEPTH, limit=RRF_DEPTH)
+    logits = scorer(query, [cid for cid, _ in ranked[:depth]])
+    reranked = rerank_mod.apply_scores(ranked, logits, depth)
+    matrix, row_of = index.dense_matrix("contextual")
+    place_term = not parse["places"]  # a place-named query: another place is not diversity
+    sim = mmr_mod.make_similarity(matrix, row_of, index.chunks, place_term=place_term)
+    final = mmr_mod.apply_mmr(reranked, logits, sim, lam, depth)
+    return _rows(index, final[:k]), {"lam": lam, "depth": depth, "place_term": place_term}
+
+
+def make_mmr_variant(lam: float, scorer):
+    def retrieve(query, filters=None, k=10):
+        _guard(filters)
+        return run_mmr(query, lam, scorer, k)[0]
+    return retrieve

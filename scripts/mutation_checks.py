@@ -175,7 +175,7 @@ ROUTING_MUTATIONS = [
 
 RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py",
                    "tests/test_variants.py", "tests/test_query_understanding.py",
-                   "tests/test_filters.py", "tests/test_freshness.py"]
+                   "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -230,6 +230,16 @@ RETRIEVAL_MUTATIONS = [
     ("M60 a month no longer fixes the season", "src/retrieval/filters.py",
      "        return MONTH_SEASON[self.month] if self.month else self.season\n",
      "        return self.season\n"),
+    ("M61 MMR redundancy added instead of subtracted", "src/retrieval/mmr.py",
+     "            return (-(lam * rel[cid] - (1 - lam) * redundancy), prior[cid], cid)\n",
+     "            return (-(lam * rel[cid] + (1 - lam) * redundancy), prior[cid], cid)\n"),
+    ("M62 MMR keeps the place term for place-named queries", "eval/variants.py",
+     '    place_term = not parse["places"]', "    place_term = True"),
+    ("M63 rerank depth ignored (every candidate reranked)", "src/retrieval/rerank.py",
+     "    head, tail = ranked[:depth], ranked[depth:]\n    missing",
+     "    head, tail = ranked, []\n    missing"),
+    ("M64 lambda selection takes the largest, not the smallest", "src/retrieval/mmr.py",
+     "    return min(lam for lam, v in", "    return max(lam for lam, v in"),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),

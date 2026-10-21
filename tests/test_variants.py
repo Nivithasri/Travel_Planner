@@ -1,4 +1,5 @@
 """Phase 6 variant wiring (eval/variants.py), tested with a fake index so no model is needed."""
+import numpy as np
 import pytest
 
 from eval import variants
@@ -163,3 +164,69 @@ def test_post_variants_refuse_a_query_that_was_not_parsed(monkeypatch):
     _wire(monkeypatch, PARSE)
     with pytest.raises(KeyError, match="parse_queries"):
         variants.row5_filters("never parsed", None, 10)
+
+
+# ---- row 8 wiring ----------------------------------------------------------------------------
+
+class MmrIndex(QueryIndex):
+    def __init__(self):
+        super().__init__({"req": ["a", "b", "c", "d"], "s1": ["b", "c"]})
+        src = {"a": "blog", "b": "blog", "c": "wikivoyage", "d": "blog"}
+        self.chunks = {c: {"chunk_id": c, "place": "P" + c, "source_type": src[c], "text": c}
+                       for c in "abcd"}
+        # a and b are identical vectors, c and d differ
+        self._m = np.array([[1, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
+
+    def dense_matrix(self, kind):
+        return self._m, {c: i for i, c in enumerate("abcd")}
+
+
+def _mmr_wire(monkeypatch, places=()):
+    idx = MmrIndex()
+    monkeypatch.setattr(variants, "get_index", lambda: idx)
+    monkeypatch.setattr(variants, "parsed_by_text", lambda: {
+        "req": {"sub_queries": ["s1"], "places": list(places)}})
+    return idx
+
+
+LOGITS = {"a": 3.0, "b": 2.8, "c": 0.0, "d": -0.5}
+
+
+def scorer(query, ids):
+    return {c: LOGITS[c] for c in ids}
+
+
+def test_row8_lambda_one_is_the_reranked_order(monkeypatch):
+    _mmr_wire(monkeypatch)
+    rows, trace = variants.run_mmr("req", 1.0, scorer, 4)
+    assert [r["chunk_id"] for r in rows] == ["a", "b", "c", "d"]
+    assert trace["place_term"] is True and trace["depth"] == 30
+
+
+def test_row8_lower_lambda_moves_the_duplicate_down(monkeypatch):
+    _mmr_wire(monkeypatch)
+    rows, _ = variants.run_mmr("req", 0.5, scorer, 4)
+    ids = [r["chunk_id"] for r in rows]
+    assert ids[0] == "a" and ids.index("b") > ids.index("c")  # b duplicates a
+
+
+def test_row8_place_named_queries_switch_the_place_term_off(monkeypatch):
+    _mmr_wire(monkeypatch, places=["Hampi"])
+    _, trace = variants.run_mmr("req", 0.5, scorer, 4)
+    assert trace["place_term"] is False
+
+
+def test_row8_the_scorer_decides_the_order_before_mmr(monkeypatch):
+    _mmr_wire(monkeypatch)
+    flipped = lambda q, ids: {c: -LOGITS[c] for c in ids}  # noqa: E731
+    rows, _ = variants.run_mmr("req", 1.0, flipped, 4)
+    assert [r["chunk_id"] for r in rows][0] == "d"
+
+
+def test_row8_variant_refuses_filters_and_unparsed_queries(monkeypatch):
+    _mmr_wire(monkeypatch)
+    f = variants.make_mmr_variant(0.8, scorer)
+    with pytest.raises(NotImplementedError):
+        f("req", {"state": ["KA"]}, 10)
+    with pytest.raises(KeyError, match="parse_queries"):
+        f("never parsed", None, 10)
