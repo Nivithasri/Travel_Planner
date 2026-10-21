@@ -221,3 +221,65 @@ def make_mmr_variant(lam: float, scorer):
         _guard(filters)
         return run_mmr(query, lam, scorer, k)[0]
     return retrieve
+
+
+# ---- row 7: cross-encoder rerank of the top 30 (D88) ------------------------------------------
+RERANK_TEXT_KIND = "contextual"  # D88: row 3 favours contextual on dev (dense 0.829 vs 0.701)
+MMR_LAMBDA_FILE = REPO_ROOT / "eval" / "mmr_lambda.json"
+_ce: object | None = None
+
+
+def get_ce_scorer():
+    """The bge-reranker-v2-m3 scorer from RERANK_LOCAL_DIR (offline, cached per query and chunk)."""
+    global _ce
+    if _ce is None:
+        from src.common.schemas import load_rerank_local_dir
+        from src.retrieval.rerank import CrossEncoderScorer
+
+        model_dir = load_rerank_local_dir()
+        if model_dir is None or not Path(model_dir).is_dir():
+            raise RuntimeError("RERANK_LOCAL_DIR is not set in .env or is not a folder: download "
+                               "BAAI/bge-reranker-v2-m3 into models/ and set it (D88)")
+        _ce = CrossEncoderScorer(Path(model_dir), get_index().chunks,
+                                 DiskCache(REPO_ROOT / ".cache"), text_kind=RERANK_TEXT_KIND,
+                                 log=print)
+    return _ce
+
+
+def run_rerank(query: str, scorer, k: int = 10, *, base: str = "expanded"):
+    """The base ranking's top 30 re-ordered by the scorer's logits; ranks 31-100 unchanged."""
+    parsed = parsed_by_text()
+    if query not in parsed:
+        raise KeyError("the query is not in eval/parsed_queries.json; run "
+                       "scripts/parse_queries.py")
+    index = get_index()
+    queries = [query, *parsed[query]["sub_queries"]] if base == "expanded" else [query]
+    ranked = expanded_ids(index, CONTEXTUAL_TABLES, queries, depth=RRF_DEPTH, limit=RRF_DEPTH)
+    logits = scorer(query, [cid for cid, _ in ranked[:rerank_mod.DEPTH]])
+    return _rows(index, rerank_mod.apply_scores(ranked, logits, rerank_mod.DEPTH)[:k])
+
+
+def row7_rerank(query, filters=None, k=10):
+    _guard(filters)
+    return run_rerank(query, get_ce_scorer(), k)
+
+
+def hybrid_rerank(query, filters=None, k=10):
+    """Diagnostic: the same rerank on the plain row-3 hybrid base (row 4 is provisional)."""
+    _guard(filters)
+    return run_rerank(query, get_ce_scorer(), k, base="hybrid")
+
+
+# ---- row 8 proper: MMR at the lambda chosen on dev by scripts/mmr_curve.py (D89) ----------------
+def chosen_lambda() -> float:
+    import json
+
+    if not MMR_LAMBDA_FILE.exists():
+        raise FileNotFoundError("eval/mmr_lambda.json is missing: run "
+                                "python scripts/mmr_curve.py --scorer ce")
+    return float(json.loads(MMR_LAMBDA_FILE.read_text(encoding="utf-8"))["lam"])
+
+
+def row8_mmr(query, filters=None, k=10):
+    _guard(filters)
+    return run_mmr(query, chosen_lambda(), get_ce_scorer(), k)[0]

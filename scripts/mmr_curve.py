@@ -11,6 +11,7 @@ no network. With --scorer proxy the table is headed so and nothing is written to
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -30,7 +31,7 @@ from src.retrieval import mmr  # noqa: E402
 def scorer_for(name: str):
     if name == "proxy":
         return variants.proxy_scorer
-    raise SystemExit("--scorer ce needs the cross-encoder (row 7), which is not built yet")
+    return variants.get_ce_scorer()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -62,6 +63,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.scorer == "ce":
         (REPO_ROOT / "eval" / "ablation" / "mmr_curve_dev.md").write_text(out + "\n",
                                                                        encoding="utf-8")
+        record = {"lam": chosen, "split": "dev",
+                  "rule": "smallest lambda within 0.02 of lambda=1.0 by dev nDCG@10 (D89)",
+                  "curve": {str(k): v for k, v in curve.items()}}
+        variants.MMR_LAMBDA_FILE.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
     return 0
 
 

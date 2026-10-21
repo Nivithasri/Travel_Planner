@@ -230,3 +230,31 @@ def test_row8_variant_refuses_filters_and_unparsed_queries(monkeypatch):
         f("req", {"state": ["KA"]}, 10)
     with pytest.raises(KeyError, match="parse_queries"):
         f("never parsed", None, 10)
+
+
+def test_row7_names_the_missing_reranker_folder_instead_of_downloading(monkeypatch, tmp_path):
+    monkeypatch.setattr(variants, "_ce", None)
+    monkeypatch.setattr("src.common.schemas.load_rerank_local_dir", lambda: None)
+    with pytest.raises(RuntimeError, match="RERANK_LOCAL_DIR"):
+        variants.get_ce_scorer()
+    monkeypatch.setattr("src.common.schemas.load_rerank_local_dir", lambda: tmp_path / "nope")
+    with pytest.raises(RuntimeError, match="download"):
+        variants.get_ce_scorer()
+
+
+def test_row8_needs_the_dev_chosen_lambda_file(monkeypatch, tmp_path):
+    monkeypatch.setattr(variants, "MMR_LAMBDA_FILE", tmp_path / "missing.json")
+    with pytest.raises(FileNotFoundError, match="mmr_curve"):
+        variants.chosen_lambda()
+    f = tmp_path / "lam.json"
+    f.write_text('{"lam": 0.8}', encoding="utf-8")
+    monkeypatch.setattr(variants, "MMR_LAMBDA_FILE", f)
+    assert variants.chosen_lambda() == 0.8
+
+
+def test_run_rerank_orders_the_top_30_by_the_scorer(monkeypatch):
+    idx = QueryIndex({"req": ["a", "b", "c", "d"], "s1": ["b"]})
+    monkeypatch.setattr(variants, "get_index", lambda: idx)
+    monkeypatch.setattr(variants, "parsed_by_text", lambda: {"req": {"sub_queries": ["s1"]}})
+    rows = variants.run_rerank("req", lambda q, ids: {c: float(ord(c)) for c in ids}, 4)
+    assert [r["chunk_id"] for r in rows] == ["d", "c", "b", "a"]  # highest logit first

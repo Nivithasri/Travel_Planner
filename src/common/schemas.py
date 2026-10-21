@@ -224,6 +224,14 @@ def load_embed_local_dir(env_file: str | os.PathLike | None = None) -> Path | No
     return Path(raw) if raw else None
 
 
+def load_rerank_local_dir(env_file: str | os.PathLike | None = None) -> Path | None:
+    """RERANK_LOCAL_DIR (optional): a local folder with the cross-encoder BAAI/bge-reranker-v2-m3
+    (D88). The owner downloads it; nothing here ever downloads."""
+    load_dotenv(env_file if env_file is not None else REPO_ROOT / ".env", override=False)
+    raw = _opt("RERANK_LOCAL_DIR")
+    return Path(raw) if raw else None
+
+
 def load_collect_settings(env_file: str | os.PathLike | None = None) -> CollectSettings:
     """CONTACT_EMAIL is required: Wikimedia and polite crawling need a way to reach us. The other
     credentials are optional; a collector without its credentials is skipped, never faked."""
