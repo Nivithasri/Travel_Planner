@@ -176,7 +176,7 @@ ROUTING_MUTATIONS = [
 RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py",
                    "tests/test_variants.py", "tests/test_query_understanding.py",
                    "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py",
-                   "tests/test_grader.py", "tests/test_pool2.py"]
+                   "tests/test_grader.py", "tests/test_pool2.py", "tests/test_label_batches.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -276,6 +276,24 @@ RETRIEVAL_MUTATIONS = [
      "scripts/corrective_rewrites.py",
      '    if split == "dev":\n        return tau_candidates(confidences)\n',
      "    if True:\n        return tau_candidates(confidences)\n"),
+    ("M79 a batch may split a query (rows are cut at the size)", "scripts/label_batches.py",
+     "        if current and len(current) + len(group) > size:\n",
+     "        if len(current) >= size:\n"),
+    ("M80 the owner's hand labels are overwritten by the chat", "scripts/label_batches.py",
+     "        if ex_label is not None and prev_llm.get(rid) != ex_label:\n",
+     "        if False:\n"),
+    ("M81 any label is accepted in a reply", "scripts/label_batches.py",
+     "        label = pooling.parse_label(parts[1])\n",
+     "        label = int(parts[1]) if parts[1].strip().isdigit() else None\n"),
+    ("M82 a row answered twice is accepted", "scripts/label_batches.py",
+     "            elif rid in seen_in:\n", "            elif False:\n"),
+    ("M83 a batch also shows the chunk id and URL", "scripts/label_batches.py",
+     '                f"TITLE: {one_line(r[\'title\'])}",\n',
+     '                f"TITLE: {one_line(r[\'title\'])} {r[\'chunk_id\']} {r[\'url\']}",\n'),
+    ("M84 a sheet changed after the export is not noticed", "scripts/label_batches.py",
+     '    if manifest["sheet_sha256"] != sha256_file(original_path):\n', "    if False:\n"),
+    ("M85 an answered blog row that was excluded is accepted", "scripts/label_batches.py",
+     "            elif rid in excluded:\n", "            elif False:\n"),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),
