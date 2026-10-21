@@ -116,3 +116,59 @@ def expanded_hybrid(query, filters=None, k=10):
     index = get_index()
     return _rows(index, expanded_ids(index, CONTEXTUAL_TABLES, [query, *parsed["sub_queries"]],
                                      depth=RRF_DEPTH, limit=k))
+
+
+# ---- rows 5 and 6: metadata filters, then freshness (D85, D87) --------------------------------
+# Both act on the 100 best candidates of a base ranking (row 4 expanded, or, as a diagnostic while
+# row 4 is provisional, the plain row-3 hybrid) and use the validated parse of the query: its
+# states, season, month, place_types and the predicted time_sensitive flag. The gold fields of
+# queries.json are never read.
+from src.retrieval.filters import load_provenance  # noqa: E402
+from src.retrieval.postprocess import PostConfig, postprocess  # noqa: E402
+
+PROVENANCE_FILE = REPO_ROOT / "data" / "enriched" / "provenance.jsonl"
+_provenance: dict[str, str] | None = None
+
+
+def get_provenance() -> dict[str, str]:
+    global _provenance
+    if _provenance is None:
+        _provenance = load_provenance(PROVENANCE_FILE)
+    return _provenance
+
+
+def run_post(query: str, config: PostConfig, k: int = 10, *, base: str = "expanded",
+             explicit_filters: dict | None = None):
+    """(rows, trace) for one query. base is "expanded" (row 4) or "hybrid" (row 3)."""
+    from src.common.schemas import load_reference_date
+
+    parsed = parsed_by_text()
+    if query not in parsed:
+        raise KeyError("the query is not in eval/parsed_queries.json; run "
+                       "scripts/parse_queries.py")
+    parse = parsed[query]
+    index = get_index()
+    queries = [query, *parse["sub_queries"]] if base == "expanded" else [query]
+    ranked = expanded_ids(index, CONTEXTUAL_TABLES, queries, depth=RRF_DEPTH, limit=RRF_DEPTH)
+    top, trace = postprocess(ranked, index.chunks, get_provenance(), parse, config, k,
+                             reference=load_reference_date(), explicit_filters=explicit_filters)
+    return _rows(index, top), trace
+
+
+def _post_variant(config: PostConfig, base: str = "expanded"):
+    def retrieve(query, filters=None, k=10):
+        rows, _ = run_post(query, config, k, base=base, explicit_filters=filters)
+        return rows
+    return retrieve
+
+
+# row 5: filters on top of row 4; 5b filters place_type on every row (rule-based fields used)
+row5_filters = _post_variant(PostConfig(use_filters=True))
+row5b_filters_all_rows = _post_variant(PostConfig(use_filters=True, rule_based_place_type=True))
+# row 6: freshness on top of row 5, one function per weight w of the dev grid
+row6_fresh_w10 = _post_variant(PostConfig(use_filters=True, fresh_w=0.1))
+row6_fresh_w20 = _post_variant(PostConfig(use_filters=True, fresh_w=0.2))
+row6_fresh_w30 = _post_variant(PostConfig(use_filters=True, fresh_w=0.3))
+# diagnostics on the plain row-3 hybrid base, because row 4 is provisional until round 2
+hybrid_filters = _post_variant(PostConfig(use_filters=True), base="hybrid")
+hybrid_filters_fresh_w20 = _post_variant(PostConfig(use_filters=True, fresh_w=0.2), base="hybrid")

@@ -3,5 +3,9 @@
  ["dense_plain", "eval.adapters:dense_plain"],
  ["hybrid_plain", "eval.variants:hybrid_plain"],
  ["hybrid_contextual", "eval.variants:hybrid_contextual"],
- ["expanded_hybrid", "eval.variants:expanded_hybrid"]
+ ["expanded_hybrid", "eval.variants:expanded_hybrid"],
+ ["row5_filters", "eval.variants:row5_filters"],
+ ["row6_fresh_w10", "eval.variants:row6_fresh_w10"],
+ ["row6_fresh_w20", "eval.variants:row6_fresh_w20"],
+ ["row6_fresh_w30", "eval.variants:row6_fresh_w30"]
 ]

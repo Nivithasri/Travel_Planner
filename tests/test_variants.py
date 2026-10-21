@@ -108,3 +108,58 @@ def test_a_fallback_parse_runs_the_request_alone(monkeypatch):
     monkeypatch.setattr(variants, "parsed_by_text", lambda: {"req": {"sub_queries": []}})
     out = variants.expanded_hybrid("req", None, 10)
     assert [r["chunk_id"] for r in out] == ["a", "b"] and {q for _, q in idx.calls} == {"req"}
+
+
+# ---- rows 5 and 6 wiring ---------------------------------------------------------------------
+
+def _wire(monkeypatch, parse):
+    from datetime import date
+
+    idx = QueryIndex({"req": ["a", "b", "c"], "s1": ["b", "c"]})
+    idx.chunks = {c: {"chunk_id": c, "place": "P", "state": st, "season_tags": ["all_year"],
+                      "place_type": "city", "date_kind": "revised", "date": None,
+                      "aspect": "other"} for c, st in (("a", "KL"), ("b", "KA"), ("c", "KA"))}
+    monkeypatch.setattr(variants, "get_index", lambda: idx)
+    monkeypatch.setattr(variants, "get_provenance", lambda: {"a": "llm", "b": "llm", "c": "llm"})
+    monkeypatch.setattr(variants, "parsed_by_text", lambda: {"req": parse})
+    monkeypatch.setattr("src.common.schemas.load_reference_date", lambda: date(2026, 10, 18))
+    return idx
+
+
+PARSE = {"sub_queries": ["s1"], "states": ["KA"], "season": None, "month": None,
+         "place_types": [], "time_sensitive": False}
+
+
+def test_row5_filters_with_the_parsed_state_and_runs_the_subqueries(monkeypatch):
+    idx = _wire(monkeypatch, PARSE)
+    out = variants.row5_filters("req", None, 10)
+    assert [r["chunk_id"] for r in out][:2] == ["b", "c"]  # KL chunk a goes behind
+    assert {q for _, q in idx.calls} == {"req", "s1"}
+
+
+def test_run_post_reports_the_trace(monkeypatch):
+    from src.retrieval.postprocess import PostConfig
+
+    _wire(monkeypatch, PARSE)
+    rows, trace = variants.run_post("req", PostConfig(use_filters=True), 2)
+    assert [r["chunk_id"] for r in rows] == ["b", "c"] and trace["backfilled"] == 0
+    assert trace["filters"]["rejected"] == {"state": 1}
+
+
+def test_hybrid_base_runs_the_request_alone(monkeypatch):
+    idx = _wire(monkeypatch, PARSE)
+    variants.hybrid_filters("req", None, 10)
+    assert {q for _, q in idx.calls} == {"req"}
+
+
+def test_row6_with_a_stable_query_equals_row5(monkeypatch):
+    _wire(monkeypatch, PARSE)
+    a = [r["chunk_id"] for r in variants.row5_filters("req", None, 10)]
+    b = [r["chunk_id"] for r in variants.row6_fresh_w30("req", None, 10)]
+    assert a == b  # time_sensitive is False in the parse, so w_q = 0
+
+
+def test_post_variants_refuse_a_query_that_was_not_parsed(monkeypatch):
+    _wire(monkeypatch, PARSE)
+    with pytest.raises(KeyError, match="parse_queries"):
+        variants.row5_filters("never parsed", None, 10)

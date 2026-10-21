@@ -174,7 +174,8 @@ ROUTING_MUTATIONS = [
 
 
 RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py",
-                   "tests/test_variants.py", "tests/test_query_understanding.py"]
+                   "tests/test_variants.py", "tests/test_query_understanding.py",
+                   "tests/test_filters.py", "tests/test_freshness.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -211,6 +212,24 @@ RETRIEVAL_MUTATIONS = [
     ("M53 condensed nDCG keeps the unjudged chunks", "eval/ablation.py",
      '        judged = [c for c in r["ranked"] if c in qrel]\n',
      '        judged = list(r["ranked"])\n'),
+    ("M54 rule-based rows lose their place_type exemption (D69)", "src/retrieval/filters.py",
+     "        if provenance in RULE_BASED and not rule_based_place_type:\n", "        if False:\n"),
+    ("M55 back-fill disabled (rejected candidates dropped)", "src/retrieval/postprocess.py",
+     "    out = passing + rejected\n", "    out = passing\n"),
+    ("M56 undated chunks treated as old (f = 0, not neutral)", "src/retrieval/freshness.py",
+     '    if chunk.get("date_kind") != "published" or not chunk.get("date"):\n'
+     "        return NEUTRAL, False\n",
+     '    if chunk.get("date_kind") != "published" or not chunk.get("date"):\n'
+     "        return 0.0, False\n"),
+    ("M57 freshness weight applied to non-time-sensitive queries", "src/retrieval/freshness.py",
+     "    w_q = w if time_sensitive else 0.0\n", "    w_q = w\n"),
+    ("M58 state filter ignored", "src/retrieval/filters.py",
+     '    if f.state and chunk.get("state") not in f.state:\n', "    if False:\n"),
+    ("M59 scenery decays like a fast aspect", "src/retrieval/freshness.py",
+     '"scenery": None', '"scenery": 180.0'),
+    ("M60 a month no longer fixes the season", "src/retrieval/filters.py",
+     "        return MONTH_SEASON[self.month] if self.month else self.season\n",
+     "        return self.season\n"),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),
