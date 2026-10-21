@@ -199,21 +199,34 @@ def run_mmr(query: str, lam: float, scorer, k: int = 10, *, depth: int = rerank_
     """(rows, trace): the row-4 expanded ranking, its top `depth` re-ordered by `scorer`, then by
     MMR at `lam`. Filters and freshness are not applied (row 5 failed its keep rule and row 6 is
     off on dev, LOG 2026-10-21); row 4 itself is provisional until round 2 (D91)."""
+    parse = _parse_of(query)
+    final, logits, place_term = _pipeline(query, parse, scorer, lam, depth=depth)
+    return (_rows(get_index(), final[:k]),
+            {"lam": lam, "depth": depth, "place_term": place_term})
+
+
+def _parse_of(query: str) -> dict:
     parsed = parsed_by_text()
     if query not in parsed:
         raise KeyError("the query is not in eval/parsed_queries.json; run "
                        "scripts/parse_queries.py")
-    parse = parsed[query]
+    return parsed[query]
+
+
+def _pipeline(query: str, parse: dict, scorer, lam: float, *, extra_queries: tuple[str, ...] = (),
+              fetch: int = RRF_DEPTH, depth: int = rerank_mod.DEPTH):
+    """Expansion (the request, its sub-queries and any extra queries, each through the contextual
+    hybrid at depth `fetch`, RRF-fused) -> rerank the top `depth` -> MMR at `lam`. Returns
+    (final ranked list, the head's reranker logits, whether the place term was on)."""
     index = get_index()
-    ranked = expanded_ids(index, CONTEXTUAL_TABLES, [query, *parse["sub_queries"]],
-                          depth=RRF_DEPTH, limit=RRF_DEPTH)
+    ranked = expanded_ids(index, CONTEXTUAL_TABLES,
+                          [query, *parse["sub_queries"], *extra_queries], depth=fetch, limit=fetch)
     logits = scorer(query, [cid for cid, _ in ranked[:depth]])
     reranked = rerank_mod.apply_scores(ranked, logits, depth)
     matrix, row_of = index.dense_matrix("contextual")
     place_term = not parse["places"]  # a place-named query: another place is not diversity
     sim = mmr_mod.make_similarity(matrix, row_of, index.chunks, place_term=place_term)
-    final = mmr_mod.apply_mmr(reranked, logits, sim, lam, depth)
-    return _rows(index, final[:k]), {"lam": lam, "depth": depth, "place_term": place_term}
+    return mmr_mod.apply_mmr(reranked, logits, sim, lam, depth), logits, place_term
 
 
 def make_mmr_variant(lam: float, scorer):
@@ -283,3 +296,60 @@ def chosen_lambda() -> float:
 def row8_mmr(query, filters=None, k=10):
     _guard(filters)
     return run_mmr(query, chosen_lambda(), get_ce_scorer(), k)[0]
+
+
+# ---- row 9: CRAG-style corrective retrieval (D90) ----------------------------------------------
+# First pass = the row 8 pipeline. If a trigger fires (src/retrieval/grader.py), ONE corrective
+# pass: metadata filters off (none are in the pipeline: row 5 failed its keep rule), candidate depth
+# 100 -> 300, the stored query rewrite added as one more query, then the same rerank and MMR. The
+# rewrite comes from eval/corrective_rewrites.json (written by scripts/corrective_rewrites.py, the
+# only LLM call of row 9), so the row runs without a network.
+from src.retrieval import grader as grader_mod  # noqa: E402
+
+REWRITES_FILE = REPO_ROOT / "eval" / "corrective_rewrites.json"
+TAU_FILE = REPO_ROOT / "eval" / "corrective_tau.json"
+
+
+def run_corrective(query: str, tau: float, scorer, lam: float, k: int = 10, *, rewrites=None):
+    """(rows, trace). trace: triggers, confidence, passes (0 or 1), rewrite used."""
+    parse = _parse_of(query)
+    index = get_index()
+    final, logits, _ = _pipeline(query, parse, scorer, lam)
+    top = [index.chunks[cid] for cid, _ in final[:grader_mod.TOP_N]]
+    conf = grader_mod.top_confidence(logits)
+    triggers = grader_mod.fired(conf, top, tau)
+    trace = {"confidence": conf, "triggers": triggers, "passes": 0, "rewrite": None,
+             "triggers_after": None}
+    for _ in range(grader_mod.MAX_CORRECTIONS):  # one pass at most (plan.md item 9)
+        if not triggers:
+            break
+        rewrites = grader_mod.load_rewrites(REWRITES_FILE) if rewrites is None else rewrites
+        rewrite = grader_mod.lookup(rewrites, query, triggers)
+        extra = (rewrite,) if rewrite else ()
+        final, logits, _ = _pipeline(query, parse, scorer, lam, extra_queries=extra,
+                                     fetch=grader_mod.CORRECTION_DEPTH)
+        top = [index.chunks[cid] for cid, _ in final[:grader_mod.TOP_N]]
+        triggers = grader_mod.fired(grader_mod.top_confidence(logits), top, tau)
+        trace.update(passes=trace["passes"] + 1, rewrite=rewrite, triggers_after=triggers)
+    return _rows(index, final[:k]), trace
+
+
+def make_corrective_variant(tau: float, scorer_factory=None):
+    def retrieve(query, filters=None, k=10):
+        _guard(filters)
+        scorer = (scorer_factory or get_ce_scorer)()
+        return run_corrective(query, tau, scorer, chosen_lambda(), k)[0]
+    return retrieve
+
+
+def chosen_tau() -> float:
+    import json
+
+    if not TAU_FILE.exists():
+        raise FileNotFoundError("eval/corrective_tau.json is missing: tau is chosen on dev")
+    return float(json.loads(TAU_FILE.read_text(encoding="utf-8"))["tau"])
+
+
+def row9_crag(query, filters=None, k=10):
+    _guard(filters)
+    return run_corrective(query, chosen_tau(), get_ce_scorer(), chosen_lambda(), k)[0]

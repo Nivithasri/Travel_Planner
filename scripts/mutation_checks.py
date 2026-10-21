@@ -175,7 +175,8 @@ ROUTING_MUTATIONS = [
 
 RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py",
                    "tests/test_variants.py", "tests/test_query_understanding.py",
-                   "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py"]
+                   "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py",
+                   "tests/test_grader.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -251,6 +252,16 @@ RETRIEVAL_MUTATIONS = [
      "            hit = None\n"),
     ("M68 table files named after the last row (the shadowed-name bug)", "eval/ablation.py",
      '        (out_dir / f"{stem}_{split}.md")', '        (out_dir / f"{name}_{split}.md")'),
+    ("M69 the grader allows a second corrective pass", "src/retrieval/grader.py",
+     "MAX_CORRECTIONS = 1  # one", "MAX_CORRECTIONS = 2  # one"),
+    ("M70 a rewrite naming a hold-out is kept", "src/retrieval/grader.py",
+     "    if leak_scan(text, holdout):\n", "    if False:\n"),
+    ("M71 contradiction no longer needs the same place", "src/retrieval/grader.py",
+     'by_place.setdefault(c["place"], []).append(c)', 'by_place.setdefault("all", []).append(c)'),
+    ("M72 few_sources counts chunks, not distinct URLs", "src/retrieval/grader.py",
+     'return len({c["url"] for c in chunks})', "return len(chunks)"),
+    ("M73 low_confidence inverted (fires above tau)", "src/retrieval/grader.py",
+     "    if confidence < tau:\n", "    if confidence > tau:\n"),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),
