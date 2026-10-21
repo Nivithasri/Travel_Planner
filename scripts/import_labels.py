@@ -2,6 +2,7 @@
 
     python scripts/import_labels.py dev      # eval/sheets/judge_dev.csv  -> eval/qrels_dev.json
     python scripts/import_labels.py test     # eval/sheets/judge_test.csv -> eval/qrels_test.json
+    python scripts/import_labels.py dev --round 2   # judge2_dev.csv -> eval/qrels_dev_r2.json
 
 Validation (nothing is written unless every check passes): the label of every row is exactly 0,
 1 or 2 (no blanks); row_ids are exactly 1..N with no duplicates; every (query, chunk) pair is
@@ -19,10 +20,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from eval import pooling  # noqa: E402
-from eval.qrels import SPLITS, load_queries, qrels_path  # noqa: E402
+from eval.qrels import SPLITS, load_queries, qrels_path, qrels_r2_path  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 POOL = ROOT / "eval" / "pool.json"
+POOL2 = ROOT / "eval" / "pool2.json"
 SHEETS = ROOT / "eval" / "sheets"
 
 
@@ -68,6 +70,12 @@ def validate(rows: list[dict], pool: dict, queries: list[dict], split: str
     return qrels, problems
 
 
+def round2_collisions(pool2: dict, pool1: dict) -> list[tuple[str, str]]:
+    """Round-2 pairs that round 1 already judged. Round 2 must hold new pairs only (D91)."""
+    return sorted((qid, cid) for qid, pairs in pool2["pairs"].items() for cid in pairs
+                  if cid in pool1["pairs"].get(qid, {}))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("split", choices=SPLITS)
@@ -77,19 +85,32 @@ def main(argv: list[str] | None = None) -> int:
                     help="the exported sheet to compare a differently named --sheet against "
                          "(default eval/sheets/judge_<split>.csv)")
     ap.add_argument("--force", action="store_true", help="overwrite an existing qrels file")
+    ap.add_argument("--round", type=int, choices=(1, 2), default=1,
+                    help="2 imports the round-2 sheet judge2_<split>.csv against eval/pool2.json "
+                         "into eval/qrels_<split>_r2.json (D91)")
     args = ap.parse_args(argv)
 
-    out = qrels_path(args.split)
+    r2 = args.round == 2
+    stem = "judge2" if r2 else "judge"
+    pool_file = POOL2 if r2 else POOL
+    out = qrels_r2_path(args.split) if r2 else qrels_path(args.split)
     if out.exists() and not args.force:
         print(f"{out.name} exists; refusing to overwrite it without --force")
         return 2
-    sheet = args.sheet or SHEETS / f"judge_{args.split}.csv"
+    sheet = args.sheet or SHEETS / f"{stem}_{args.split}.csv"
     if not sheet.exists():
         print(f"no sheet at {sheet}")
         return 2
-    pool = json.loads(POOL.read_text(encoding="utf-8"))
+    pool = json.loads(pool_file.read_text(encoding="utf-8"))
+    if r2:
+        clash = round2_collisions(pool, json.loads(POOL.read_text(encoding="utf-8")))
+        if clash:
+            print(f"{len(clash)} round-2 pair(s) were already judged in round 1; nothing written:")
+            for qid, cid in clash[:20]:
+                print(f"  {qid}/{cid}")
+            return 1
     rows = pooling.read_sheet(sheet)
-    original = args.original or SHEETS / f"judge_{args.split}.csv"
+    original = args.original or SHEETS / f"{stem}_{args.split}.csv"
     if original.resolve() != sheet.resolve():
         if not original.exists():
             print(f"no exported sheet at {original} to compare {sheet.name} against")

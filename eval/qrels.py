@@ -85,3 +85,26 @@ def load_qrels(split: str, *, allow_test: bool = False,
             if label not in LABELS or isinstance(label, bool):
                 raise ValueError(f"{path.name}: {qid}/{cid} has label {label!r}")
     return qrels
+
+
+def qrels_r2_path(split: str, directory: Path | None = None) -> Path:
+    return (directory or EVAL_DIR) / f"qrels_{split}_r2.json"
+
+
+def load_qrels_merged(split: str, *, allow_test: bool = False, directory: Path | None = None
+                      ) -> dict[str, dict[str, int]]:
+    """Round 1 plus round 2 (D91). Round 2 judges only pairs that round 1 never pooled, and it
+    NEVER overrides a round-1 label: a pair in both files keeps its round-1 value. The test split is
+    refused exactly as load_qrels refuses it. A missing round-2 file means round 2 is not labelled
+    yet, and the result is round 1 alone."""
+    merged = load_qrels(split, allow_test=allow_test, directory=directory)
+    path = qrels_r2_path(split, directory)
+    if not path.exists():
+        return merged
+    r2 = json.loads(path.read_text(encoding="utf-8"))
+    for qid, rels in r2.items():
+        for cid, label in rels.items():
+            if label not in LABELS or isinstance(label, bool):
+                raise ValueError(f"{path.name}: {qid}/{cid} has label {label!r}")
+            merged.setdefault(qid, {}).setdefault(cid, label)  # round 1 wins
+    return merged

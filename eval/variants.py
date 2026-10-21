@@ -19,8 +19,7 @@ from pathlib import Path
 
 from eval.adapters import ENRICHED, INDEX_DIR, RRF_DEPTH, get_index
 from src.common.cache import DiskCache
-from src.common.schemas import REPO_ROOT, load_embed_local_dir
-from src.retrieval.build_index import load_encoder
+from src.common.schemas import REPO_ROOT
 from src.retrieval.hybrid import CONTEXTUAL_TABLES, expanded_ids, hybrid_ids
 from src.retrieval.search import Index, model_id_from_manifest
 
@@ -32,14 +31,14 @@ _control: Index | None = None
 def get_control_index() -> Index:
     global _control
     if _control is None:
-        model_dir = load_embed_local_dir()
-        if model_dir is None:
-            raise RuntimeError("EMBED_LOCAL_DIR is not set in .env")
         if not (CONTROL_DIR / "dense_contextual.npy").exists():
             raise RuntimeError("the control index is missing: run scripts/build_control_index.py")
-        _control = Index(CONTROL_DIR, ENRICHED, encode=load_encoder(Path(model_dir)),
+        # The control index is searched with the SAME bge-m3 as the main index, so it shares the
+        # one loaded encoder instead of loading a second 2.3 GB copy (which, together with the
+        # reranker, does not fit in memory on a 7 GB machine) and the same query-vector cache.
+        _control = Index(CONTROL_DIR, ENRICHED, encode=get_index()._encode,
                          cache=DiskCache(REPO_ROOT / ".cache"),
-                         model_id=model_id_from_manifest(INDEX_DIR))  # same bge-m3 -> shared cache
+                         model_id=model_id_from_manifest(INDEX_DIR))
     return _control
 
 

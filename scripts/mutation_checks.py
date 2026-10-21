@@ -176,7 +176,7 @@ ROUTING_MUTATIONS = [
 RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py",
                    "tests/test_variants.py", "tests/test_query_understanding.py",
                    "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py",
-                   "tests/test_grader.py"]
+                   "tests/test_grader.py", "tests/test_pool2.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -262,6 +262,16 @@ RETRIEVAL_MUTATIONS = [
      'return len({c["url"] for c in chunks})', "return len(chunks)"),
     ("M73 low_confidence inverted (fires above tau)", "src/retrieval/grader.py",
      "    if confidence < tau:\n", "    if confidence > tau:\n"),
+    ("M74 round-2 pool includes pairs round 1 already judged", "eval/pooling2.py",
+     "                if cid in judged.get(qid, set()):\n                    continue\n",
+     "                if False:\n                    continue\n"),
+    ("M75 round-2 labels override round-1 labels", "eval/qrels.py",
+     "            merged.setdefault(qid, {}).setdefault(cid, label)  # round 1 wins\n",
+     "            merged.setdefault(qid, {})[cid] = label\n"),
+    ("M76 a system gap is silently dropped, not reported", "eval/pooling2.py",
+     "                gaps.setdefault(system, []).append(qid)\n", "                pass\n"),
+    ("M77 round-2 import accepts pairs round 1 already judged", "scripts/import_labels.py",
+     '                  if cid in pool1["pairs"].get(qid, {}))\n', "                  if False)\n"),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),
