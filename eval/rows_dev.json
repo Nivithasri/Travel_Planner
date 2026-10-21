@@ -5,5 +5,6 @@
  ["hybrid_contextual", "eval.variants:hybrid_contextual"],
  ["expanded_hybrid", "eval.variants:expanded_hybrid"],
  ["row7_rerank", "eval.variants:row7_rerank"],
- ["row8_mmr", "eval.variants:row8_mmr"]
+ ["row8_mmr", "eval.variants:row8_mmr"],
+ ["row9_crag", "eval.variants:row9_crag"]
 ]

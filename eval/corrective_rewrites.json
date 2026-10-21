@@ -1,0 +1,92 @@
+{
+ "meta": {
+  "model": "openai/gpt-oss-20b",
+  "options": {
+   "max_tokens": 400,
+   "reasoning_effort": "low"
+  },
+  "prompt": "crag-rewrite-v1"
+ },
+ "rewrites": {
+  "123c55f9f17e6eeb": {
+   "dropped": null,
+   "query": "Is the Vivekananda Rock ferry running, latest timings",
+   "rewrite": "Vivekananda Rock ferry schedule latest timings 2024",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "251c13eb6b5c883e": {
+   "dropped": null,
+   "query": "Nature and culture, mid-budget, one week",
+   "rewrite": "mid-budget one week nature and culture South India itinerary",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "2e36cb4bb529546e": {
+   "dropped": null,
+   "query": "Which South Indian beaches are closed or unsafe for swimming right now?",
+   "rewrite": "South Indian beaches currently closed or unsafe for swimming 2026 safety status",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "4ae7241c23af1081": {
+   "dropped": null,
+   "query": "Tirupati darshan tips and temple timings",
+   "rewrite": "Tirupati Venkateswara Temple darshan timings, queue management tips, best time to visit, temple schedule 2024",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "856748aa8f325f93": {
+   "dropped": null,
+   "query": "Is Mysuru a good base for a family with young kids for 3 days?",
+   "rewrite": "Mysuru family-friendly attractions for kids 3 days itinerary",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "a95879ebc9c54956": {
+   "dropped": null,
+   "query": "Budget two-week South India itinerary by train and bus",
+   "rewrite": "South India two-week train and bus itinerary budget travel plan",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "a9ea78a92a96bf16": {
+   "dropped": null,
+   "query": "Backpacking Hampi on a budget: where to stay and how to get around",
+   "rewrite": "budget backpacking accommodation Hampi hostel guesthouse cheap lodging and transport options",
+   "triggers": [
+    "few_sources"
+   ]
+  },
+  "bf662f3e83da096b": {
+   "dropped": null,
+   "query": "Beach destination in South India that is safe for toddlers",
+   "rewrite": "South India toddler-friendly beach destinations safety tips",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "d9e04952fac967d1": {
+   "dropped": null,
+   "query": "Offbeat places in Karnataka away from tourist crowds",
+   "rewrite": "offbeat tourist destinations Karnataka away from crowds 2024 travel guide",
+   "triggers": [
+    "low_confidence"
+   ]
+  },
+  "dc3ab715286f1d32": {
+   "dropped": null,
+   "query": "History lover who also likes good food",
+   "rewrite": "History lover South India best heritage sites with local cuisine recommendations",
+   "triggers": [
+    "low_confidence"
+   ]
+  }
+ }
+}

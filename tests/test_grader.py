@@ -266,3 +266,18 @@ def test_the_corrective_variant_refuses_filters(monkeypatch):
     f = variants.make_corrective_variant(0.5, scorer_factory=lambda: None)
     with pytest.raises(NotImplementedError):
         f("q", {"state": ["KA"]}, 10)
+
+
+# ---- tau choice (scripts/tau_curve.py) ---------------------------------------------------------
+
+def test_tau_is_the_highest_ndcg_with_ties_to_the_smaller_tau():
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location(
+        "tau_curve", Path(__file__).resolve().parents[1] / "scripts" / "tau_curve.py")
+    tc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tc)
+    assert tc.choose_tau({0.06: 0.574, 0.11: 0.572, 0.63: 0.578}) == 0.63
+    assert tc.choose_tau({0.06: 0.58, 0.11: 0.58, 0.63: 0.57}) == 0.06  # tie -> smaller
+    assert tc.choose_tau({0.06: None, 0.11: 0.5}) == 0.11
