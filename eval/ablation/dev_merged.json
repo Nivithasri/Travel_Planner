@@ -1,0 +1,101 @@
+{
+ "frozen": {
+  "lambda": 0.9,
+  "tau": 0.6314
+ },
+ "lambda_curve_merged": {
+  "0.5": 0.7089470257195328,
+  "0.7": 0.731771278452363,
+  "0.8": 0.7461320680289744,
+  "0.9": 0.7722347037859245,
+  "1.0": 0.7705264508468257
+ },
+ "lambda_pick": 0.9,
+ "ndcg_merged": {
+  "bm25_plain": 0.5241064780071658,
+  "dense_plain": 0.6730114114177381,
+  "expanded_hybrid": 0.716985970569137,
+  "hybrid_contextual": 0.7680184993121725,
+  "hybrid_filters": 0.7262547189112747,
+  "hybrid_plain": 0.6450308148947056,
+  "hybrid_rerank": 0.7289671360438326,
+  "row5_filters": 0.6539779832514847,
+  "row6_fresh_w10": 0.6539779832514847,
+  "row6_fresh_w20": 0.6504521163856632,
+  "row6_fresh_w30": 0.6504521163856632,
+  "row7_rerank": 0.7705264508468257,
+  "row8_mmr": 0.7722347037859245,
+  "row9_crag": 0.7775290857920201
+ },
+ "ndcg_round1": {
+  "bm25_plain": 0.5424683769139093,
+  "dense_plain": 0.7011021469964659,
+  "expanded_hybrid": 0.5810737559198471,
+  "hybrid_contextual": 0.7685868762579458,
+  "hybrid_filters": 0.7169973673764676,
+  "hybrid_plain": 0.6589886228662288,
+  "hybrid_rerank": 0.6123427370296409,
+  "row5_filters": 0.5358165928522411,
+  "row6_fresh_w10": 0.5358165928522411,
+  "row6_fresh_w20": 0.5321230890370976,
+  "row6_fresh_w30": 0.5321230890370976,
+  "row7_rerank": 0.5886883982071149,
+  "row8_mmr": 0.5792730536652188,
+  "row9_crag": 0.5783825210874396
+ },
+ "tau_curve_merged": {
+  "0.0611": 0.7898710058874484,
+  "0.1104": 0.7793708350646888,
+  "0.6314": 0.7775290857920201
+ },
+ "tau_pick": 0.0611,
+ "verdicts": {
+  "row 3: contextual notes": {
+   "delta_merged": 0.12298768441746688,
+   "delta_round1": 0.10959825339171692,
+   "verdict": "KEEP"
+  },
+  "row 4: query expansion": {
+   "delta_merged": -0.05103252874303543,
+   "delta_round1": -0.18751312033809864,
+   "verdict": "DROP"
+  },
+  "row 5 on the row-3 base (diagnostic)": {
+   "delta_merged": -0.04176378040089779,
+   "delta_round1": -0.051589508881478174,
+   "verdict": "DROP"
+  },
+  "row 5: metadata filters": {
+   "delta_merged": -0.06300798731765234,
+   "delta_round1": -0.045257163067605966,
+   "verdict": "DROP"
+  },
+  "row 7 on the row-3 base (diagnostic)": {
+   "delta_merged": -0.03905136326833991,
+   "delta_round1": -0.15624413922830482,
+   "verdict": "DROP"
+  },
+  "row 7: cross-encoder rerank": {
+   "delta_merged": 0.05354048027768865,
+   "delta_round1": 0.0076146422872678254,
+   "verdict": "KEEP"
+  },
+  "row 8: MMR at the frozen lambda": {
+   "delta_merged": 0.00170825293909882,
+   "delta_round1": -0.009415344541896187,
+   "verdict": "by the lambda rule: lambda 0.9 (MMR on)"
+  },
+  "row 9: corrective pass at the frozen tau": {
+   "delta_merged": 0.005294382006095555,
+   "delta_round1": -0.0008905325777791573,
+   "verdict": "KEEP"
+  }
+ },
+ "w_curve_merged": {
+  "0.0": 0.6539779832514847,
+  "0.1": 0.6539779832514847,
+  "0.2": 0.6504521163856632,
+  "0.3": 0.6504521163856632
+ },
+ "w_pick": 0.0
+}

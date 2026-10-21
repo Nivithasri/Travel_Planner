@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from eval import metrics as M  # noqa: E402
 from eval import significance as S  # noqa: E402
-from eval.qrels import load_qrels, load_queries  # noqa: E402
+from eval.qrels import load_qrels, load_qrels_merged, load_queries  # noqa: E402
 from eval.run_eval import (  # noqa: E402
     ENRICHED,
     PROVENANCE,
@@ -115,13 +115,16 @@ def to_csv(rows: list[dict]) -> str:
 
 
 def run(rows_spec: list[list[str]], split: str, out_dir: Path | None,
-        stem: str = "ablation") -> int:
+        stem: str = "ablation", merged: bool = False) -> int:
     reference = load_reference_date()
     if reference is None:
         print("EVAL_REFERENCE_DATE is not set in .env (D4)")
         return 2
     queries = load_queries(split)
-    qrels = load_qrels(split, allow_test=(split == "test"))
+    # merged = round 1 (human) plus round 2 (D91, D95); its per-row files get their own prefix so
+    # the round-1 results are never overwritten
+    qrels = (load_qrels_merged if merged else load_qrels)(split, allow_test=(split == "test"))
+    prefix = f"{split}_merged" if merged else split
     info = load_chunk_info(ENRICHED, PROVENANCE)
     excluded = load_excluded()
     from eval.run_eval import evaluate
@@ -132,7 +135,7 @@ def run(rows_spec: list[list[str]], split: str, out_dir: Path | None,
         ordered.append((name, result))
         if out_dir:
             out_dir.mkdir(parents=True, exist_ok=True)
-            (out_dir / f"{split}_{name}.json").write_text(
+            (out_dir / f"{prefix}_{name}.json").write_text(
                 json.dumps(result, indent=1, sort_keys=True), encoding="utf-8")
         print(f"ran {name}: nDCG@10 {_fmt(result['groups']['overall']['ndcg@10'])}")
     table = [headline_row(name, res, qrels) for name, res in ordered]
@@ -155,10 +158,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", type=Path, help="directory for per-row JSON and the table")
     ap.add_argument("--name", default="ablation",
                     help="table file stem: <name>_<split>.md/.csv (default ablation)")
+    ap.add_argument("--merged", action="store_true",
+                    help="score against round 1 plus round 2 judgments (D91); per-row files get "
+                         "the prefix <split>_merged_")
     args = ap.parse_args(argv)
     rows_spec = json.loads(args.rows.read_text(encoding="utf-8"))
     out_dir = args.json or (REPO_ROOT / "eval" / "ablation")
-    return run(rows_spec, args.split, out_dir, args.name)
+    stem = "ablation_merged" if args.merged and args.name == "ablation" else args.name
+    return run(rows_spec, args.split, out_dir, stem, args.merged)
 
 
 if __name__ == "__main__":

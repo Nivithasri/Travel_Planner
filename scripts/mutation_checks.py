@@ -176,7 +176,8 @@ ROUTING_MUTATIONS = [
 RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py",
                    "tests/test_variants.py", "tests/test_query_understanding.py",
                    "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py",
-                   "tests/test_grader.py", "tests/test_pool2.py", "tests/test_label_batches.py"]
+                   "tests/test_grader.py", "tests/test_pool2.py", "tests/test_label_batches.py",
+                   "tests/test_rescore.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -280,8 +281,8 @@ RETRIEVAL_MUTATIONS = [
      "        if current and len(current) + len(group) > size:\n",
      "        if len(current) >= size:\n"),
     ("M80 the owner's hand labels are overwritten by the chat", "scripts/label_batches.py",
-     "        if ex_label is not None and prev_llm.get(rid) != ex_label:\n",
-     "        if False:\n"),
+     "        elif ex_label is not None and prev_llm.get(rid) != ex_label:\n",
+     "        elif False:\n"),
     ("M81 any label is accepted in a reply", "scripts/label_batches.py",
      "        label = pooling.parse_label(parts[1])\n",
      "        label = int(parts[1]) if parts[1].strip().isdigit() else None\n"),
@@ -294,6 +295,14 @@ RETRIEVAL_MUTATIONS = [
      '    if manifest["sheet_sha256"] != sha256_file(original_path):\n', "    if False:\n"),
     ("M85 an answered blog row that was excluded is accepted", "scripts/label_batches.py",
      "            elif rid in excluded:\n", "            elif False:\n"),
+    ("M86 a hand label can be 'corrected' as if it were the chat's", "scripts/label_batches.py",
+     "        elif rid not in chat:\n", "        elif False:\n"),
+    ("M87 a recorded correction is treated as one of the owner's own labels",
+     "scripts/label_batches.py",
+     '        if ex_label is not None and corr is not None and ex_label == corr["to"]:\n',
+     "        if False:\n"),
+    ("M88 the keep-rule tolerance is ten times too lax", "scripts/rescore_dev.py",
+     "KEEP_TOLERANCE = 0.005  # D84", "KEEP_TOLERANCE = 0.05  # D84"),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),

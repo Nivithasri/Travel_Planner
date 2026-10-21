@@ -235,6 +235,7 @@ def merge_split(split: str, sheets_dir: Path, provenance_path: Path, *,
     prov_doc = json.loads(Path(provenance_path).read_text(encoding="utf-8")) \
         if Path(provenance_path).exists() else {}
     prev_llm = {k: int(v) for k, v in prov_doc.get(split, {}).get("llm", {}).items()}
+    corrections = {k: dict(v) for k, v in prov_doc.get(split, {}).get("corrections", {}).items()}
     existing: dict[str, dict] = {}
     if out_path.exists():
         existing_rows = pooling.read_sheet(out_path)
@@ -243,7 +244,7 @@ def merge_split(split: str, sheets_dir: Path, provenance_path: Path, *,
             problems += [f"{out_path.name}: {p}" for p in changed[:10]]
         existing = {r["row_id"]: r for r in existing_rows}
 
-    out_rows, hand, llm = [], {}, {}
+    out_rows, hand, llm, corrected = [], {}, {}, {}
     pairs: list[tuple[str, int, int]] = []
     for r in original:
         rid = r["row_id"]
@@ -253,7 +254,16 @@ def merge_split(split: str, sheets_dir: Path, provenance_path: Path, *,
         ex_label = pooling.parse_label(raw) if raw else None
         if raw and ex_label is None:
             problems.append(f"{out_path.name}: row {rid} holds {raw!r}, which is not 0, 1 or 2")
-        if ex_label is not None and prev_llm.get(rid) != ex_label:
+        corr = corrections.get(rid)
+        if ex_label is not None and corr is not None and ex_label == corr["to"]:
+            # the chat's label, changed on the owner's instruction and recorded: not a hand label
+            if rid in labels and labels[rid] != corr["from"]:
+                problems.append(f"row {rid}: the chat's reply ({labels[rid]}) is no longer the "
+                                f"label that was corrected ({corr['from']}); redo the correction")
+            row["label"], row["note"] = str(ex_label), ex["note"]
+            llm[rid] = corr["from"]
+            corrected[rid] = corr
+        elif ex_label is not None and prev_llm.get(rid) != ex_label:
             row["label"], row["note"] = str(ex_label), (ex["note"] if ex else "")
             hand[rid] = ex_label
             if rid in labels:
@@ -289,14 +299,75 @@ def merge_split(split: str, sheets_dir: Path, provenance_path: Path, *,
         "assessor_llm": assessor, "sheet_sha256": manifest["sheet_sha256"],
         "llm": {k: llm[k] for k in sorted(llm, key=int)}, "hand": sorted(hand, key=int),
         "unsure": sorted(unsure, key=int), "excluded_blog": sorted(excluded, key=int),
+        "corrections": {k: corrected[k] for k in sorted(corrected, key=int)},
         "agreement_on_rows_labelled_both_ways": agree}
     atomic_write_text(Path(provenance_path), json.dumps(doc, indent=1, sort_keys=True) + "\n")
     dist = {g: sum(1 for v in llm.values() if v == g) for g in (0, 1, 2)}
     disagreements = [(rid, by_id[rid]["query_id"], a, b) for rid, a, b in pairs if a != b]
     return {"rows": len(original), "llm": len(llm), "hand": len(hand), "unsure": len(unsure),
+            "corrected": len(corrected),
             "llm_distribution": dist, "unanswered": unanswered, "blog_to_label_by_hand":
             by_hand_todo, "agreement": agree, "disagreements": disagreements,
             "out": str(out_path), "reply_files": [f.name for f in reply_files]}, []
+
+
+def correct_labels(split: str, sheets_dir: Path, provenance_path: Path, rows: list[str], to: int,
+                   reason: str) -> tuple[dict, list[str]]:
+    """Change the chat's label on `rows` to `to`, on the owner's instruction. Only a label the chat
+    wrote and nobody has touched may be corrected (a hand label is edited directly). The change
+    stays visible: the note gets ' [corrected FROM->TO: reason]' and the provenance file records
+    {row: {from, to, reason}}, so the figure 'labelled by the chat' stays honest. All or nothing."""
+    sheets_dir = Path(sheets_dir)
+    out_path = sheets_dir / f"judge2_{split}_labelled.csv"
+    original_path = sheets_dir / f"judge2_{split}.csv"
+    if not out_path.exists() or not Path(provenance_path).exists():
+        return {}, [f"{out_path.name} or the provenance file is missing: run merge first"]
+    doc = json.loads(Path(provenance_path).read_text(encoding="utf-8"))
+    if split not in doc:
+        return {}, [f"no {split} entry in the provenance file: run merge first"]
+    if to not in (0, 1, 2):
+        return {}, ["--to must be 0, 1 or 2"]
+    if not reason.strip():
+        return {}, ["a reason is required"]
+    labelled = pooling.read_sheet(out_path)
+    problems = [f"{out_path.name}: {p}"
+                for p in pooling.verify_unchanged(labelled, pooling.read_sheet(original_path))]
+    by_id = {r["row_id"]: r for r in labelled}
+    chat = {k: int(v) for k, v in doc[split]["llm"].items()}
+    corr = dict(doc[split].get("corrections", {}))
+    changes = []
+    for rid in rows:
+        r = by_id.get(rid)
+        cur = pooling.parse_label(r["label"]) if r and r["label"].strip() else None
+        if r is None:
+            problems.append(f"row {rid} is not in {out_path.name}")
+        elif cur is None:
+            problems.append(f"row {rid} has no valid label")
+        elif rid not in chat:
+            problems.append(f"row {rid} has no chat label on record (a hand label or blank): "
+                            "edit it directly")
+        elif cur != chat[rid] and not (rid in corr and cur == corr[rid]["to"]):
+            problems.append(f"row {rid} no longer holds the chat's label (changed by hand): "
+                            "edit it directly")
+        elif cur == to:
+            continue  # already there: nothing to do, and running this twice is harmless
+        else:
+            changes.append((rid, cur))
+    if problems:
+        return {}, problems
+    for rid, cur in changes:
+        by_id[rid]["label"] = str(to)
+        by_id[rid]["note"] = (by_id[rid]["note"] + f" [corrected {chat[rid]}->{to}: "
+                              f"{reason.strip()}]").strip()
+        corr[rid] = {"from": chat[rid], "to": to, "reason": reason.strip()}
+    if changes:
+        tmp = out_path.with_name(out_path.name + ".tmp")
+        pooling.write_sheet(tmp, labelled)
+        os.replace(tmp, out_path)
+        doc[split]["corrections"] = {k: corr[k] for k in sorted(corr, key=int)}
+        atomic_write_text(Path(provenance_path), json.dumps(doc, indent=1, sort_keys=True) + "\n")
+    return {"changed": [(rid, cur, to) for rid, cur in changes],
+            "total_corrections": len(corr)}, []
 
 
 def fmt(v: float | None) -> str:
@@ -333,8 +404,11 @@ def main(argv: list[str] | None = None) -> int:
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("action", choices=("export", "merge"))
+    ap.add_argument("action", choices=("export", "merge", "correct"))
     ap.add_argument("--split", required=True, choices=SPLITS)
+    ap.add_argument("--rows", help="correct: comma-separated row ids, e.g. 9,38,87")
+    ap.add_argument("--to", type=int, help="correct: the new label (0, 1 or 2)")
+    ap.add_argument("--reason", default="", help="correct: why (recorded in note and provenance)")
     ap.add_argument("--size", type=int, default=DEFAULT_SIZE)
     ap.add_argument("--exclude-blog", action="store_true")
     ap.add_argument("--allow-partial", action="store_true")
@@ -351,6 +425,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{args.split}: {len(sizes)} batches in eval/sheets/batches/ (rows per batch "
               f"{sizes}); {len(m['excluded_row_ids'])} blog rows excluded; one query is never "
               "split")
+        return 0
+    if args.action == "correct":
+        ids = [x.strip() for x in (args.rows or "").split(",") if x.strip()]
+        if not ids or args.to is None:
+            print("correct needs --rows and --to (and --reason)")
+            return 2
+        rep, problems = correct_labels(args.split, SHEETS, PROVENANCE, ids, args.to, args.reason)
+        if problems:
+            print(f"{len(problems)} problem(s); nothing written:")
+            for p in problems:
+                print("  " + p)
+            return 1
+        for rid, old, new in rep["changed"]:
+            print(f"row {rid}: {old} -> {new}")
+        print(f"{len(rep['changed'])} changed; {rep['total_corrections']} correction(s) on record "
+              "in eval/labelling_r2_provenance.json")
         return 0
     rep, problems = merge_split(args.split, SHEETS, PROVENANCE,
                                 allow_partial=args.allow_partial, assessor=args.assessor)

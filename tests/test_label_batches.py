@@ -381,3 +381,90 @@ def test_the_script_never_references_the_qrels_files():
     src = (ROOT / "scripts" / "label_batches.py").read_text(encoding="utf-8")
     for forbidden in ("qrels_test", "qrels_dev", "load_qrels", "allow_test"):
         assert forbidden not in src
+
+
+# ---- corrections on the owner's instruction ---------------------------------------------------
+
+def correct(sheets, rows, to=1, reason="rule 10"):
+    return lb.correct_labels("dev", sheets, sheets / "prov.json", rows, to, reason)
+
+
+def labels_of(sheets):
+    return {r["row_id"]: r for r in pooling.read_sheet(sheets / "judge2_dev_labelled.csv")}
+
+
+def merged_sheet(sheets):
+    full_replies(sheets, 25)  # chat labels: row_id % 3 -> rows 2, 5, 8 are 2
+    rep, problems = merge(sheets)
+    assert problems == [] and rep["llm"] == 9
+
+
+def test_a_correction_changes_the_label_and_leaves_a_visible_record(sheets):
+    merged_sheet(sheets)
+    rep, problems = correct(sheets, ["2", "5"])
+    out = labels_of(sheets)
+    assert problems == [] and rep["changed"] == [("2", 2, 1), ("5", 2, 1)]
+    assert out["2"]["label"] == "1" and out["8"]["label"] == "2"  # only the named rows
+    assert "[corrected 2->1: rule 10]" in out["2"]["note"]
+    prov = json.loads((sheets / "prov.json").read_text())["dev"]
+    assert prov["corrections"]["2"] == {"from": 2, "to": 1, "reason": "rule 10"}
+    assert prov["llm"]["2"] == 2  # the chat's own label stays on record
+    assert pooling.verify_unchanged(list(out.values()),
+                                    pooling.read_sheet(sheets / "judge2_dev.csv")) == []
+
+
+def test_correcting_twice_is_harmless(sheets):
+    merged_sheet(sheets)
+    correct(sheets, ["2"])
+    before = (sheets / "judge2_dev_labelled.csv").read_bytes()
+    rep, problems = correct(sheets, ["2"])
+    assert problems == [] and rep["changed"] == []
+    assert (sheets / "judge2_dev_labelled.csv").read_bytes() == before
+
+
+def test_a_hand_label_or_an_unknown_row_cannot_be_corrected_and_nothing_is_written(sheets):
+    full_replies(sheets, 25)
+    hand_label(sheets, {"1": 2})
+    merge(sheets)
+    before = (sheets / "judge2_dev_labelled.csv").read_bytes()
+    rep, problems = correct(sheets, ["2", "1", "99"])
+    assert rep == {} and any("row 1 has no chat label on record" in p for p in problems)
+    assert any("row 99 is not in" in p for p in problems)
+    assert (sheets / "judge2_dev_labelled.csv").read_bytes() == before  # all or nothing
+
+
+def test_a_label_the_owner_changed_by_hand_is_not_silently_replaced(sheets):
+    merged_sheet(sheets)
+    rows = pooling.read_sheet(sheets / "judge2_dev_labelled.csv")
+    rows[1]["label"] = "0"  # row 2: the chat said 2, the owner typed 0
+    pooling.write_sheet(sheets / "judge2_dev_labelled.csv", rows)
+    _, problems = correct(sheets, ["2"])
+    assert any("no longer holds the chat's label" in p for p in problems)
+
+
+def test_bad_arguments_are_refused(sheets):
+    merged_sheet(sheets)
+    assert "must be 0, 1 or 2" in correct(sheets, ["2"], to=3)[1][0]
+    assert "reason is required" in correct(sheets, ["2"], reason=" ")[1][0]
+    assert "run merge first" in lb.correct_labels(
+        "test", sheets, sheets / "prov.json", ["1"], 1, "x")[1][0]
+
+
+def test_a_later_merge_keeps_the_correction_and_does_not_call_it_a_hand_label(sheets):
+    merged_sheet(sheets)
+    correct(sheets, ["2", "5"])
+    rep, problems = merge(sheets)
+    out = labels_of(sheets)
+    assert problems == [] and rep["hand"] == 0 and rep["corrected"] == 2 and rep["llm"] == 9
+    assert out["2"]["label"] == "1" and out["5"]["label"] == "1"
+    assert rep["agreement"]["n"] == 0  # a correction is not an independent hand label
+    prov = json.loads((sheets / "prov.json").read_text())["dev"]
+    assert set(prov["corrections"]) == {"2", "5"} and prov["hand"] == []
+
+
+def test_a_merge_notices_when_the_reply_behind_a_correction_changed(sheets):
+    merged_sheet(sheets)
+    correct(sheets, ["2"])
+    put_reply(sheets, "dev_1.txt", reply(*[(str(i), 0 if i == 2 else i % 3) for i in range(1, 10)]))
+    _, problems = merge(sheets)
+    assert any("no longer the label that was corrected" in p for p in problems)

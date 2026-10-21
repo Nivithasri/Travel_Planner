@@ -105,3 +105,27 @@ def test_run_names_the_table_files_after_the_stem_not_the_last_row(tmp_path, mon
     assert (tmp_path / "mystem_dev.md").exists() and (tmp_path / "mystem_dev.csv").exists()
     assert not (tmp_path / "rowB_dev.md").exists()
     assert (tmp_path / "dev_rowA.json").exists() and (tmp_path / "dev_rowB.json").exists()
+
+
+def test_merged_scoring_uses_both_rounds_and_keeps_round_one_files_apart(tmp_path, monkeypatch):
+    from datetime import date
+
+    from eval import run_eval
+
+    used = []
+    monkeypatch.setattr(ablation, "load_reference_date", lambda: date(2026, 10, 18))
+    monkeypatch.setattr(ablation, "load_queries", lambda split: [])
+    monkeypatch.setattr(ablation, "load_qrels",
+                        lambda split, allow_test=False: used.append("round1") or {})
+    monkeypatch.setattr(ablation, "load_qrels_merged",
+                        lambda split, allow_test=False: used.append("merged") or {})
+    monkeypatch.setattr(ablation, "load_chunk_info", lambda *a: {})
+    monkeypatch.setattr(ablation, "load_excluded", lambda: set())
+    monkeypatch.setattr(ablation, "load_retriever", lambda spec: None)
+    res = {**ROW_A, "per_query": [{**r, "ranked": []} for r in ROW_A["per_query"]]}
+    monkeypatch.setattr(run_eval, "evaluate", lambda *a, **k: res)
+    assert ablation.run([["rowA", "x:y"]], "dev", tmp_path, "t", merged=True) == 0
+    assert used == ["merged"] and (tmp_path / "dev_merged_rowA.json").exists()
+    assert not (tmp_path / "dev_rowA.json").exists()  # round-1 per-row files are not touched
+    assert ablation.run([["rowA", "x:y"]], "dev", tmp_path, "t") == 0
+    assert used == ["merged", "round1"] and (tmp_path / "dev_rowA.json").exists()
