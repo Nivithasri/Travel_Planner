@@ -173,7 +173,8 @@ ROUTING_MUTATIONS = [
 ]
 
 
-RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py"]
+RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/test_ablation.py",
+                   "tests/test_variants.py", "tests/test_query_understanding.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -190,6 +191,24 @@ RETRIEVAL_MUTATIONS = [
     ("M45 Holm step-up instead of step-down", "eval/significance.py",
      "        running = max(running, (m - rank) * pvalues[idx])\n",
      "        running = max(running, (rank + 1) * pvalues[idx])\n"),
+    ("M46 sub-query hold-out scan disabled", "src/retrieval/query_understanding.py",
+     "        if leak_scan(q, holdout):\n", "        if False:\n"),
+    ("M47 hallucinated state kept (request need not name it)",
+     "src/retrieval/query_understanding.py",
+     "        elif code not in place_states and not any(\n",
+     "        elif False and not any(\n"),
+    ("M48 hallucinated place kept (request need not name it)",
+     "src/retrieval/query_understanding.py",
+     "        elif entry.name not in named:\n", "        elif False:\n"),
+    ("M49 too few sub-queries no longer fall back to the original query",
+     "src/retrieval/query_understanding.py",
+     "    if len(kept) < MIN_SUBQUERIES:\n", "    if len(kept) < 0:\n"),
+    ("M50 month no longer fixes the season", "src/retrieval/query_understanding.py",
+     "    if month is not None and season != _MONTH_SEASON[month]:\n",
+     "    if False:\n"),
+    ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
+     "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
+     "            for e in registry.entries]\n\n\ndef system_prompt"),
 ]
 
 
