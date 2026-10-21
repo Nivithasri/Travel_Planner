@@ -2,5 +2,6 @@
  ["bm25_plain", "eval.adapters:bm25_plain"],
  ["dense_plain", "eval.adapters:dense_plain"],
  ["hybrid_plain", "eval.variants:hybrid_plain"],
- ["hybrid_contextual", "eval.variants:hybrid_contextual"]
+ ["hybrid_contextual", "eval.variants:hybrid_contextual"],
+ ["expanded_hybrid", "eval.variants:expanded_hybrid"]
 ]

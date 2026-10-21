@@ -21,7 +21,7 @@ from eval.adapters import ENRICHED, INDEX_DIR, RRF_DEPTH, get_index
 from src.common.cache import DiskCache
 from src.common.schemas import REPO_ROOT, load_embed_local_dir
 from src.retrieval.build_index import load_encoder
-from src.retrieval.fusion import rrf
+from src.retrieval.hybrid import CONTEXTUAL_TABLES, expanded_ids, hybrid_ids
 from src.retrieval.search import Index, model_id_from_manifest
 
 CONTROL_DIR = REPO_ROOT / "work" / "phase6" / "control"
@@ -48,10 +48,12 @@ def _guard(filters: dict | None) -> None:
         raise NotImplementedError("the row 2/3 variants do not support filters (row 5 adds them)")
 
 
+def _rows(index: Index, ranked: list[tuple[str, float]]) -> list[dict]:
+    return [{**index.chunks[cid], "score": score} for cid, score in ranked]
+
+
 def _hybrid(index: Index, tables: list[str], query: str, k: int) -> list[dict]:
-    lists = [[r["chunk_id"] for r in index.table(name, query, RRF_DEPTH)] for name in tables]
-    fused = rrf(lists)[:k]
-    return [{**index.chunks[cid], "score": score} for cid, score in fused]
+    return _rows(index, hybrid_ids(index, tables, query, depth=RRF_DEPTH, limit=k))
 
 
 def _arm(index: Index, table: str, query: str, k: int) -> list[dict]:
@@ -82,3 +84,35 @@ def dense_control(query, filters=None, k=10):
 def bm25_control(query, filters=None, k=10):
     _guard(filters)
     return _arm(get_control_index(), "bm25_contextual", query, k)
+
+
+# ---- row 4: query understanding and expansion (D86) -----------------------------------------
+PARSED_QUERIES = REPO_ROOT / "eval" / "parsed_queries.json"
+_parsed_by_text: dict[str, dict] | None = None
+
+
+def parsed_by_text(path: Path = PARSED_QUERIES) -> dict[str, dict]:
+    """The committed query-understanding output, keyed by query text. Row 4 reads this file instead
+    of calling the LLM, so the ablation is reproducible without a network (D86)."""
+    global _parsed_by_text
+    if _parsed_by_text is None:
+        import json
+
+        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        _parsed_by_text = {p["text"]: p for p in doc["queries"].values()}
+    return _parsed_by_text
+
+
+def expanded_hybrid(query, filters=None, k=10):
+    """Row 4: the request and its sub-queries each go through the row-3 contextual hybrid and the
+    per-query rankings are fused with RRF. A query missing from the parsed file raises (no silent
+    fallback to the plain row-3 result)."""
+    _guard(filters)
+    try:
+        parsed = parsed_by_text()[query]
+    except KeyError:
+        raise KeyError("the query is not in eval/parsed_queries.json; run "
+                       "scripts/parse_queries.py") from None
+    index = get_index()
+    return _rows(index, expanded_ids(index, CONTEXTUAL_TABLES, [query, *parsed["sub_queries"]],
+                                     depth=RRF_DEPTH, limit=k))

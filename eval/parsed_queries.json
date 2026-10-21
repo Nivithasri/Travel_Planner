@@ -1,0 +1,1190 @@
+{
+ "meta": {
+  "model": "openai/gpt-oss-20b",
+  "n_queries": 40,
+  "options": {
+   "max_tokens": 400,
+   "reasoning_effort": "low"
+  },
+  "prompt_version": "qu-v1",
+  "registry_places_listed": 26
+ },
+ "queries": {
+  "Q01": {
+   "budget_tier": null,
+   "duration_days": 3,
+   "fallback": false,
+   "interests": [
+    "kids",
+    "short stay",
+    "city",
+    "family-friendly",
+    "short trip"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "city"
+   ],
+   "places": [
+    "Mysuru"
+   ],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Best family-friendly attractions in Mysuru for a 3-day stay",
+    "Top kid-friendly activities in Mysuru city",
+    "Mysuru accommodation options for families with young children"
+   ],
+   "text": "Is Mysuru a good base for a family with young kids for 3 days?",
+   "time_sensitive": false,
+   "travel_style": "family"
+  },
+  "Q02": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "children",
+    "grandparents",
+    "family",
+    "activities",
+    "friendly"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "city"
+   ],
+   "places": [
+    "Hyderabad"
+   ],
+   "season": null,
+   "states": [
+    "TS"
+   ],
+   "sub_queries": [
+    "Family-friendly attractions in Hyderabad for kids and elders",
+    "Best parks and museums in Hyderabad suitable for all ages",
+    "Top interactive experiences in Hyderabad for grandparents and children",
+    "Hyderabad family day trips with activities for seniors and kids"
+   ],
+   "text": "Family-friendly things to do in Hyderabad with children and grandparents",
+   "time_sensitive": false,
+   "travel_style": "family"
+  },
+  "Q03": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beach",
+    "family",
+    "toddler-friendly"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Best toddler-friendly beaches in Tamil Nadu",
+    "Safe beach resorts for toddlers in Kerala",
+    "Top family beaches in Karnataka for young children"
+   ],
+   "text": "Beach destination in South India that is safe for toddlers",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q04": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "toy train",
+    "gardens",
+    "small children"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "hill_station"
+   ],
+   "places": [
+    "Ooty"
+   ],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Ooty toy train schedule for families",
+    "Best gardens to visit in Ooty with kids",
+    "Family-friendly activities in Ooty hill station"
+   ],
+   "text": "Ooty toy train and gardens with small children",
+   "time_sensitive": false,
+   "travel_style": "family"
+  },
+  "Q05": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "elderly",
+    "easy walks",
+    "hill station"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "hill_station"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Best hill stations in Tamil Nadu for senior-friendly walks",
+    "Top easy trekking routes in Kerala hill stations for elderly",
+    "Recommended hill stations in Karnataka with gentle walking paths"
+   ],
+   "text": "Hill station with easy walks for elderly parents",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q06": {
+   "budget_tier": "budget",
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "budget",
+    "accommodation",
+    "transport",
+    "culture",
+    "history"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "temple",
+    "heritage",
+    "region"
+   ],
+   "places": [
+    "Hampi"
+   ],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Budget hostels near Hampi temples",
+    "Public transport options from Hospet to Hampi",
+    "Cycling routes around Hampi heritage sites"
+   ],
+   "text": "Backpacking Hampi on a budget: where to stay and how to get around",
+   "time_sensitive": false,
+   "travel_style": "backpacker"
+  },
+  "Q07": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beach",
+    "quiet"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach"
+   ],
+   "places": [
+    "Gokarna"
+   ],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Quiet beaches near Gokarna for backpackers",
+    "Best secluded beaches in Gokarna area",
+    "Gokarna beach options with low crowds"
+   ],
+   "text": "Gokarna beaches for backpackers, which ones are quiet",
+   "time_sensitive": false,
+   "travel_style": "backpacker"
+  },
+  "Q08": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "safety",
+    "solo",
+    "tips",
+    "Bengaluru",
+    "Chennai"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "city"
+   ],
+   "places": [
+    "Bengaluru",
+    "Chennai"
+   ],
+   "season": null,
+   "states": [
+    "KA",
+    "TN"
+   ],
+   "sub_queries": [
+    "Solo safety tips for Bengaluru nightlife",
+    "How to stay safe in Chennai as a solo traveler",
+    "Best security practices for solo travelers in Indian cities"
+   ],
+   "text": "Solo traveller safety tips in Bengaluru and Chennai",
+   "time_sensitive": false,
+   "travel_style": "other"
+  },
+  "Q09": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "offbeat",
+    "remote",
+    "cultural",
+    "nature",
+    "local"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage",
+    "region"
+   ],
+   "places": [],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Explore lesser-known heritage sites in Karnataka",
+    "Discover remote hill stations and villages in Karnataka",
+    "Find offbeat natural attractions in Karnataka away from crowds"
+   ],
+   "text": "Offbeat places in Karnataka away from tourist crowds",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q10": {
+   "budget_tier": "budget",
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "hostel",
+    "cheap",
+    "young",
+    "travel"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "city"
+   ],
+   "places": [
+    "Pondicherry"
+   ],
+   "season": null,
+   "states": [
+    "PY"
+   ],
+   "sub_queries": [
+    "cheap hostels in Pondicherry for backpackers",
+    "budget guesthouses near Pondicherry beach",
+    "Pondicherry hostel reviews for young travelers"
+   ],
+   "text": "Hostels and cheap stays in Pondicherry for young travellers",
+   "time_sensitive": false,
+   "travel_style": "backpacker"
+  },
+  "Q11": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "coffee",
+    "romance",
+    "estates",
+    "hill",
+    "scenic"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "hill_station"
+   ],
+   "places": [
+    "Kodagu"
+   ],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Best coffee estates in Kodagu for honeymoon",
+    "Romantic hill station activities in Kodagu",
+    "Top scenic viewpoints in Kodagu for couples"
+   ],
+   "text": "Romantic honeymoon in Kodagu coffee estates",
+   "time_sensitive": false,
+   "travel_style": "honeymoon"
+  },
+  "Q12": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "romantic",
+    "sunset",
+    "evenings",
+    "beach",
+    "coastal"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach"
+   ],
+   "places": [
+    "Kanniyakumari"
+   ],
+   "season": null,
+   "states": [
+    "TN"
+   ],
+   "sub_queries": [
+    "Best sunset spots at Kanniyakumari for couples",
+    "Romantic evening activities near Kanniyakumari beach",
+    "Top beachside restaurants in Kanniyakumari for sunset dining"
+   ],
+   "text": "Romantic evenings and sunset spots in Kanniyakumari",
+   "time_sensitive": false,
+   "travel_style": "honeymoon"
+  },
+  "Q13": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beaches",
+    "quiet resorts",
+    "honeymoon"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Best quiet beach resorts in Tamil Nadu",
+    "Top honeymoon beach destinations in Kerala",
+    "Budget-friendly beach resorts in Karnataka"
+   ],
+   "text": "Honeymoon in South India with beaches and quiet resorts",
+   "time_sensitive": false,
+   "travel_style": "honeymoon"
+  },
+  "Q14": {
+   "budget_tier": "luxury",
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "luxury",
+    "couples",
+    "palace",
+    "stay",
+    "Mysuru"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage"
+   ],
+   "places": [
+    "Mysuru"
+   ],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Luxury private villas near Mysuru Palace",
+    "Exclusive couples resorts around Mysuru Palace",
+    "Best boutique hotels near Mysuru Palace for honeymoon"
+   ],
+   "text": "Private and luxury stays near Mysuru palace for couples",
+   "time_sensitive": false,
+   "travel_style": "honeymoon"
+  },
+  "Q15": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "scenic drives",
+    "waterfalls"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "waterfall"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Best waterfall drives in Tamil Nadu",
+    "Top scenic road trips in Kerala with waterfalls",
+    "Waterfall destinations in Karnataka for couples"
+   ],
+   "text": "Couple trip with scenic drives and waterfalls",
+   "time_sensitive": false,
+   "travel_style": "honeymoon"
+  },
+  "Q16": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "temple",
+    "darshan",
+    "timings",
+    "tips",
+    "pilgrimage"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "temple"
+   ],
+   "places": [
+    "Tirupati"
+   ],
+   "season": null,
+   "states": [
+    "AP"
+   ],
+   "sub_queries": [
+    "Tirupati temple opening hours",
+    "Best time for Tirupati darshan",
+    "Tirupati darshan tips for large crowds"
+   ],
+   "text": "Tirupati darshan tips and temple timings",
+   "time_sensitive": false,
+   "travel_style": "pilgrimage"
+  },
+  "Q17": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "temple",
+    "heritage"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "temple",
+    "heritage"
+   ],
+   "places": [
+    "Madurai"
+   ],
+   "season": null,
+   "states": [
+    "TN"
+   ],
+   "sub_queries": [
+    "Meenakshi temple Madurai visiting hours today",
+    "Meenakshi temple Madurai dress code requirements",
+    "Meenakshi temple Madurai entry fee and guidelines"
+   ],
+   "text": "Meenakshi temple Madurai visiting hours and dress code",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q18": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "temple",
+    "pilgrimage",
+    "circuit",
+    "Tamil Nadu",
+    "religious"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "temple"
+   ],
+   "places": [],
+   "season": null,
+   "states": [
+    "TN"
+   ],
+   "sub_queries": [
+    "Top 10 famous temples in Tamil Nadu for a pilgrimage circuit",
+    "Best route for visiting major temples in Tamil Nadu",
+    "Temple circuit itinerary in Tamil Nadu with travel tips"
+   ],
+   "text": "Famous temple circuit in Tamil Nadu for a pilgrimage",
+   "time_sensitive": false,
+   "travel_style": "pilgrimage"
+  },
+  "Q19": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "history",
+    "monuments",
+    "temples",
+    "rock-cut",
+    "heritage"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage",
+    "temple"
+   ],
+   "places": [
+    "Mahabalipuram"
+   ],
+   "season": null,
+   "states": [
+    "TN"
+   ],
+   "sub_queries": [
+    "Mahabalipuram shore temple history",
+    "Mahabalipuram rock-cut monuments guide",
+    "Mahabalipuram heritage site details"
+   ],
+   "text": "Mahabalipuram shore temple and rock-cut monuments history",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q20": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "ancient temples",
+    "heritage sites",
+    "Karnataka",
+    "cultural",
+    "history"
+   ],
+   "month": null,
+   "notes": [
+    "place 'Hampi' dropped: the request does not name it",
+    "place 'Badami' dropped: the request does not name it",
+    "place 'Gokarna' dropped: the request does not name it",
+    "place 'Mysuru' dropped: the request does not name it"
+   ],
+   "place_types": [
+    "temple",
+    "heritage"
+   ],
+   "places": [],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Best time to visit Hampi temples",
+    "Top heritage sites in Karnataka",
+    "Ancient temples in Karnataka itinerary"
+   ],
+   "text": "Ancient temples and heritage sites to visit in Karnataka",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q21": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beach",
+    "city",
+    "heritage"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach",
+    "city",
+    "heritage"
+   ],
+   "places": [
+    "Kochi"
+   ],
+   "season": "monsoon",
+   "states": [
+    "KL"
+   ],
+   "sub_queries": [
+    "Best beaches to visit in Kochi during monsoon",
+    "Top heritage sites open in Kochi in monsoon season",
+    "Monsoon weather impact on Kochi city attractions"
+   ],
+   "text": "Is Kochi worth visiting in monsoon season?",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q22": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beach",
+    "monsoon"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach"
+   ],
+   "places": [
+    "Gokarna"
+   ],
+   "season": "monsoon",
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Are Gokarna beaches open during monsoon?",
+    "Monsoon beach accessibility in Gokarna, Karnataka",
+    "Current beach conditions in Gokarna during rainy season"
+   ],
+   "text": "Gokarna in the rainy season, are the beaches open?",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q23": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "rainy",
+    "hills",
+    "nature"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "hill_station"
+   ],
+   "places": [],
+   "season": "monsoon",
+   "states": [],
+   "sub_queries": [
+    "Best hill stations in Western Ghats for monsoon",
+    "Top Western Ghats destinations with heavy rainfall",
+    "Western Ghats trekking routes during monsoon season"
+   ],
+   "text": "Best places to enjoy the rains in the Western Ghats",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q24": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "waterfalls",
+    "road closures",
+    "leeches"
+   ],
+   "month": 7,
+   "notes": [],
+   "place_types": [
+    "region",
+    "waterfall"
+   ],
+   "places": [
+    "Kodagu"
+   ],
+   "season": "monsoon",
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Kodagu waterfalls July",
+    "Kodagu road closures July",
+    "leech infestation Kodagu July"
+   ],
+   "text": "Kodagu in July: waterfalls, road closures and leeches",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q25": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "monsoon",
+    "travel"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [],
+   "places": [],
+   "season": "monsoon",
+   "states": [],
+   "sub_queries": [
+    "Best hill stations in Tamil Nadu during monsoon",
+    "Top beach destinations in Kerala for June and July",
+    "Popular pilgrimage sites in Andhra Pradesh in monsoon season"
+   ],
+   "text": "Where to travel in South India in June and July",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q26": {
+   "budget_tier": "budget",
+   "duration_days": 3,
+   "fallback": false,
+   "interests": [
+    "city",
+    "budget",
+    "short trip"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "city"
+   ],
+   "places": [
+    "Chennai"
+   ],
+   "season": null,
+   "states": [
+    "TN"
+   ],
+   "sub_queries": [
+    "budget itinerary for 3 days in Chennai",
+    "cheap accommodation options in Chennai",
+    "low cost food and transport in Chennai"
+   ],
+   "text": "How much does a 3-day trip to Chennai cost on a tight budget?",
+   "time_sensitive": false,
+   "travel_style": "other"
+  },
+  "Q27": {
+   "budget_tier": "budget",
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "street food",
+    "cheap eats",
+    "local cuisine"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "city"
+   ],
+   "places": [
+    "Hyderabad"
+   ],
+   "season": null,
+   "states": [
+    "TS"
+   ],
+   "sub_queries": [
+    "Best budget street food stalls in Hyderabad",
+    "Top affordable local eateries in Hyderabad",
+    "Hidden cheap food spots in Hyderabad"
+   ],
+   "text": "Cheap eats and street food in Hyderabad",
+   "time_sensitive": false,
+   "travel_style": "other"
+  },
+  "Q28": {
+   "budget_tier": "budget",
+   "duration_days": 14,
+   "fallback": false,
+   "interests": [
+    "budget",
+    "train",
+    "bus",
+    "itinerary",
+    "south india"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Best budget train routes across Tamil Nadu, Kerala, Karnataka, Andhra Pradesh, Telangana and Puducherry",
+    "Top affordable bus connections between major cities in South India",
+    "Suggested 14‑day itinerary using only trains and buses in South India"
+   ],
+   "text": "Budget two-week South India itinerary by train and bus",
+   "time_sensitive": false,
+   "travel_style": "other"
+  },
+  "Q29": {
+   "budget_tier": "budget",
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beaches",
+    "sightseeing",
+    "low-cost"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach",
+    "heritage",
+    "city"
+   ],
+   "places": [
+    "Visakhapatnam"
+   ],
+   "season": null,
+   "states": [
+    "AP"
+   ],
+   "sub_queries": [
+    "Visakhapatnam beaches best free spots",
+    "budget sightseeing tours Visakhapatnam",
+    "cheap local attractions Visakhapatnam",
+    "Visakhapatnam beach activities low cost"
+   ],
+   "text": "Visakhapatnam beaches and low-cost sightseeing",
+   "time_sensitive": false,
+   "travel_style": "other"
+  },
+  "Q30": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "heritage",
+    "low cost"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Top free heritage sites in Tamil Nadu",
+    "Low entry fee temples and monuments in Kerala",
+    "Affordable heritage attractions in Karnataka and Andhra Pradesh"
+   ],
+   "text": "Free or low entry fee heritage sites in South India",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q31": {
+   "budget_tier": "mid",
+   "duration_days": 7,
+   "fallback": false,
+   "interests": [
+    "nature",
+    "culture",
+    "mid-budget",
+    "week"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage",
+    "hill_station",
+    "wildlife"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Top heritage sites in South India for a 7‑day mid‑budget trip",
+    "Best hill stations to visit in South India within one week",
+    "Wildlife sanctuaries in South India suitable for a 7‑day itinerary"
+   ],
+   "text": "Nature and culture, mid-budget, one week",
+   "time_sensitive": false,
+   "travel_style": "other"
+  },
+  "Q32": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "relaxing"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Best beach resorts in Tamil Nadu for a relaxing getaway",
+    "Top hill stations in Kerala with spa and wellness options",
+    "Affordable heritage town retreats in Karnataka for stress relief"
+   ],
+   "text": "Something relaxing after a hectic work year",
+   "time_sensitive": false,
+   "travel_style": null
+  },
+  "Q33": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "history",
+    "food"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Top heritage sites in Tamil Nadu with local cuisine",
+    "Best historic towns in Kerala known for food",
+    "Cultural heritage destinations in Karnataka with food tours"
+   ],
+   "text": "History lover who also likes good food",
+   "time_sensitive": false,
+   "travel_style": "other"
+  },
+  "Q34": {
+   "budget_tier": null,
+   "duration_days": 1,
+   "fallback": false,
+   "interests": [
+    "history",
+    "architecture",
+    "culture",
+    "religion",
+    "local"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "temple",
+    "heritage"
+   ],
+   "places": [
+    "Warangal"
+   ],
+   "season": null,
+   "states": [
+    "TS"
+   ],
+   "sub_queries": [
+    "Warangal fort tour",
+    "Warangal temples guide",
+    "Warangal day trip itinerary"
+   ],
+   "text": "Warangal fort and temples day trip",
+   "time_sensitive": false,
+   "travel_style": "pilgrimage"
+  },
+  "Q35": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "heritage",
+    "monuments",
+    "tourism"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage"
+   ],
+   "places": [
+    "Hampi"
+   ],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Hampi current visitor restrictions",
+    "Hampi monument closures 2024",
+    "Hampi entry rules now",
+    "Hampi open days schedule",
+    "Hampi COVID restrictions"
+   ],
+   "text": "Is Hampi open to visitors, any closed or restricted monuments right now?",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q36": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "palace",
+    "ticket",
+    "opening",
+    "price"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "heritage"
+   ],
+   "places": [
+    "Mysuru"
+   ],
+   "season": null,
+   "states": [
+    "KA"
+   ],
+   "sub_queries": [
+    "Mysuru Palace current ticket price",
+    "Mysuru Palace opening hours today",
+    "Mysuru Palace entry fee and timings"
+   ],
+   "text": "Current ticket price and opening time of Mysuru Palace",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q37": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "ferry",
+    "tourism"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "Vivekananda Rock ferry schedule",
+    "Vivekananda Rock ferry latest timings",
+    "Vivekananda Rock ferry operating status",
+    "Vivekananda Rock ferry ticket price",
+    "Vivekananda Rock ferry departure times"
+   ],
+   "text": "Is the Vivekananda Rock ferry running, latest timings",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q38": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beach",
+    "flooding",
+    "cyclone"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach"
+   ],
+   "places": [
+    "Chennai"
+   ],
+   "season": null,
+   "states": [
+    "TN"
+   ],
+   "sub_queries": [
+    "Current status of Chennai Marina Beach during cyclone season",
+    "Are there any flood alerts for Chennai Marina Beach today?",
+    "What are the latest closure notices for Chennai Marina Beach due to flooding?"
+   ],
+   "text": "Chennai Marina beach flooding or cyclone closures",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q39": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "beaches",
+    "closed",
+    "unsafe"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "beach"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "current beach closures South India",
+    "unsafe beaches Kerala Tamil Nadu Karnataka",
+    "latest beach safety updates South India"
+   ],
+   "text": "Which South Indian beaches are closed or unsafe for swimming right now?",
+   "time_sensitive": true,
+   "travel_style": null
+  },
+  "Q40": {
+   "budget_tier": null,
+   "duration_days": null,
+   "fallback": false,
+   "interests": [
+    "temple",
+    "closures",
+    "dress-code"
+   ],
+   "month": null,
+   "notes": [],
+   "place_types": [
+    "temple"
+   ],
+   "places": [],
+   "season": null,
+   "states": [],
+   "sub_queries": [
+    "2024 temple closure schedule South India",
+    "Dress code changes at Tirupati temple 2024",
+    "Major temple dress code updates Karnataka 2024"
+   ],
+   "text": "Temple closures or dress-code changes at major South India temples this year",
+   "time_sensitive": true,
+   "travel_style": null
+  }
+ }
+}

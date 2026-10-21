@@ -21,6 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from eval import metrics as M  # noqa: E402
 from eval import significance as S  # noqa: E402
 from eval.qrels import load_qrels, load_queries  # noqa: E402
 from eval.run_eval import (  # noqa: E402
@@ -32,8 +33,8 @@ from eval.run_eval import (  # noqa: E402
 )
 from src.common.schemas import REPO_ROOT, load_reference_date  # noqa: E402
 
-HEADLINE = ("ndcg@10", "mrr", "p@5", "recall@10", "unjudged@10", "excluded@10",
-            "src_types@10", "places@10")
+HEADLINE = ("ndcg@10", "cond_ndcg@10", "mrr", "p@5", "recall@10", "unjudged@10",
+            "excluded@10", "src_types@10", "places@10")
 
 
 def ndcg_by_query(result: dict) -> dict[str, float | None]:
@@ -41,10 +42,26 @@ def ndcg_by_query(result: dict) -> dict[str, float | None]:
     return {r["id"]: r["ndcg@10"] for r in result["per_query"]}
 
 
-def headline_row(name: str, result: dict) -> dict:
+def condensed_ndcg(result: dict, qrels: dict[str, dict[str, int]]) -> float | None:
+    """Mean nDCG@10 over the judged results only: unjudged chunks are removed from each ranking
+    before the cut (condensed list, Sakai 2008), so a variant is not charged for chunks nobody has
+    labelled yet. A robustness column until round 2 is labelled (D91); it needs rankings up to
+    run_eval's RUN_K, so a query with fewer than 10 judged results is scored on what it has."""
+    vals = []
+    for r in result["per_query"]:
+        qrel = qrels.get(r["id"], {})
+        judged = [c for c in r["ranked"] if c in qrel]
+        v = M.ndcg_at_k(judged, qrel, 10)
+        if v is not None:
+            vals.append(v)
+    return sum(vals) / len(vals) if vals else None
+
+
+def headline_row(name: str, result: dict, qrels: dict[str, dict[str, int]] | None = None) -> dict:
     g = result["groups"]["overall"]
     row = {"row": name, "n": g["n_queries"], "0rel": g["n_zero_relevant"]}
-    row.update({c: g[c] for c in HEADLINE})
+    row.update({c: g[c] for c in HEADLINE if c != "cond_ndcg@10"})
+    row["cond_ndcg@10"] = condensed_ndcg(result, qrels) if qrels is not None else None
     return row
 
 
@@ -82,8 +99,10 @@ def to_markdown(rows: list[dict], sig: list[dict], split: str) -> str:
         lines.append(f"| {s['comparison']} | {s['n']} | {s['delta_ndcg@10']:+.3f} | {ci} | "
                      f"{s['p']:.4f} | {s['p_holm']:.4f} | {s['method']} |")
     lines += ["", "unjudged@10 > 0 means the row retrieved chunks round 1 never pooled; those "
-              "count as 0 until round 2 is labelled (D91). nDCG on 13 dev queries is descriptive, "
-              "not significant (D92)."]
+              "count as 0 in ndcg@10 until round 2 is labelled (D91). cond_ndcg@10 removes "
+              "unjudged chunks from each ranking before the cut, so a row is not charged for "
+              "labels nobody has made yet; read the two columns together. nDCG on 13 dev "
+              "queries is descriptive, not significant (D92)."]
     return "\n".join(lines)
 
 
@@ -115,7 +134,7 @@ def run(rows_spec: list[list[str]], split: str, out_dir: Path | None) -> int:
             (out_dir / f"{split}_{name}.json").write_text(
                 json.dumps(result, indent=1, sort_keys=True), encoding="utf-8")
         print(f"ran {name}: nDCG@10 {_fmt(result['groups']['overall']['ndcg@10'])}")
-    table = [headline_row(name, res) for name, res in ordered]
+    table = [headline_row(name, res, qrels) for name, res in ordered]
     sig = significance_rows(ordered) if len(ordered) > 1 else []
     md = to_markdown(table, sig, split)
     print("\n" + md)

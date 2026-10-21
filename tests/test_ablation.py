@@ -58,3 +58,26 @@ def test_csv_header_and_blank_for_none():
     header, row = csv.strip().split("\n")
     assert header.startswith("row,n,0rel,ndcg@10")
     assert ",," in row  # the None nDCG is an empty field
+
+
+def test_condensed_ndcg_ignores_unjudged_chunks():
+    # ranking: u1 (unjudged), a (grade 2), u2 (unjudged), b (grade 1)
+    res = {"groups": {"overall": {}}, "per_query": [{"id": "q", "ranked": ["u1", "a", "u2", "b"]}]}
+    qrels = {"q": {"a": 2, "b": 1, "c": 2}}
+    got = ablation.condensed_ndcg(res, qrels)
+    # judged-only list [a, b]: dcg = 2 + 1/log2(3); ideal over all judged = [2, 2, 1]
+    import math
+    want = (2 + 1 / math.log2(3)) / (2 + 2 / math.log2(3) + 1 / 2)
+    assert got == pytest.approx(want)
+
+
+def test_condensed_ndcg_skips_queries_without_relevant_chunks():
+    res = {"groups": {"overall": {}}, "per_query": [{"id": "q", "ranked": ["a"]}]}
+    assert ablation.condensed_ndcg(res, {"q": {"a": 0}}) is None
+
+
+def test_headline_row_carries_the_condensed_column():
+    res = make_result(0.5, [{"id": "q1", "ndcg@10": 0.5, "ranked": ["a"]}])
+    assert ablation.headline_row("A", res)["cond_ndcg@10"] is None  # no qrels given
+    row = ablation.headline_row("A", res, {"q1": {"a": 2}})
+    assert row["cond_ndcg@10"] == pytest.approx(1.0)
