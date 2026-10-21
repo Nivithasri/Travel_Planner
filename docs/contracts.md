@@ -31,6 +31,9 @@ get_place_card(place) -> dict                       # tips, warnings, citations 
 live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type "live"    (Phase 7, Valincia; D31 PROPOSED, not binding until she acknowledges)
 ```
 
+## retrieve() (Phase 6, D96)
+`src.retrieval.retrieve.retrieve(query, filters=None, k=10)` returns chunk fields plus "score" from the FROZEN config (eval/frozen_config.json): RRF of BM25 and dense search over the contextual text; no LLM, reranker or parse. `retrieve_with_trace(query, filters, k, config=FROZEN_CONFIG, **parts)` adds a trace and accepts a RetrieveConfig (expansion, use_filters, fresh_w, rerank, mmr_lambda, corrective_tau) with an injected parser, scorer and rewriter; FULL_CONFIG is the measured full chain, not frozen. `filters` = {"state": [..], "season": .., "month": 1-12, "place_type": [..]}, unknown keys raise, failing chunks move behind passing ones (back-fill); not allowed with a reranked config.
+
 ## Eval files
 - eval/queries.json: [{id, text, split: dev|test, type, time_sensitive: bool, freshness_slice: bool, place_scope: named|free, places: [registry names]}] (place_scope and places added by D70)
 - eval/qrels_dev.json, eval/qrels_test.json: {query_id: {chunk_id: 0|1|2}} (D71; replaces eval/qrels.json). The pooling round and contributing systems are in eval/pool.json (ids only).

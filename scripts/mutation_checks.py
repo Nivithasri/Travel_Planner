@@ -177,7 +177,7 @@ RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/
                    "tests/test_variants.py", "tests/test_query_understanding.py",
                    "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py",
                    "tests/test_grader.py", "tests/test_pool2.py", "tests/test_label_batches.py",
-                   "tests/test_rescore.py"]
+                   "tests/test_rescore.py", "tests/test_retrieve.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -303,6 +303,20 @@ RETRIEVAL_MUTATIONS = [
      "        if False:\n"),
     ("M88 the keep-rule tolerance is ten times too lax", "scripts/rescore_dev.py",
      "KEEP_TOLERANCE = 0.005  # D84", "KEEP_TOLERANCE = 0.05  # D84"),
+    ("M89 the corrective pass runs even when no trigger fired", "src/retrieval/retrieve.py",
+     "                if triggers:  # exactly one corrective pass (plan.md item 9, D90)\n",
+     "                if True:  # exactly one corrective pass (plan.md item 9, D90)\n"),
+    ("M90 the corrective pass keeps the first-pass depth", "src/retrieval/retrieve.py",
+     "                                                    grader.CORRECTION_DEPTH)\n",
+     "                                                    DEPTH)\n"),
+    ("M91 explicit filters are silently ignored", "src/retrieval/retrieve.py",
+     "            needs_post = bool(filters) or cfg.use_filters or cfg.fresh_w > 0\n",
+     "            needs_post = cfg.use_filters or cfg.fresh_w > 0\n"),
+    ("M92 explicit filters are accepted with a reranked pipeline", "src/retrieval/retrieve.py",
+     "        if filters and cfg.rerank:\n", "        if False:\n"),
+    ("M93 the frozen config drifts to the expanded pipeline", "src/retrieval/retrieve.py",
+     "FROZEN_CONFIG = RetrieveConfig()\n",
+     "FROZEN_CONFIG = RetrieveConfig(name='row3_contextual_hybrid', expansion=True)\n"),
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),

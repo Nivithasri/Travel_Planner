@@ -1,0 +1,14 @@
+{
+ "decision": "D96",
+ "frozen": {
+  "name": "row3_contextual_hybrid",
+  "expansion": false,
+  "use_filters": false,
+  "rule_based_place_type": false,
+  "fresh_w": 0.0,
+  "rerank": false,
+  "mmr_lambda": null,
+  "corrective_tau": null
+ },
+ "note": "RRF (k=60, depth 100) of BM25 and dense search over the contextual text. Changing this file or FROZEN_CONFIG requires a new decision in docs/decisions.md."
+}
