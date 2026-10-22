@@ -1,0 +1,83 @@
+{
+ "family": [
+  [
+   "bm25_plain",
+   "dense_plain"
+  ],
+  [
+   "dense_plain",
+   "dense_contextual"
+  ],
+  [
+   "hybrid_plain",
+   "hybrid_contextual"
+  ],
+  [
+   "dense_plain",
+   "hybrid_plain"
+  ],
+  [
+   "dense_contextual",
+   "hybrid_contextual"
+  ],
+  [
+   "bm25_contextual",
+   "dense_contextual"
+  ],
+  [
+   "dense_contextual",
+   "row9_crag"
+  ],
+  [
+   "hybrid_contextual",
+   "expanded_hybrid"
+  ],
+  [
+   "expanded_hybrid",
+   "row7_rerank"
+  ],
+  [
+   "row7_rerank",
+   "row8_mmr"
+  ],
+  [
+   "row8_mmr",
+   "row9_crag"
+  ]
+ ],
+ "finished_utc": "2026-10-22T13:32:07+00:00",
+ "frozen_row": "dense_contextual",
+ "git_head": "0dd35c9d9bb037d1f70490c5ad14123a0cfadada",
+ "inputs": {
+  "frozen_config_sha256": "5a23f7f02d00404eccf8d4ebe33206fb1a2e17a9a39257b2241b19a20af46e4b",
+  "parsed_queries_sha256": "f2b1dcda7a5a9a976d3166009cb070811b78c0aaeb13561f544e9d4baadd635f",
+  "qrels_test_r2_sha256": "e6bb70dc55073ebfbbd46d6e4cd211f865867f4cfdf53aed3cb9213cc181b2ed",
+  "qrels_test_round1_sha256": "0bc9349b1ff86bbf20901692c3df78a1c3f49e605c53aa64043a49cf0599b5d2",
+  "queries_sha256": "be45d13f7f21f9759155605efa7f06824b315f677ef1d0f7cc19e66184333567"
+ },
+ "n_mc": 100000,
+ "rows": [
+  "bm25_plain",
+  "dense_plain",
+  "bm25_contextual",
+  "dense_contextual",
+  "hybrid_plain",
+  "hybrid_contextual",
+  "rrf4",
+  "dense_control",
+  "bm25_control",
+  "hybrid_control",
+  "expanded_hybrid",
+  "row5_filters",
+  "row6_fresh_w10",
+  "row6_fresh_w20",
+  "row6_fresh_w30",
+  "hybrid_filters",
+  "row7_rerank",
+  "hybrid_rerank",
+  "row8_mmr",
+  "row9_crag"
+ ],
+ "seed": 42,
+ "started_utc": "2026-10-22T13:29:37+00:00"
+}
