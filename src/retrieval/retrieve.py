@@ -1,12 +1,14 @@
-"""retrieve(): the frozen-corpus retrieval function of the project (D84, D85, D96).
+"""retrieve(): the frozen-corpus retrieval function of the project (D84, D85, D96 as amended).
 
     retrieve(query, filters=None, k=10) -> list[dict]      # chunk fields + "score"
 
-FROZEN_CONFIG is the pipeline the Phase 6 keep rule left standing on the dev judgments (D96): RRF of
-BM25 and dense search over the CONTEXTUAL text of every chunk (ablation row 3). It needs no LLM,
-no reranker and no parse: one query in, a ranked list out. Every other ablated component stays in
-this module behind a RetrieveConfig switch, exactly as it was measured, so that Phase 7 can turn
-one on knowingly:
+FROZEN_CONFIG is the pipeline the Phase 6 keep rule left standing on the dev judgments (D96, as
+amended): DENSE search (bge-m3, exact cosine) over the CONTEXTUAL text of every chunk (ablation
+row 3 on the dense side). The rule also drops the BM25 + dense hybrid, which loses to dense search
+alone. It needs no LLM, no reranker and no parse: one query in, a ranked list out. HYBRID_CONFIG,
+the RRF of BM25 and dense over the contextual text, stays available, measured but not frozen. Every
+other ablated component stays in this module behind a RetrieveConfig switch, exactly as it was
+measured, so that Phase 7 can turn one on knowingly:
 
     expansion        request + 3-5 LLM sub-queries, each through the hybrid, RRF-fused (row 4)
     use_filters      state / season / place_type filters from the parse (row 5; D69 exemptions)
@@ -48,7 +50,8 @@ ENRICHED = REPO_ROOT / "data" / "enriched" / "chunks.jsonl"
 PROVENANCE = REPO_ROOT / "data" / "enriched" / "provenance.jsonl"
 PARSED_QUERIES = REPO_ROOT / "eval" / "parsed_queries.json"
 REWRITES = REPO_ROOT / "eval" / "corrective_rewrites.json"
-DEPTH = 100  # candidates per hybrid ranking (D72)
+DEPTH = 100  # candidates per ranking (D72)
+DENSE_CONTEXTUAL = ("dense_contextual",)
 MMR_LAMBDA = 0.9  # D89, chosen on dev
 CORRECTIVE_TAU = 0.6314  # D90, chosen on dev
 
@@ -59,6 +62,7 @@ Rewriter = Callable[[str, list[str]], "str | None"]
 @dataclass(frozen=True)
 class RetrieveConfig:
     name: str = "row3_contextual_hybrid"
+    tables: tuple[str, ...] = CONTEXTUAL_TABLES  # the arms fused: both (hybrid) or dense alone
     expansion: bool = False
     use_filters: bool = False
     rule_based_place_type: bool = False  # diagnostic 5b only
@@ -68,6 +72,13 @@ class RetrieveConfig:
     corrective_tau: float | None = None
 
     def __post_init__(self) -> None:
+        if self.tables not in (CONTEXTUAL_TABLES, DENSE_CONTEXTUAL):
+            raise ValueError("tables must be the contextual hybrid or dense_contextual alone "
+                             "(the two arms that were ablated)")
+        if self.tables == DENSE_CONTEXTUAL and (
+                self.expansion or self.use_filters or self.fresh_w or self.rerank):
+            raise ValueError("dense_contextual alone was ablated without expansion, parsed "
+                             "filters, freshness or rerank")
         if (self.mmr_lambda is not None or self.corrective_tau is not None) and not (
                 self.expansion and self.rerank):
             raise ValueError("MMR and the corrective pass were ablated on top of expansion and "
@@ -85,8 +96,10 @@ class RetrieveConfig:
                 or self.mmr_lambda is not None or self.corrective_tau is not None)
 
 
-# The frozen pipeline (D96): what the D84 keep rule leaves standing on the dev judgments.
-FROZEN_CONFIG = RetrieveConfig()
+# The frozen pipeline (D96 as amended): what the D84 keep rule leaves standing on the dev judgments.
+FROZEN_CONFIG = RetrieveConfig(name="dense_contextual", tables=DENSE_CONTEXTUAL)
+# The contextual hybrid (row 3), the earlier frozen choice: measured, NOT frozen.
+HYBRID_CONFIG = RetrieveConfig()
 # The full chain as measured (rows 4, 7, 8, 9); NOT frozen, available to Phase 7 (D96).
 FULL_CONFIG = RetrieveConfig(name="full_chain", expansion=True, rerank=True,
                              mmr_lambda=MMR_LAMBDA, corrective_tau=CORRECTIVE_TAU)
@@ -202,6 +215,9 @@ class Retriever:
             if cfg.expansion:
                 base = expanded_ids(self.index, CONTEXTUAL_TABLES,
                                     [query, *parse["sub_queries"]], depth=DEPTH, limit=DEPTH)
+            elif cfg.tables == DENSE_CONTEXTUAL:  # one arm: its own cosine scores, no fusion
+                base = [(r["chunk_id"], r["score"])
+                        for r in self.index.table(cfg.tables[0], query, DEPTH)]
             else:
                 base = hybrid_ids(self.index, CONTEXTUAL_TABLES, query, depth=DEPTH, limit=DEPTH)
             needs_post = bool(filters) or cfg.use_filters or cfg.fresh_w > 0
@@ -241,4 +257,6 @@ def retrieve(query: str, filters: dict | None = None, k: int = 10) -> list[dict]
 
 
 def config_dict(config: RetrieveConfig = FROZEN_CONFIG) -> dict:
-    return asdict(config)
+    out = asdict(config)
+    out["tables"] = list(out["tables"])  # JSON has no tuples
+    return out

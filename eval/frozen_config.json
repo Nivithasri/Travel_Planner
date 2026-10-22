@@ -1,7 +1,10 @@
 {
- "decision": "D96",
+ "decision": "D96 (amended 2026-10-22)",
  "frozen": {
-  "name": "row3_contextual_hybrid",
+  "name": "dense_contextual",
+  "tables": [
+   "dense_contextual"
+  ],
   "expansion": false,
   "use_filters": false,
   "rule_based_place_type": false,
@@ -10,5 +13,5 @@
   "mmr_lambda": null,
   "corrective_tau": null
  },
- "note": "RRF (k=60, depth 100) of BM25 and dense search over the contextual text. Changing this file or FROZEN_CONFIG requires a new decision in docs/decisions.md."
+ "note": "Dense search (bge-m3, exact cosine, depth 100) over the contextual text; no BM25, no fusion, no LLM, no reranker. The earlier frozen choice, the contextual hybrid, is HYBRID_CONFIG in src/retrieval/retrieve.py (measured, not frozen). Changing this file or FROZEN_CONFIG requires a new decision in docs/decisions.md."
 }

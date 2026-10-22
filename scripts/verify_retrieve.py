@@ -1,15 +1,18 @@
 """Does retrieve() (src/retrieval/retrieve.py) reproduce the ablated variants exactly? (D96)
 
-    python scripts/verify_retrieve.py          # DEV queries only; offline; exit 1 on any mismatch
+    python scripts/verify_retrieve.py              # DEV queries, every pairing; exit 1 on mismatch
+    python scripts/verify_retrieve.py --split test # TEST queries, the frozen pairing only
 
 For every ablation row that has a RetrieveConfig, runs the engine and the original variant
-(eval/variants.py) on the 13 dev queries with the same index, parse file, reranker cache and stored
-rewrites, and compares the top 10 chunk ids IN ORDER. Because the engine reproduces them, the dev
-numbers measured for the variants are the numbers of the engine, and the frozen config is exactly
-row 3. No relevance judgments are read; the test queries are not touched.
+(eval/variants.py, eval/adapters.py) on the queries of the split with the same index, parse file,
+reranker cache and stored rewrites, and compares the top 10 chunk ids IN ORDER. Because the engine
+reproduces them, the numbers measured for the variants are the numbers of the engine, and the frozen
+config is exactly its ablation row. Only rankings are compared: no relevance judgments are read, so
+the test split can be checked without looking at any test result.
 """
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -18,14 +21,17 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from eval import adapters  # noqa: E402
 from eval import variants as V  # noqa: E402
 from eval.qrels import load_queries  # noqa: E402
 from src.common.schemas import load_reference_date  # noqa: E402
 from src.retrieval import retrieve as R  # noqa: E402
 
 C = R.RetrieveConfig
+FROZEN_PAIR = ("dense_contextual", adapters.dense_contextual, R.FROZEN_CONFIG)
 PAIRS = [
-    ("hybrid_contextual", V.hybrid_contextual, R.FROZEN_CONFIG),
+    FROZEN_PAIR,
+    ("hybrid_contextual", V.hybrid_contextual, R.HYBRID_CONFIG),
     ("expanded_hybrid", V.expanded_hybrid, C(name="e", expansion=True)),
     ("hybrid_filters", V.hybrid_filters, C(name="hf", use_filters=True)),
     ("row5_filters", V.row5_filters, C(name="f", expansion=True, use_filters=True)),
@@ -38,14 +44,20 @@ PAIRS = [
 ]
 
 
-def main() -> int:
-    queries = load_queries("dev")
-    index, scorer = V.get_index(), V.get_ce_scorer()
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--split", choices=("dev", "test"), default="dev")
+    args = ap.parse_args(argv)
+    queries = load_queries(args.split)
+    pairs = PAIRS if args.split == "dev" else [FROZEN_PAIR]
+    index = V.get_index()
     parts = dict(index=index, provenance=V.get_provenance(), parser=R.parser_from_file(),
-                 scorer=scorer, rewriter=R.rewriter_from_file(), reference=load_reference_date())
+                 scorer=V.get_ce_scorer() if args.split == "dev" else None,
+                 rewriter=R.rewriter_from_file(), reference=load_reference_date())
     bad = 0
+    print(f"split {args.split}, {len(queries)} queries")
     print(f"{'ablation row':<20}{'config':<26}{'same top-10 (ids, order)':>26}")
-    for name, variant, cfg in PAIRS:
+    for name, variant, cfg in pairs:
         engine = R.Retriever(cfg, **parts)
         same = 0
         for q in queries:
@@ -56,13 +68,18 @@ def main() -> int:
                 print(f"    MISMATCH {name} {q['id']}: variant {want[:4]}.. engine {got[:4]}..")
         bad += same != len(queries)
         print(f"{name:<20}{cfg.name:<26}{same:>20} of {len(queries)}")
-    frozen = R.Retriever(R.FROZEN_CONFIG, **parts)
     q0 = queries[0]["text"]
-    a = [(r["chunk_id"], round(r["score"], 12)) for r in frozen.search(q0, None, 10)[0]]
-    b = [(r["chunk_id"], round(r["score"], 12)) for r in V.hybrid_contextual(q0, None, 10)]
-    print(f"\nfrozen config scores identical to hybrid_contextual on {queries[0]['id']}: {a == b}")
-    bad += a != b
-    print("VERIFIED: the engine reproduces every ablated row" if not bad
+    for label, cfg, fn in (("frozen", R.FROZEN_CONFIG, adapters.dense_contextual),
+                           ("hybrid", R.HYBRID_CONFIG, V.hybrid_contextual)):
+        if args.split == "test" and label == "hybrid":
+            continue
+        eng = R.Retriever(cfg, **parts)
+        a = [(r["chunk_id"], round(r["score"], 12)) for r in eng.search(q0, None, 10)[0]]
+        b = [(r["chunk_id"], round(r["score"], 12)) for r in fn(q0, None, 10)]
+        print(f"\n{label} config: ids AND scores identical to its ablation row on "
+              f"{queries[0]['id']}: {a == b}")
+        bad += a != b
+    print("VERIFIED: the engine reproduces every checked row" if not bad
           else f"FAILED: {bad} row(s) differ")
     return 1 if bad else 0
 

@@ -31,7 +31,8 @@ class FakeIndex:
     def table(self, name, query, k):
         self.calls.append((name, query, k))
         ranking = self.rankings.get((name, query)) or self.rankings.get(query, IDS)
-        return [{"chunk_id": c, "score": 1.0} for c in ranking[:k]]
+        return [{"chunk_id": c, "score": round(1.0 - 0.1 * i, 4)}
+                for i, c in enumerate(ranking[:k])]
 
     def dense_matrix(self, kind):
         return self._m, {c: i for i, c in enumerate(IDS)}
@@ -52,12 +53,37 @@ def parse_for(sub=("s1", "s2"), places=(), states=()):
 
 # ---- the frozen config -----------------------------------------------------------------------
 
-def test_the_frozen_config_is_the_plain_contextual_hybrid_and_matches_the_committed_record():
+def test_the_frozen_config_is_dense_contextual_alone_and_matches_the_committed_record():
     cfg = R.FROZEN_CONFIG
+    assert cfg.tables == ("dense_contextual",)
     assert (cfg.expansion, cfg.use_filters, cfg.fresh_w, cfg.rerank, cfg.mmr_lambda,
             cfg.corrective_tau) == (False, False, 0.0, False, None, None)
     rec = json.loads((ROOT / "eval" / "frozen_config.json").read_text(encoding="utf-8"))
     assert rec["frozen"] == R.config_dict(cfg)  # changing the frozen config means a new decision
+
+
+def test_the_hybrid_is_kept_as_a_measured_but_not_frozen_config():
+    assert R.HYBRID_CONFIG.tables == ("bm25_contextual", "dense_contextual")
+    assert R.HYBRID_CONFIG is not R.FROZEN_CONFIG and R.HYBRID_CONFIG.name != R.FROZEN_CONFIG.name
+
+
+def test_the_frozen_config_searches_only_the_dense_arm_and_keeps_its_own_scores():
+    idx = FakeIndex({("dense_contextual", "q"): ["c", "a", "b"]})
+    rows, trace = R.Retriever(R.FROZEN_CONFIG, index=idx, provenance=PROV).search("q", None, 3)
+    assert [r["chunk_id"] for r in rows] == ["c", "a", "b"]
+    assert [r["score"] for r in rows] == [1.0, 0.9, 0.8]  # cosine scores, not fused ones
+    assert {name for name, _, _ in idx.calls} == {"dense_contextual"}  # no BM25, no fusion
+    assert trace["config"] == "dense_contextual"
+
+
+@pytest.mark.parametrize("kw", [{"tables": ("bm25_contextual",)}, {"tables": ("dense_plain",)},
+                                {"tables": ("dense_contextual",), "expansion": True},
+                                {"tables": ("dense_contextual",), "rerank": True},
+                                {"tables": ("dense_contextual",), "use_filters": True},
+                                {"tables": ("dense_contextual",), "fresh_w": 0.1}])
+def test_the_dense_arm_is_only_accepted_alone_and_only_the_two_ablated_arm_sets_exist(kw):
+    with pytest.raises(ValueError):
+        R.RetrieveConfig(name="bad", **kw)
 
 
 def test_the_full_chain_carries_the_dev_chosen_parameters():
@@ -79,10 +105,10 @@ def test_the_frozen_config_needs_no_parser_scorer_or_llm():
     assert [x["chunk_id"] for x in rows] == IDS[:5] and trace["config"] == R.FROZEN_CONFIG.name
 
 
-def test_results_are_chunk_fields_plus_a_score_in_rank_order():
+def test_the_hybrid_config_fuses_both_arms_by_rrf():
     idx = FakeIndex({("bm25_contextual", "q"): ["b", "a", "c"],
                      ("dense_contextual", "q"): ["a", "b", "d"]})
-    rows, _ = R.Retriever(index=idx, provenance=PROV).search("q", None, 3)
+    rows, _ = R.Retriever(R.HYBRID_CONFIG, index=idx, provenance=PROV).search("q", None, 3)
     want = [c for c, _ in rrf([["b", "a", "c"], ["a", "b", "d"]])][:3]
     assert [r["chunk_id"] for r in rows] == want
     assert all({"text", "url", "place", "state", "score"} <= set(r) for r in rows)
