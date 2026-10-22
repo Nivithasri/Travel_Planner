@@ -236,7 +236,7 @@ Add one component at a time and run `eval/run_eval.py` after each. Develop again
 **Live results stay out of this phase.** `retrieve()` and every ablation row use the frozen corpus only. The corrective search in item 9 may be pointed at the live layer in Phase 7, but its effect is reported separately from the ablation table.
 
 **Outputs:** `src/retrieval/` modules, ablation table (CSV and markdown), the final `retrieve()`.
-**Done when:** the ablation table is complete and `retrieve()` returns ranked, filtered, reranked, freshness-aware chunks.
+**Done when:** the ablation table is complete and `retrieve()` is frozen at the pipeline the pre-stated keep rule leaves standing (amended by D97: `dense_contextual`, ranked contextual dense search). Filters, freshness, reranking, MMR and the corrective pass exist as measured, non-frozen options behind `RetrieveConfig` (`FULL_CONFIG` is the measured full chain and runs on the eval queries only until a live parser and rewriter are injected).
 
 ## Phase 7: Place cards and agent pipeline
 

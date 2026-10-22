@@ -239,3 +239,20 @@ def test_filters_follow_the_ablated_post_processing():
     rows, trace = R.Retriever(cfg, index=FakeIndex(), provenance=PROV,
                               parser=parse_for(sub=(), states=("KL",))).search("q", None, 4)
     assert [x["chunk_id"] for x in rows] == list("efgh") and "post" in trace
+
+
+# ---- FULL_CONFIG outside the eval queries ----------------------------------------------------
+
+def test_full_config_on_a_non_eval_query_raises_a_clear_error_not_keyerror():
+    retriever = R.Retriever(R.FULL_CONFIG, index=FakeIndex(), provenance=PROV,
+                            parser=R.parser_from_file(), scorer=boom,
+                            rewriter=R.rewriter_from_file())
+    with pytest.raises(R.QueryNotPrepared, match="eval queries") as err:
+        retriever.search("a query that is not one of the forty eval queries", None, 10)
+    assert not isinstance(err.value, KeyError)
+
+
+def test_the_file_rewriter_raises_the_same_clear_error():
+    with pytest.raises(R.QueryNotPrepared, match="rewrite") as err:
+        R.rewriter_from_file()("not an eval query", ["low_confidence"])
+    assert not isinstance(err.value, KeyError)

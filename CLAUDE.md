@@ -10,6 +10,8 @@ IR project (agentic RAG). Spec: @docs/plan.md  Contracts: @docs/contracts.md  De
 - Before the first commit of a session run `git config core.hooksPath .githooks` (strips any attribution automatically).
 - Never push, force-push, or open PRs unless I ask. If asked, the same rules apply.
 - Never mention in LOG.md (repo root) that an AI tool wrote the code.
+- Exception (D97): honest provenance of DATA labels, e.g. "Claude chat" as the round-2 relevance labeller in
+  eval/labelling_r2_provenance.json and D95, is recorded as it happened; this is not attribution of code or commits.
 
 ## Session handoff (every phase runs in a fresh session)
 - FIRST action of every session: read docs/HANDOFF.md, LOG.md, docs/phase-status.md, then `git status` and

@@ -52,6 +52,21 @@ The frozen corpus (`data/processed`) is read-only. Enriched chunks go to `data/e
 | `python scripts/label_sample.py` / `--score` | write the 30-chunk hand-label sheet / score your labels against the model (offline) |
 | `python scripts/mutation_checks.py` | apply 19 one-line mutations and confirm a test fails for each; `git diff --stat` must be empty afterwards |
 
+## Run (Phases 4 to 6: evaluation and retrieval)
+Use the project virtual environment (`.venv/Scripts/python.exe` on Windows): `bm25s` and the retrieval stack are installed there, not in the base interpreter. Set `HF_HUB_OFFLINE=1`; the indexes (`index/`), `data/enriched/` and the local models (`EMBED_LOCAL_DIR`, `RERANK_LOCAL_DIR` in `.env`) are gitignored (O12), so these commands need them.
+
+| Command | What it does |
+|---|---|
+| `python eval/run_eval.py --retriever eval.adapters:dense_contextual --split dev` | metrics for any `retrieve`-style function (`--split test` reads the test qrels; run it only at the end) |
+| `python scripts/rescore_dev.py` | re-score every dev ablation row with the merged judgments and re-apply the keep rules (writes `eval/ablation/dev_merged.*`) |
+| `python scripts/verify_retrieve.py [--split test]` | check that `retrieve()` reproduces each ablation row's top 10 in order (rankings only, no judgments) |
+| `python scripts/test_run.py` | THE one-shot test run of Phase 6; refuses to run again once `eval/ablation/test_run_manifest.json` exists |
+| `python scripts/test_report_extra.py` | add src_types@10, per-type and freshness-slice cuts to `eval/ablation/test_final.md` from the saved per-row JSON (no retrieval) |
+| `python scripts/mutation_checks.py --retrieval` | apply the Phase 6 mutations (M42 onward) and confirm a test fails for each; takes more than 10 minutes, `git diff --stat` must be empty afterwards |
+| `python -m pytest -q` | all tests (run it with the .venv interpreter) |
+
+`from src.retrieval.retrieve import retrieve` is the frozen function (D96 as amended): dense search over the contextual text. The other measured pipelines are `RetrieveConfig` options (`HYBRID_CONFIG`, `FULL_CONFIG`); see docs/HANDOFF.md before using them.
+
 ## Layout
 `src/common/{http,cache,llm,schemas}.py` (HTTP client with allowlist and request log; disk cache; Ollama client;
 settings and contract models), `src/collect/sources.py` (collectors) and `src/collect/run.py` (raw and live

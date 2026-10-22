@@ -24,11 +24,15 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.common.schemas import PlaceType, State
+
 FILTER_KEYS = ("state", "season", "month", "place_type")
 SEASONS = ("winter", "summer", "monsoon", "post_monsoon")
 MONTH_SEASON = {12: "winter", 1: "winter", 2: "winter", 3: "summer", 4: "summer", 5: "summer",
                 6: "monsoon", 7: "monsoon", 8: "monsoon", 9: "monsoon", 10: "post_monsoon",
                 11: "post_monsoon"}
+STATES = tuple(x.value for x in State)
+PLACE_TYPES = tuple(x.value for x in PlaceType)
 RULE_BASED = ("rule_only", "fallback")  # provenance classes whose place_type is rule-based (D69)
 
 
@@ -60,13 +64,14 @@ class Filters:
         if unknown:
             raise ValueError(f"unknown filter keys {sorted(unknown)}; allowed: {FILTER_KEYS}")
         month = d.get("month")
-        if month is not None and month not in MONTH_SEASON:
+        if month is not None and (isinstance(month, bool) or month not in MONTH_SEASON):
             raise ValueError("month must be 1-12")
         season = d.get("season")
         if season is not None and season not in SEASONS:
             raise ValueError(f"season must be one of {SEASONS}")
-        return cls(state=tuple(d["state"]) if d.get("state") else None, season=season,
-                   month=month, place_type=tuple(d["place_type"]) if d.get("place_type") else None)
+        state = _checked(d.get("state"), STATES, "state")
+        place_type = _checked(d.get("place_type"), PLACE_TYPES, "place_type")
+        return cls(state=state, season=season, month=month, place_type=place_type)
 
     @classmethod
     def from_parsed(cls, parsed: dict, explicit: dict | None = None) -> Filters:
@@ -74,8 +79,21 @@ class Filters:
         explicit dict. Reads only the parse fields states, season, month and place_types."""
         base = {"state": parsed.get("states") or None, "season": parsed.get("season"),
                 "month": parsed.get("month"), "place_type": parsed.get("place_types") or None}
-        merged = {**base, **{k: v for k, v in (explicit or {}).items()}}
-        return cls.from_dict({k: v for k, v in merged.items() if v})
+        # an explicit key overrides the parsed one even when its value is empty: None or []
+        # clears that filter; an invalid value (month 0, an unknown state) raises
+        return cls.from_dict({**base, **(explicit or {})})
+
+
+def _checked(values, allowed: tuple[str, ...], name: str) -> tuple[str, ...] | None:
+    """A non-empty tuple of allowed values, or None for no filter (None or an empty list)."""
+    if values is None:
+        return None
+    if isinstance(values, str):
+        raise ValueError(f"{name} must be a list of values, not a string")
+    bad = [v for v in values if v not in allowed]
+    if bad:
+        raise ValueError(f"unknown {name} value(s) {bad}; allowed: {allowed}")
+    return tuple(values) or None
 
 
 def load_provenance(path: Path) -> dict[str, str]:

@@ -14,8 +14,9 @@ Triggers (evaluated on the first pass):
   and another that it is closed, shut or banned. A crude keyword rule over the chunk text; it is
   local and sends nothing anywhere. It may rarely or never fire; its firing rate is reported.
 
-The corrective pass (done by the caller): metadata filters off, candidate depth 100 -> 300, the
-cached rewrite added as one more query, then the same rerank and MMR steps on the new list.
+The corrective pass (done by the caller): candidate depth 100 -> 300, the cached rewrite added as
+one more query, then the same rerank and MMR steps on the new list. (The reranked pipeline never
+applies metadata filters, so there are none to switch off; explicit filters with it are refused.)
 """
 from __future__ import annotations
 

@@ -326,6 +326,15 @@ RETRIEVAL_MUTATIONS = [
     ("M51 hold-out places listed in the prompt", "src/retrieval/query_understanding.py",
      "            for e in registry.entries if not e.holdout]\n\n\ndef system_prompt",
      "            for e in registry.entries]\n\n\ndef system_prompt"),
+    ("M96 filter values are not validated", "src/retrieval/filters.py",
+     "    if bad:\n        raise ValueError(f\"unknown {name} value(s)",
+     "    if False:\n        raise ValueError(f\"unknown {name} value(s)"),
+    ("M97 an explicit empty filter no longer overrides the parsed one", "src/retrieval/filters.py",
+     "return cls.from_dict({**base, **(explicit or {})})",
+     "return cls.from_dict({**base, **{k: v for k, v in (explicit or {}).items() if v}})"),
+    ("M98 the file parser raises a bare KeyError again", "src/retrieval/retrieve.py",
+     "            raise QueryNotPrepared(\n                \"this query has no stored parse",
+     "            raise KeyError(\n                \"this query has no stored parse"),
 ]
 
 

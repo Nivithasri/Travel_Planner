@@ -114,6 +114,12 @@ def default_index() -> Index:
                  cache=DiskCache(REPO_ROOT / ".cache"), model_id=model_id_from_manifest(INDEX_DIR))
 
 
+class QueryNotPrepared(RuntimeError):
+    """The config needs a stored query parse or corrective rewrite that does not exist for this
+    query. The file-backed parser and rewriter cover the 40 eval queries only (D86, D90); a live
+    parser/rewriter (cached LLM calls) must be injected to run FULL_CONFIG on any other query."""
+
+
 def parser_from_file(path: Path = PARSED_QUERIES) -> Parser:
     """A parser that reads the committed query-understanding output (D86): reproducible, no LLM."""
     import json
@@ -123,8 +129,11 @@ def parser_from_file(path: Path = PARSED_QUERIES) -> Parser:
 
     def parse(query: str) -> dict:
         if query not in by_text:
-            raise KeyError("the query is not in eval/parsed_queries.json; run "
-                           "scripts/parse_queries.py")
+            raise QueryNotPrepared(
+                "this query has no stored parse: parser_from_file covers the 40 eval queries in "
+                "eval/parsed_queries.json only. Inject a parser that calls query understanding "
+                "(src/retrieval/query_understanding.py, cached) to use expansion, filters, "
+                "freshness, MMR or the corrective pass on other queries")
         return by_text[query]
 
     return parse
@@ -135,7 +144,13 @@ def rewriter_from_file(path: Path = REWRITES) -> Rewriter:
     store = grader.load_rewrites(path)
 
     def rewrite(query: str, triggers: list[str]) -> str | None:
-        return grader.lookup(store, query, triggers)
+        try:
+            return grader.lookup(store, query, triggers)
+        except KeyError:
+            raise QueryNotPrepared(
+                "no stored corrective rewrite for this query and trigger set: rewriter_from_file "
+                "covers the eval queries only. Inject a rewriter that calls the cached LLM "
+                "rewrite (src/retrieval/grader.py) to use the corrective pass elsewhere") from None
 
     return rewrite
 

@@ -85,3 +85,23 @@ def test_exempt_count_is_the_passing_rule_based_rows_whose_check_was_skipped():
                                          Filters.from_dict({"place_type": ["beach"]}))
     assert [c for c, _ in passing] == ["a", "b"] and [c for c, _ in rejected] == ["c"]
     assert trace["exempt"] == 1
+
+
+def test_invalid_explicit_values_raise_and_empty_values_clear():
+    for bad in ({"month": 0}, {"month": True}, {"state": ["XX"]}, {"state": "KA"},
+                {"place_type": ["spa"]}, {"place_type": "beach"}):
+        with pytest.raises(ValueError):
+            Filters.from_dict(bad)
+        with pytest.raises(ValueError):
+            Filters.from_parsed({}, bad)
+    assert Filters.from_dict({"state": [], "place_type": None}).empty
+
+
+def test_explicit_empty_value_overrides_the_parsed_filter():
+    parsed = {"states": ["KL"], "place_types": ["beach"], "month": 7}
+    assert Filters.from_parsed(parsed).state == ("KL",)
+    f = Filters.from_parsed(parsed, {"state": [], "month": None})
+    assert f.state is None and f.month is None and f.place_type == ("beach",)
+    assert Filters.from_parsed(parsed, {"state": ["KA"]}).state == ("KA",)
+    with pytest.raises(ValueError):
+        Filters.from_parsed(parsed, {"month": 0})
