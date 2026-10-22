@@ -1,6 +1,6 @@
 # Phase status
 Tick only after verification commands were run (see LOG.md).
-Phases 1 to 5 are CLOSED (owner-confirmed). Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 6 (Valincia).
+Phases 1 to 6 are CLOSED. Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 7 (Valincia).
 
 ## Phase 0: Scaffold and shared infrastructure
 - [x] pyproject.toml, src/common/{config,cache,llm,schemas}.py (verified: `python -m pytest -q` 128 passed, `python -m ruff check .` clean)
@@ -66,9 +66,15 @@ Phases 1 to 5 are CLOSED (owner-confirmed). Phase 5 is PROVISIONAL until the own
 - [ ] travel_km is unreliable on hill legs (20-26% short): documented in contracts.md, use hours
 - [x] Done when: both functions return instantly for every registry place (tests time 26 places x 12 months and 1,000 lookups).
 
-## Phase 6: Retrieval engine and ablations
-- [ ] Tasks (see docs/plan.md)
-- [ ] Done when: the ablation table is complete and `retrieve()` returns ranked, filtered, reranked, freshness-aware chunks.
+## Phase 6: Retrieval engine and ablations (CLOSED 2026-10-22, tag phase-6-done; owner: Valincia)
+- Verified (commands in LOG.md): pytest 1132 passed / 11 skipped, ruff clean, mutations M42-M95 caught, verify_retrieve.py dev 13/13 and test 27/27
+- [x] Baselines, RRF hybrid, contextual vs plain with the D69 control, query understanding (40 parsed queries), filters with D69 exemptions, aspect-aware freshness, cross-encoder rerank, MMR, CRAG-style corrective pass (D84-D90)
+- [x] Round-2 pool (435 pairs) judged by a chat assistant (D95, no agreement figure vs the owner); merged qrels
+- [x] Significance: sign-flip test, bootstrap CI, Holm (D92); test split run ONCE (eval/ablation/test_final.md)
+- [x] retrieve() FROZEN as dense_contextual (D96 amended before the test run); hybrid and full chain kept behind RetrieveConfig, not frozen
+- [x] Test: frozen 0.685 nDCG@10; rerank rows 0.80-0.82 (reported, frozen choice not changed); contextual notes and rerank significant after Holm, hybrid, expansion, MMR, corrective not
+- [ ] Caveats: chat-made round-2 labels unvalidated; freshness 0 (D32); 27 test queries; popular/hidden mix not evaluable (D44)
+- [x] Done when: the ablation table is complete and `retrieve()` is frozen (it returns ranked dense_contextual results; filters, rerank and freshness exist as measured, non-frozen options)
 
 ## Phase 7: Place cards and agent pipeline
 - [ ] Tasks (see docs/plan.md)
