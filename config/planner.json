@@ -1,0 +1,16 @@
+{
+  "_comment": "Planner parameters (D101). All values are starting values fixed before any golden test; changing one is a decision. Routing data is PROVISIONAL (D77).",
+  "min_days": 1,
+  "max_days": 10,
+  "default_days": 4,
+  "default_budget_tier": "mid",
+  "max_stops": 5,
+  "days_per_stop": 2,
+  "cluster_hours": 4.0,
+  "daily_travel_limit_hours": {"default": 5.0, "family": 3.5, "couple": 5.0, "solo": 6.0, "group": 5.0},
+  "weights": {"relevance": 1.0, "interest": 0.3, "named": 1.0, "season_poor": 0.6, "season_fair": 0.1, "hidden_bonus": 0.15},
+  "visibility_terciles": 3,
+  "backups": 2,
+  "evidence_grade": {"min_model_written": 2, "min_distinct_urls": 3},
+  "retrieve": {"k_request": 30, "k_place": 12, "k_thin": 30}
+}

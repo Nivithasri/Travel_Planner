@@ -352,20 +352,32 @@ RETRIEVAL_MUTATIONS = [
 ]
 
 
+# Phase 7 (D99 to D104): mutations M103+ run against the Phase 7 tests only (--phase7).
+PHASE7_TESTS = ["tests/test_state.py"]
+PHASE7_MUTATIONS = [
+    ("M103 the live gate ignores terms_status", "src/live/config.py",
+     "        if self.terms_status != \"verified\":\n            return \"terms_not_verified\"\n",
+     "        if False:\n            return \"terms_not_verified\"\n"),
+]
+
+
 def main() -> int:
     survived = 0
     rows = []
     plan = [(m, EVAL_TESTS) for m in EVAL_MUTATIONS]
     routing = [(m, ROUTING_TESTS) for m in ROUTING_MUTATIONS]
     retrieval = [(m, RETRIEVAL_TESTS) for m in RETRIEVAL_MUTATIONS]
-    if "--routing" in sys.argv[1:]:  # --routing runs only M30 to M41
+    phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
+    if "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
+        plan = phase7
+    elif "--routing" in sys.argv[1:]:  # --routing runs only M30 to M41
         plan = routing
     elif "--eval" in sys.argv[1:]:  # --eval runs only M20 to M29
         pass
     elif "--retrieval" in sys.argv[1:]:  # --retrieval runs only M42+
         plan = retrieval
     else:
-        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval
+        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7
     for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()

@@ -1,0 +1,22 @@
+{
+  "_comment": "Live search layer (docs/plan.md 2.1, D100). Real network calls are refused unless terms_status is 'verified' (set by the OWNER only). 'enabled': false drops the layer (corpus-only). The cache is same-UTC-day only and stores minimal cleaned fields, never the raw API body.",
+  "provider": "tavily",
+  "enabled": true,
+  "terms_status": "not_verified",
+  "terms_evidence": "Owner read 2026-10-23: Platform ToS (updated 2026-05-04) has no caching clause but limits use to internal business purposes and does not mention academic use; Acceptable Use Policy only partly read; the older Search API Agreement (2023-11-30, tavily.com/policy) forbids storing/caching API output and ML use, supersession unconfirmed. NOT VERIFIED.",
+  "endpoint_host": "api.tavily.com",
+  "endpoint_path": "/search",
+  "credits_per_search": 2,
+  "default_searches_per_request": 2,
+  "max_searches_per_request": 3,
+  "max_credits_per_request": 6,
+  "monthly_credits": 1000,
+  "monthly_stop_at": 900,
+  "max_results_per_search": 5,
+  "max_live_chunks": 8,
+  "snippet_max_chars": 600,
+  "timeout_s": 15,
+  "latency_budget_s": 30,
+  "cache_enabled": true,
+  "cache_dir": ".cache/live"
+}

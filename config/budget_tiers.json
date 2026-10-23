@@ -1,0 +1,13 @@
+{
+  "_comment": "ASSUMED per-day budget figures (INR) written from memory, NOT derived from the corpus and NOT verified (D101). The itinerary labels every budget line 'rough, assumed'. Replace with the owner's figures when available.",
+  "status": "assumed_unverified",
+  "currency": "INR",
+  "per_day": {
+    "budget": {"stay": 1200, "food": 600, "local_transport": 300, "activities": 300},
+    "mid": {"stay": 3000, "food": 1000, "local_transport": 600, "activities": 600},
+    "luxury": {"stay": 8000, "food": 2000, "local_transport": 1500, "activities": 1500}
+  },
+  "intercity_per_hour": {"budget": 250, "mid": 450, "luxury": 900},
+  "tolerance": 0.15,
+  "user_cap_note": "A user cap, when given, is compared with the estimate; the tier figures are never presented as quotes."
+}

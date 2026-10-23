@@ -232,6 +232,24 @@ def load_rerank_local_dir(env_file: str | os.PathLike | None = None) -> Path | N
     return Path(raw) if raw else None
 
 
+@dataclass(frozen=True)
+class LiveSettings:
+    """LIVE_SEARCH_API_KEY (optional, D100). The key never appears in a repr."""
+
+    api_key: str | None = field(default=None, repr=False)
+
+    @property
+    def has_key(self) -> bool:
+        return bool(self.api_key)
+
+
+def load_live_settings(env_file: str | os.PathLike | None = None) -> LiveSettings:
+    """The key of the live search provider, read from .env only. Unset means the live layer cannot
+    make a real call (it degrades to corpus-only); nothing else is read here."""
+    load_dotenv(env_file if env_file is not None else REPO_ROOT / ".env", override=False)
+    return LiveSettings(api_key=_opt("LIVE_SEARCH_API_KEY"))
+
+
 def load_collect_settings(env_file: str | os.PathLike | None = None) -> CollectSettings:
     """CONTACT_EMAIL is required: Wikimedia and polite crawling need a way to reach us. The other
     credentials are optional; a collector without its credentials is skipped, never faked."""
