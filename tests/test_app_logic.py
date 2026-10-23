@@ -20,6 +20,8 @@ from src.live.search import LiveRetriever
 from src.live.store import DayCache, Ledger
 from src.tools.travel_time import load_matrix
 from tests.test_graph import OVER, TEXT, make_deps
+from tests.test_live import FakeClient as SearchClient
+from tests.test_live import retriever as live_retriever
 
 SENTINELS = ("zzqxsentinelstyle", "zzqxsentinelinterest", "zzqxsentinelconstraint",
              "zzqxsentinelplace")
@@ -402,7 +404,8 @@ def mixed_sources():
 
 def test_a_source_row_has_only_the_whitelisted_fields_and_never_text():
     rows = S.source_rows(mixed_sources(), ATTR, {"abc"})
-    allowed = ("Alias", "Title", "Place", "Source", "Date", "Fetch date", "Link", "Licence")
+    allowed = ("Alias", "Chunk id", "Title", "Place", "Source", "Date", "Fetch date", "Link",
+               "Licence")
     assert S.SOURCE_FIELDS[:-1] == allowed and S.SOURCE_FIELDS[-1] == "Flags"
     assert len(rows) == 3
     for r in rows:
@@ -451,3 +454,133 @@ def test_the_view_comes_from_the_run_state():
     v = S.view_from_state(st, 3.2)
     assert v["live_status"] == "ok" and v["repaired"] and v["wall_s"] == 3.2
     assert v["timings"] == {"plan": 0.2}
+
+
+# ---- chunk ids, live status line, wording, tokens, config --------------------------------------
+
+def test_the_chunk_id_column_matches_the_ids_printed_in_the_itinerary_text():
+    wiki, blog, live = S.source_rows(mixed_sources(), ATTR, set())
+    assert wiki["Chunk id"] == "chunk:abc" and blog["Chunk id"] == "chunk:blogchunk"
+    assert live["Chunk id"] == "live:1"
+    h = S.start_run(make_deps(), TEXT, OVER)
+    assert h.done.wait(30) and h.error is None
+    final = h.state.final
+    ids = {r["Chunk id"] for r in S.source_rows(final, {}, set())}
+    cited = {f"chunk:{m}" for m in __import__("re").findall(r"\[chunk:([0-9a-zA-Z]+)\]",
+                                                          final["text"])}
+    assert cited and cited <= ids  # every id in the text has a row
+
+
+def run_live(tmp_path, *, client=None, key="k", **kw):
+    live = live_retriever(tmp_path, client=client, key=key, **kw)
+    deps = make_deps(live=live)
+    h = S.start_run(deps, TEXT, {**OVER, "named_places": ["Hampi"]})
+    assert h.done.wait(30) and h.error is None
+    return deps, h, S.view_from_state(h.state, 0.0, trace=h.trace, use_live=True)
+
+
+def test_the_live_status_line_gives_counts_for_a_successful_search(tmp_path):
+    _, h, view = run_live(tmp_path)
+    line = S.live_status_line(view)
+    assert line == "live search: ok, 2 searches, 8 results, 2 in scope, 2 merged, 1 cited"
+    assert view["live_counts"] == {"searches": 2, "results": 8, "in_scope": 2, "merged": 2,
+                                   "cited": 1}
+    assert not any(w in line for w in ("ruins", "Hampi", "Badami", "Paris", "http"))
+    sources = h.state.final["sources"]
+    assert [s["live"] for s in sources].count(True) == 1  # the cited live item reaches Sources
+
+
+def test_the_live_status_line_for_empty_error_no_key_and_not_used(tmp_path):
+    _, _, empty = run_live(tmp_path, client=SearchClient(results=[]))
+    assert S.live_status_line(empty) == (
+        "live search: empty, 2 searches, 0 results, 0 in scope, 0 merged, 0 cited")
+    _, _, err = run_live(tmp_path, client=SearchClient(boom=True))
+    line = S.live_status_line(err)
+    assert line == "live search: error: live search failed; answers use the corpus only"
+    assert "terms not verified" not in line and "500" not in line
+    _, _, nokey = run_live(tmp_path, key=None)
+    assert S.live_status_line(nokey) == "live search: no key"
+    _, _, gated = run_live(tmp_path, terms_status="not_verified")
+    assert S.live_status_line(gated) == "live search: not used (terms_not_verified)"
+    from src.live.store import Ledger
+
+    stopped = Ledger(tmp_path / "stopped.json", 1, 1000, lambda: "2026-10-23")  # stop below 2
+    _, _, quota = run_live(tmp_path, ledger=stopped)
+    assert S.live_status_line(quota) == "live search: not used (quota)"
+
+
+def test_nothing_is_counted_or_shown_when_live_was_not_requested():
+    h = S.start_run(make_deps(), TEXT, OVER)
+    assert h.done.wait(30) and h.trace is None
+    view = S.view_from_state(h.state, 0.0, trace=h.trace, use_live=False)
+    assert "live_counts" not in view and S.live_status_line(view) is None
+
+
+def test_the_live_trace_is_reset_for_each_run_and_wraps_a_retriever_once(tmp_path):
+    live = live_retriever(tmp_path, client=SearchClient())
+    deps = make_deps(live=live)
+    first = S.watch_live(deps)
+    assert S.watch_live(deps) is first  # wrapped once
+    for _ in range(2):
+        h = S.start_run(deps, TEXT, {**OVER, "named_places": ["Hampi"]})
+        assert h.done.wait(30) and h.error is None
+    view = S.view_from_state(h.state, 0.0, trace=h.trace, use_live=True)
+    assert view["live_counts"]["results"] == 8 and view["live_counts"]["searches"] == 2
+
+
+def test_a_live_view_with_counts_is_never_written_to_disk(tmp_path):
+    _, _, view = run_live(tmp_path)
+    cache = QC.QueryCache(tmp_path / "appcache")
+    assert cache.put("q", {}, True, view) is None
+    assert not (tmp_path / "appcache").exists()  # not even the directory was created
+    assert cache.get("q", {}, True)["live_counts"]["cited"] == 1  # in session memory only
+
+
+def test_the_switched_off_note_is_reworded_only_when_live_was_not_requested():
+    from src.live.search import NOTES
+
+    off = NOTES["disabled"]
+    view = {"use_live": False, "live_status": "disabled", "live_note": off,
+            "final": {"text": f"- {off}" + chr(10), "warnings": [off]}}
+    shown = S.display_view(view)
+    assert off not in json.dumps(shown) and S.NOT_REQUESTED_NOTE in shown["final"]["text"]
+    asked = {**view, "use_live": True}
+    assert S.display_view(asked) is asked and off in json.dumps(asked)  # a real switch-off stays
+    assert view["live_note"] == off  # the stored view is not modified
+
+
+def test_token_rows_show_zero_for_a_step_served_from_the_llm_cache():
+    rows = S.token_rows({"parse": 0, "write": 1171, "critic": 0, "write_reservation": 2901,
+                         "live_credits": 4})
+    assert rows == [{"Step": "parse (tokens)", "Value": 0},
+                    {"Step": "write (tokens)", "Value": 1171},
+                    {"Step": "repair (tokens)", "Value": 0},
+                    {"Step": "live search credits (assumed)", "Value": 4}]
+
+
+def read_toml_sections(path):
+    out, section = {}, None
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("["):
+            section = line.strip("[]")
+            out[section] = {}
+        elif "=" in line and section:
+            k, v = (x.strip() for x in line.split("=", 1))
+            out[section][k] = v.strip('"') if v.startswith('"') else (v == "true")
+    return out
+
+
+def test_the_streamlit_config_is_local_quiet_and_has_no_file_watcher():
+    cfg = read_toml_sections(REPO_ROOT / ".streamlit" / "config.toml")
+    assert cfg["server"]["fileWatcherType"] == "none"  # no torchvision probing noise
+    assert cfg["server"]["address"] == "127.0.0.1" and cfg["server"]["headless"] is True
+    assert cfg["client"]["showErrorDetails"] == "none"
+    assert cfg["browser"]["gatherUsageStats"] is False
+
+
+def test_the_readme_says_torchvision_is_not_needed():
+    text = (REPO_ROOT / "app" / "README.md").read_text(encoding="utf-8")
+    assert "torchvision" in text and "must not be installed" in text

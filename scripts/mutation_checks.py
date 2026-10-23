@@ -509,6 +509,24 @@ PHASE8_MUTATIONS = [
     ("M157 the default runner is always run_local", "app/state.py",
      "    from src.agents.graph import run_graph\n\n    return run_graph\n",
      "    from src.agents.graph import run_local\n\n    return run_local\n"),
+    ("M158 the live status line counts every merged item as cited", "app/state.py",
+     "    cited = sum(1 for s in (state.final or {}).get(\"sources\", []) if s.get(\"live\"))\n",
+     "    cited = merged\n"),
+    ("M159 the live status line is shown although live was not requested", "app/state.py",
+     "    if not view.get(\"use_live\"):\n        return None\n    status = view.get(\"live_status\")\n",
+     "    status = view.get(\"live_status\")\n"),
+    ("M160 the switched-off note is not reworded when live was not requested", "app/state.py",
+     "    if view.get(\"use_live\") or view.get(\"live_status\") not in (\"disabled\", \"not_run\"):\n"
+     "        return view\n",
+     "    if True:\n        return view\n"),
+    ("M161 the progress banner stays after the run", "app/streamlit_app.py",
+     "    banner.empty()\n", "    pass\n"),
+    ("M162 the chunk id column drops the chunk: marker", "app/state.py",
+     "\"Chunk id\": cid if s.get(\"live\") else f\"chunk:{cid}\",", "\"Chunk id\": cid,"),
+    ("M163 the Streamlit file watcher is switched on again", ".streamlit/config.toml",
+     "fileWatcherType = \"none\"\n", ""),
+    ("M164 the live trace is not reset between runs", "app/state.py",
+     "        trace.reset()\n        res = run(*args, **kwargs)\n", "        res = run(*args, **kwargs)\n"),
 ]
 
 
@@ -520,7 +538,7 @@ def main() -> int:
     retrieval = [(m, RETRIEVAL_TESTS) for m in RETRIEVAL_MUTATIONS]
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
-    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M157
+    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M164
         plan = phase8
     elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7

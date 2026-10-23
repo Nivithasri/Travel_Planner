@@ -139,8 +139,9 @@ if submitted:
 
 handle = ss.get("handle")
 if handle is not None:
-    st.info("Planning your trip. The first request loads the local search model, which can "
-            "take a minute.")
+    banner = st.empty()
+    banner.info("Planning your trip. The first request loads the local search model, which can "
+                "take a minute.")
     live_box = st.empty()
     buf = ""
     while True:
@@ -152,10 +153,12 @@ if handle is not None:
             break
         handle.done.wait(0.15)
     live_box.empty()
+    banner.empty()
     text, overrides, was_live = ss.pop("ctx", ("", {}, False))
     ss.pop("handle", None)
     if handle.state is not None:
-        view = S.view_from_state(handle.state, handle.wall_s)
+        view = S.view_from_state(handle.state, handle.wall_s, trace=handle.trace,
+                                 use_live=was_live)
         cache.put(text, overrides, was_live, view)
         ss["view"] = view
         ss["view_meta"] = {"state": "fresh", "at": ""}
@@ -176,7 +179,7 @@ for note in ss.get("notes", []):
 
 view = ss.get("view")
 if view:
-    view = S.redact_deep(view)
+    view = S.redact_deep(S.display_view(view))
     final = view.get("final") or {}
     meta = ss.get("view_meta", {"state": "fresh", "at": ""})
     if meta["state"] == "cached":
@@ -195,6 +198,9 @@ if view:
         st.warning(view.get("live_note") or "live search unavailable; answers use the corpus only")
     else:
         st.caption("corpus only: no live search was used for this answer")
+    status_line = S.live_status_line(view)
+    if status_line:
+        st.caption(status_line)
     st.caption(S.RECENCY_NOTE)
 
     critic = final.get("critic") or {}
@@ -211,6 +217,13 @@ if view:
 
     plan = final.get("plan") or {}
     cards = S.load_cards()
+    attribution = S.load_attribution()
+    if not cards:
+        st.caption("place cards are not available (index/place_cards.json is missing or "
+                   "unreadable)")
+    if not attribution:
+        st.caption("source titles are not available (data/processed/attribution.json is "
+                   "missing or unreadable)")
     if plan.get("stops"):
         st.subheader("Plan")
         st.dataframe([{k: s.get(k) for k in ("place", "state", "nights", "evidence_class",
@@ -242,7 +255,7 @@ if view:
         for w in warnings:
             st.warning(w)
 
-    rows = S.source_rows(final, S.load_attribution(), S.card_warning_chunk_ids(cards))
+    rows = S.source_rows(final, attribution, S.card_warning_chunk_ids(cards))
     with st.expander(f"Sources ({len(rows)})", expanded=True):
         if rows:
             st.dataframe(rows, hide_index=True, column_config={
@@ -254,6 +267,11 @@ if view:
     t_rows, total = S.timing_rows(view.get("timings") or {})
     with st.expander("Timing per node", expanded=False):
         st.dataframe(t_rows, hide_index=True)
+        tok_rows = S.token_rows(view.get("tokens") or {})
+        if tok_rows:
+            st.dataframe(tok_rows, hide_index=True)
+            st.caption("tokens the hosted model reported; 0 means the step was served from the "
+                       "local LLM cache and nothing was sent")
         st.caption(f"sum of node times {total} s; wall clock {view.get('wall_s', 0)} s "
                    "(retrieve and live run in parallel)")
 

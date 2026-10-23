@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from src.live.config import TERMS_NOTICE
+
 ROOT = Path(__file__).resolve().parents[1]
 
 BUDGET_TIERS = ("budget", "mid", "luxury")
@@ -32,6 +34,7 @@ PRIVACY_HINT = "do not enter personal information"
 RECENCY_NOTE = ("no corpus item is dated within the last 18 months; live items show their fetch "
                 "date, not a publish date")
 SEASON_NOTE = "trip spans several months; season check uses the start month only"
+NOT_REQUESTED_NOTE = "live search was not requested for this run; answers use the corpus only"
 CARD_LABEL = "auto-generated, check before relying"
 BUDGET_LABEL = "rough estimate, not verified"
 TRAVEL_LABEL = "provisional"
@@ -363,6 +366,7 @@ class RunHandle:
     quota: bool = False
     wall_s: float = 0.0
     thread: threading.Thread | None = None
+    trace: Any = None
 
     def drain(self) -> str:
         out = []
@@ -412,6 +416,7 @@ def start_run(deps, text: str, overrides: dict, runner=None) -> RunHandle:
         raise RunBusy(BUSY_MESSAGE)
     try:
         handle = RunHandle()
+        handle.trace = watch_live(deps)
         deps.on_piece = handle.pieces.put
         handle.thread = threading.Thread(
             target=_worker, args=(handle, deps, text, overrides, runner or default_runner()),
@@ -426,11 +431,108 @@ def start_run(deps, text: str, overrides: dict, runner=None) -> RunHandle:
 
 # ---- views and panel rows ------------------------------------------------------------------------
 
-def view_from_state(state, wall_s: float = 0.0) -> dict:
+@dataclass
+class LiveTrace:
+    """Counts of one live step, collected without touching src/: the retriever's own search and
+    run methods are wrapped on the instance. Counts only, never result text."""
+
+    searches: int = 0
+    results: int = 0
+    in_scope: int = 0
+    ran: bool = False
+
+    def reset(self) -> None:
+        self.searches = self.results = self.in_scope = 0
+        self.ran = False
+
+
+def watch_live(deps) -> LiveTrace | None:
+    """Wrap deps.live (once) so each run leaves a LiveTrace; None when there is no live step."""
+    live = getattr(deps, "live", None)
+    if live is None or not callable(getattr(live, "run", None)):
+        return None
+    existing = getattr(live, "_p8_trace", None)
+    if existing is not None:
+        return existing
+    trace = LiveTrace()
+    run, search = live.run, getattr(live, "search", None)
+
+    def counted_run(*args, **kwargs):
+        trace.reset()
+        res = run(*args, **kwargs)
+        trace.searches = int(getattr(res, "searches", 0) or 0)
+        trace.in_scope = len(getattr(res, "items", []) or [])
+        trace.ran = True
+        return res
+
+    live.run = counted_run
+    if search is not None:
+        def counted_search(*args, **kwargs):
+            out = search(*args, **kwargs)
+            trace.results += len(out[0])
+            return out
+
+        live.search = counted_search
+    live._p8_trace = trace
+    return trace
+
+
+def live_counts(state, trace: LiveTrace | None) -> dict:
+    packed = getattr(state, "packed_obj", None)
+    merged = sum(1 for p in getattr(packed, "items", []) if p.item.is_live)
+    cited = sum(1 for s in (state.final or {}).get("sources", []) if s.get("live"))
+    t = trace or LiveTrace()
+    return {"searches": t.searches, "results": t.results, "in_scope": t.in_scope,
+            "merged": merged, "cited": cited}
+
+
+def view_from_state(state, wall_s: float = 0.0, trace: LiveTrace | None = None,
+                    use_live: bool = False) -> dict:
     final = state.final or {}
-    return {"final": final, "timings": dict(state.timings), "tokens": dict(state.tokens),
+    view = {"final": final, "timings": dict(state.timings), "tokens": dict(state.tokens),
             "live_status": state.live_status, "live_note": state.live_note,
-            "repaired": bool(state.repaired), "wall_s": wall_s}
+            "repaired": bool(state.repaired), "wall_s": wall_s, "use_live": bool(use_live)}
+    if use_live:  # counts exist only for a live-on answer, which is never written to disk
+        view["live_counts"] = live_counts(state, trace)
+    return view
+
+
+def live_status_line(view: dict) -> str | None:
+    """One counts-only line about the live step; None when live search was not requested."""
+    if not view.get("use_live"):
+        return None
+    status = view.get("live_status")
+    c = view.get("live_counts") or {}
+    if status in ("ok", "empty"):
+        return (f"live search: {status}, {c.get('searches', 0)} searches, "
+                f"{c.get('results', 0)} results, {c.get('in_scope', 0)} in scope, "
+                f"{c.get('merged', 0)} merged, {c.get('cited', 0)} cited")
+    if status == "error":
+        reason = (view.get("live_note") or "").replace(TERMS_NOTICE, "").strip(" ;")
+        return f"live search: error: {redact(reason or 'the search failed')}"
+    if status == "no_key":
+        return "live search: no key"
+    return f"live search: not used ({status})"
+
+
+def _replace_deep(obj, old: str, new: str):
+    if isinstance(obj, str):
+        return obj.replace(old, new)
+    if isinstance(obj, dict):
+        return {k: _replace_deep(v, old, new) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_replace_deep(v, old, new) for v in obj]
+    return obj
+
+
+def display_view(view: dict) -> dict:
+    """The view as shown: when live search was not requested, the pipeline's 'switched off
+    (config/live.json)' note is reworded, because nothing was switched off."""
+    if view.get("use_live") or view.get("live_status") not in ("disabled", "not_run"):
+        return view
+    from src.live.search import NOTES
+
+    return _replace_deep(view, NOTES["disabled"], NOT_REQUESTED_NOTE)
 
 
 def live_ran(view: dict) -> bool:
@@ -441,8 +543,8 @@ def terms_notice_visible(view: dict) -> bool:
     return live_ran(view)
 
 
-SOURCE_FIELDS = ("Alias", "Title", "Place", "Source", "Date", "Fetch date", "Link", "Licence",
-                 "Flags")
+SOURCE_FIELDS = ("Alias", "Chunk id", "Title", "Place", "Source", "Date", "Fetch date", "Link",
+                 "Licence", "Flags")
 SOURCE_FLAGS = ("card warning", "limited evidence")
 
 
@@ -474,7 +576,10 @@ def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> l
             flags.append(SOURCE_FLAGS[0])
         if s.get("limited"):
             flags.append(SOURCE_FLAGS[1])
-        rows.append({"Alias": s.get("alias", ""), "Title": title, "Place": s.get("place") or "",
+        cid = str(s.get("chunk_id", ""))
+        rows.append({"Alias": s.get("alias", ""),
+                     "Chunk id": cid if s.get("live") else f"chunk:{cid}",
+                     "Title": title, "Place": s.get("place") or "",
                      "Source": source, "Date": date_label, "Fetch date": fetched,
                      "Link": s.get("url", ""), "Licence": licence, "Flags": ", ".join(flags)})
     return rows
@@ -487,6 +592,14 @@ def card_warning_chunk_ids(cards: dict) -> set[str]:
 def timing_rows(timings: dict) -> tuple[list[dict], float]:
     rows = [{"Node": k, "Seconds": v} for k, v in timings.items()]
     return rows, round(sum(timings.values()), 3)
+
+
+def token_rows(tokens: dict) -> list[dict]:
+    """Tokens the hosted model reported per step; 0 means the call was served from the local LLM
+    cache (nothing was sent). live_credits are assumed, not measured."""
+    names = (("parse", "parse (tokens)"), ("write", "write (tokens)"),
+             ("critic", "repair (tokens)"), ("live_credits", "live search credits (assumed)"))
+    return [{"Step": label, "Value": int(tokens[k])} for k, label in names if k in tokens]
 
 
 def leg_rows(plan: dict) -> list[dict]:

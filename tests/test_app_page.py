@@ -50,6 +50,7 @@ def make_state(*, live=False, text=None, status=None, critic="passed", repaired=
              "live_status": status or ("ok" if live else "disabled"),
              "warnings": ["thin evidence for Hampi"]}
     return RunState(final=final, timings={"parse": 0.5, "write": 2.0},
+                    tokens={"parse": 844, "write": 1171, "critic": 0},
                     live_status=status or ("ok" if live else "disabled"),
                     live_note=TERMS_NOTICE if live else None, repaired=repaired)
 
@@ -166,6 +167,9 @@ def test_a_corpus_only_run_shows_the_itinerary_sources_and_labels_and_caches_to_
     assert "card warning" in sources.loc[0, "Flags"]
     assert tuple(sources.columns) == S.SOURCE_FIELDS
     assert "recent" not in page.casefold().replace("last good", "")
+    assert sources.loc[0, "Chunk id"] == "chunk:abc" and sources.loc[1, "Chunk id"] == (
+        "chunk:blog1")
+    assert "Planning your trip" not in page  # the progress banner is gone when the run ends
 
 
 def test_the_timing_breakdown_is_collapsed_and_complete(fake):
@@ -173,6 +177,10 @@ def test_the_timing_breakdown_is_collapsed_and_complete(fake):
     exp = next(e for e in at.expander if e.label == "Timing per node")
     assert exp.proto.expanded is False
     assert "sum of node times 2.5 s" in blob(at)
+    steps = next(d for d in at.dataframe if "Step" in d.value.columns).value
+    assert dict(zip(steps["Step"], steps["Value"])) == {
+        "parse (tokens)": 844, "write (tokens)": 1171, "repair (tokens)": 0}
+    assert "0 means the step was served from the local LLM cache" in blob(at)
     assert next(e for e in at.expander if e.label.startswith("Sources")).proto.expanded is True
 
 
@@ -311,17 +319,22 @@ def test_critic_failure_and_repair_are_visible(fake):
 
 # ---- the real pipeline runner behind the page -----------------------------------------------
 
+def real_page(tmp_path, monkeypatch, deps):
+    """The page on the real pipeline (default runner) with the given fake dependencies."""
+    monkeypatch.setattr(QC, "CACHE_DIR", tmp_path / "appcache")
+    monkeypatch.setattr(S, "get_deps", lambda use_live, factory=None: deps)
+    monkeypatch.setattr(S, "load_cards", lambda: CARDS)
+    monkeypatch.setattr(S, "load_attribution", lambda: ATTR)
+    monkeypatch.setattr(S, "live_availability",
+                        lambda: {"key_present": True, "enabled": True, "terms_status": "x"})
+
+
 @pytest.mark.parametrize("langgraph_available", [True, False])
 def test_the_page_drains_the_streamed_pieces_of_the_real_pipeline(
         tmp_path, monkeypatch, langgraph_available):
     """No fake runner: the default runner (run_graph, or run_local without langgraph) runs the
     real nodes on fake dependencies in the worker thread; the page's loop receives the pieces."""
-    monkeypatch.setattr(QC, "CACHE_DIR", tmp_path / "appcache")
-    monkeypatch.setattr(S, "get_deps", lambda use_live, factory=None: make_deps())
-    monkeypatch.setattr(S, "load_cards", lambda: CARDS)
-    monkeypatch.setattr(S, "load_attribution", lambda: ATTR)
-    monkeypatch.setattr(S, "live_availability",
-                        lambda: {"key_present": True, "enabled": True, "terms_status": "x"})
+    real_page(tmp_path, monkeypatch, make_deps())
     if not langgraph_available:
         monkeypatch.setitem(__import__("sys").modules, "langgraph", None)
     seen = []
@@ -340,3 +353,56 @@ def test_the_page_drains_the_streamed_pieces_of_the_real_pipeline(
     assert "# South India itinerary" in page and "## Sources" in page
     assert "Visitors enjoy" in page and "fresh run" in page
     assert not S.run_lock_held()
+    # live was not requested: the note says so instead of "switched off (config/live.json)"
+    assert S.NOT_REQUESTED_NOTE in page and "switched off" not in page
+    assert "live search:" not in page.replace("live search: terms", "")  # no status line
+
+
+LIVE_OUTCOMES = [
+    ("ok", {}, "live search: ok, 2 searches, 8 results, 2 in scope, 2 merged, 1 cited"),
+    ("empty", {"client": "empty"},
+     "live search: empty, 2 searches, 0 results, 0 in scope, 0 merged, 0 cited"),
+    ("error", {"client": "boom"},
+     "live search: error: live search failed; answers use the corpus only"),
+    ("no_key", {"key": None}, "live search: no key"),
+]
+
+
+@pytest.mark.parametrize("name,kw,line", LIVE_OUTCOMES, ids=[o[0] for o in LIVE_OUTCOMES])
+def test_the_page_shows_a_counts_only_live_status_line(tmp_path, monkeypatch, name, kw, line):
+    from tests.test_live import FakeClient as SearchClient
+    from tests.test_live import retriever as live_retriever
+
+    client = {"empty": SearchClient(results=[]), "boom": SearchClient(boom=True)}.get(
+        kw.get("client"), SearchClient())
+    live = live_retriever(tmp_path, client=client, key=kw.get("key", "k"))
+    real_page(tmp_path, monkeypatch, make_deps(live=live))
+    at = app()
+    at.text_input(key="f_places_free").set_value("Hampi")
+    at = submit(at, **{"checkbox__f_live": True})
+    page = blob(at)
+    assert line in page
+    caption = next(str(c.value) for c in at.caption if str(c.value).startswith("live search:")
+                   and "terms" not in str(c.value))
+    assert caption == line  # the line itself carries counts and labels only
+    assert not any(w in caption for w in ("ruins", "Badami", "Paris", "http"))
+    assert files_in(tmp_path) == []  # a live-on answer writes nothing
+    sources = next(d for d in at.dataframe if "Chunk id" in d.value.columns).value
+    live_rows = sources[sources["Source"].str.startswith("live")]
+    assert len(live_rows) == (1 if name == "ok" else 0)  # live rows only when a live item was cited
+    if name == "ok":
+        assert live_rows.iloc[0]["Chunk id"].startswith("live:")
+        assert live_rows.iloc[0]["Fetch date"] != ""
+    assert (TERMS_NOTICE in page) is (name != "no_key")
+
+
+def files_in(tmp_path):
+    d = tmp_path / "appcache"
+    return sorted(d.glob("*.json")) if d.exists() else []
+
+
+def test_missing_cards_or_attribution_are_said_on_the_page(fake, monkeypatch):
+    monkeypatch.setattr(S, "load_cards", lambda: {})
+    monkeypatch.setattr(S, "load_attribution", lambda: {})
+    page = blob(submit(app()))
+    assert "place cards are not available" in page and "source titles are not available" in page

@@ -16,6 +16,11 @@ Needs, all local or in `.env` (the page never prints them):
   request loads the model (25 to 40 s); later requests reuse it.
 - The hosted language model: `LLM_API_BASE_URL` (or `LLM_API_URL`), `LLM_API_KEY`, the model names
   and limits. The shared rate limiter applies; only one run executes at a time.
+- Do NOT install `torchvision`: it is not needed (the app uses only the local text-embedding model)
+  and must not be installed. Streamlit's file watcher used to probe every transformers module and
+  print "No module named 'torchvision'" lines; `.streamlit/config.toml` now sets
+  `server.fileWatcherType = "none"`, so those lines no longer appear (restart the app to pick up
+  code changes).
 - Optional, for live search: `LIVE_SEARCH_API_KEY`. Live search is a tick box, off by default; it
   spends search credits (assumed 2 per search, not measured).
 
@@ -32,6 +37,18 @@ Needs, all local or in `.env` (the page never prints them):
 - Labels: travel times are provisional; budget figures are a rough estimate, not verified;
   place-card items are auto-generated, check before relying. No corpus item is dated within the
   last 18 months; live items show their fetch date, not a publish date.
+- Under the notices, one counts-only line reports the live step when "Add live web search" was
+  ticked: `live search: ok, N searches, N results, N in scope, N merged, N cited`, or `empty` (same
+  counts), `error: <short reason>`, `no key`, or `not used (<reason>)`. "results" are what the
+  provider returned, "in scope" are those that name a registry place or state and passed the
+  safety filter (after the cap of 8), "merged" are the live items put into the writer's prompt and
+  "cited" are those the written itinerary cites (only cited ones become rows of the sources
+  table). The line holds no snippet text and, like every live answer, stays in the session.
+- Sources table: "Chunk id" shows the id exactly as the itinerary text prints it
+  (`chunk:<id>` or `live:<id>`), so each citation in the text maps to a row.
+- Timing panel: seconds per node and the tokens the hosted model reported per step (0 = served from
+  the local LLM cache, nothing sent).
+- When live search was not ticked the note reads "live search was not requested for this run".
 - The trip start month alone drives the season check (a note appears when the dates span months).
 
 ## Cache (D111)
