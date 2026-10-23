@@ -38,7 +38,9 @@ def build_live(registry, *, enabled: bool = True) -> LiveRetriever | None:
         from src.common.schemas import load_collect_settings
 
         client = TavilyClient(make_http(load_collect_settings()), key, cfg)
-    return LiveRetriever(cfg, api_key=key, client=client, place_labels=labels, place_names=names)
+    amap = {a: e.name for e in registry.entries if not e.holdout for a in e.aliases}
+    return LiveRetriever(cfg, api_key=key, client=client, place_labels=labels, place_names=names,
+                         alias_map=amap)
 
 
 def build_default_deps(*, live: bool = True, parse: bool = True, on_piece=None) -> Deps:

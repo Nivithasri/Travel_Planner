@@ -281,3 +281,58 @@ def test_a_malformed_provider_reply_is_an_error(tmp_path):
                                  [TransportResponse(200, {}, text)])
         with pytest.raises(FetchError):
             TavilyClient(client, "k", cfg()).search("Hampi closures July 2026")
+
+
+# ---- the shape seen in the first approved smoke test (D108); text below is invented ----------
+
+REAL_SHAPE = {
+    "query": "placeholder query", "follow_up_questions": None, "answer": None, "images": [],
+    "results": [
+        {"url": "https://a.test/r1", "title": "Mysore Palace timings", "content": "Placeholder "
+         "timings for the palace in Mysore.", "score": 0.91, "raw_content": None, "id": "x1"},
+        {"url": "https://a.test/r2", "title": "Hampi tickets", "content": "Placeholder ticket "
+         "text for Hampi.", "score": 0.8, "raw_content": None, "id": "x2"}],
+    "response_time": 1.0, "request_id": "00000000-0000-0000-0000-000000000000"}
+
+
+def test_the_real_reply_shape_parses_and_the_request_body_is_the_documented_one(tmp_path):
+    ok = TransportResponse(200, {}, json.dumps(REAL_SHAPE))
+    client, calls, _ = http_with(tmp_path, [ok])
+    tav = TavilyClient(client, SECRET, cfg())
+    got = tav.search("Hampi opening hours")
+    assert [r["url"] for r in got] == ["https://a.test/r1", "https://a.test/r2"]
+    body = json.loads(calls[0]["body"])
+    assert body == {"query": "Hampi opening hours", "max_results": 5, "search_depth": "basic",
+                    "include_answer": False, "include_raw_content": False}
+    assert tav.request_body("x") == {**body, "query": "x"}
+    assert [m["published_date"] for m in (minimal(r, 600) for r in got)] == [None, None]
+
+
+def test_a_page_that_uses_a_registry_alias_is_in_scope_and_maps_to_the_place(tmp_path):
+    c = cfg(cache_dir=str(tmp_path / "live"))
+    r = LiveRetriever(c, api_key="k", client=FakeClient(results=REAL_SHAPE["results"]),
+                      cache=DayCache(tmp_path / "live", False, lambda: "2026-10-23"),
+                      ledger=Ledger(tmp_path / "l.json", 900, 1000, lambda: "2026-10-23"),
+                      place_labels=LABELS, place_names=NAMES, alias_map={"Mysore": "Mysuru"},
+                      today=lambda: TODAY)
+    res = r.run(["Mysuru"], [], 7)
+    by_url = {i.url: i for i in res.items}
+    assert by_url["https://a.test/r1"].place == "Mysuru"
+    assert by_url["https://a.test/r2"].place == "Hampi"
+    bare = LiveRetriever(c, api_key="k", client=FakeClient(results=REAL_SHAPE["results"]),
+                         cache=DayCache(tmp_path / "live2", False, lambda: "2026-10-23"),
+                         ledger=Ledger(tmp_path / "l2.json", 900, 1000, lambda: "2026-10-23"),
+                         place_labels=LABELS, place_names=NAMES, today=lambda: TODAY)
+    assert "https://a.test/r1" not in {i.url for i in bare.run(["Mysuru"], [], 7).items}
+
+
+def test_a_failing_transport_degrades_to_corpus_only_with_a_note(tmp_path):
+    client, calls, _ = http_with(tmp_path, [TransportResponse(500, {}, "x")] * 3)
+    c = cfg(cache_dir=str(tmp_path / "live"))
+    r = LiveRetriever(c, api_key="k", client=TavilyClient(client, "k", c),
+                      cache=DayCache(tmp_path / "live", False, lambda: "2026-10-23"),
+                      ledger=Ledger(tmp_path / "l.json", 900, 1000, lambda: "2026-10-23"),
+                      place_labels=LABELS, place_names=NAMES, today=lambda: TODAY)
+    res = r.run(["Hampi"], [], 7)
+    assert res.items == [] and res.status == "error" and "corpus only" in res.note
+    assert len(calls) == res.searches  # one POST per search, never retried

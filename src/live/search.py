@@ -61,7 +61,8 @@ def _valid_date(v) -> str | None:
 
 
 def to_items(results: Iterable[dict], query: str, scope_terms: Iterable[str], fetch_date: str,
-             max_chars: int, place_names: Iterable[str]) -> list[EvidenceItem]:
+             max_chars: int, place_names: Iterable[str],
+             aliases: dict[str, str] | None = None) -> list[EvidenceItem]:
     """Cleaned live items for results that name a registry place, state or alias (South India
     scope). Items with instruction-like text are dropped later by the packer too."""
     scope = [t.casefold() for t in scope_terms]
@@ -74,6 +75,9 @@ def to_items(results: Iterable[dict], query: str, scope_terms: Iterable[str], fe
         if not r.get("url") or not any(re.search(rf"\b{re.escape(t)}\b", hay) for t in scope):
             continue
         place = next((n for n in names if re.search(rf"\b{re.escape(n)}\b", hay, re.I)), "")
+        if not place:  # a registry alias (for example Mysore for Mysuru) names the place too
+            place = next((n for a, n in (aliases or {}).items()
+                          if re.search(rf"\b{re.escape(a)}\b", hay, re.I)), "")
         overlap = len({w for w in re.findall(r"[a-z]{4,}", hay)} & qwords) / max(len(qwords), 1)
         out.append(EvidenceItem(
             chunk_id=live_chunk_id(r["url"], fetch_date), place=place, source_type="live",
@@ -89,16 +93,22 @@ class TavilyClient:
     def __init__(self, http: HttpClient, api_key: str, cfg: LiveConfig):
         self.http, self._key, self.cfg = http, api_key, cfg
 
-    def search(self, query: str) -> list[dict]:
-        url = f"https://{self.cfg.endpoint_host}{self.cfg.endpoint_path}"
-        body = {"query": query, "max_results": self.cfg.max_results_per_search,
+    def request_body(self, query: str) -> dict:
+        return {"query": query, "max_results": self.cfg.max_results_per_search,
                 "search_depth": "basic", "include_answer": False, "include_raw_content": False}
+
+    def search_doc(self, query: str):
+        """The decoded reply document (used by the smoke driver to keep the raw shape)."""
+        url = f"https://{self.cfg.endpoint_host}{self.cfg.endpoint_path}"
         resp = self.http.post_json(
-            url, body, secret_headers={"Authorization": f"Bearer {self._key}"})
+            url, self.request_body(query), secret_headers={"Authorization": f"Bearer {self._key}"})
         try:
-            doc = json.loads(resp.text)
+            return json.loads(resp.text)
         except ValueError as exc:
             raise FetchError("the search reply was not JSON") from exc
+
+    def search(self, query: str) -> list[dict]:
+        doc = self.search_doc(query)
         results = doc.get("results") if isinstance(doc, dict) else None
         if not isinstance(results, list):
             raise FetchError("the search reply has no results list")
@@ -109,7 +119,8 @@ class LiveRetriever:
     def __init__(self, cfg: LiveConfig | None = None, *, api_key: str | None = None,
                  client: TavilyClient | None = None, cache: DayCache | None = None,
                  ledger: Ledger | None = None, place_labels: Iterable[str] = (),
-                 place_names: Iterable[str] = (), clock: Callable[[], float] = time.monotonic,
+                 place_names: Iterable[str] = (), alias_map: dict[str, str] | None = None,
+                 clock: Callable[[], float] = time.monotonic,
                  today: Callable[[], date] = lambda: datetime.now(timezone.utc).date()):
         self.cfg = cfg or load_live_config()
         self._key, self.client = api_key, client
@@ -117,6 +128,7 @@ class LiveRetriever:
         self.ledger = ledger or Ledger(self.cfg.cache_path / "ledger.json",
                                        self.cfg.monthly_stop_at, self.cfg.monthly_credits)
         self.place_names = list(place_names)
+        self.alias_map = dict(alias_map or {})
         self.vocab = vocabulary([*place_labels, *self.place_names])
         self._clock, self._today = clock, today
         self.searches_this_request = 0
@@ -170,7 +182,7 @@ class LiveRetriever:
         today = self._today()
         queries = build_queries(places, states, month, today, self.place_names,
                                 self.cfg.default_searches_per_request)
-        scope = [*self.place_names, *STATE_NAMES.values()]
+        scope = [*self.place_names, *self.alias_map, *STATE_NAMES.values()]
         res = LiveResult()
         statuses = []
         seen: set[str] = set()
@@ -179,7 +191,7 @@ class LiveRetriever:
             statuses.append(status)
             res.cache_hits += int(cached)
             for it in to_items(results, q, scope, today.isoformat(), self.cfg.snippet_max_chars,
-                               self.place_names):
+                               self.place_names, self.alias_map):
                 if it.chunk_id not in seen and not injection_flags(it.text):
                     seen.add(it.chunk_id)
                     res.items.append(it)
@@ -209,12 +221,13 @@ def live_retrieve(query: str, places: list[str] | None = None, k: int = 5, *,
         reg = load_core_registry()
         names = [e.name for e in reg.entries if not e.holdout]
         labels = [a for e in reg.entries if not e.holdout for a in e.aliases]
-        retriever = LiveRetriever(place_labels=labels, place_names=names)
+        amap = {a: e.name for e in reg.entries if not e.holdout for a in e.aliases}
+        retriever = LiveRetriever(place_labels=labels, place_names=names, alias_map=amap)
     results, status, _ = retriever.search(query)
     today = retriever._today().isoformat()
-    scope = [*retriever.place_names, *STATE_NAMES.values()]
+    scope = [*retriever.place_names, *retriever.alias_map, *STATE_NAMES.values()]
     items = to_items(results, query, scope, today, retriever.cfg.snippet_max_chars,
-                     retriever.place_names)
+                     retriever.place_names, retriever.alias_map)
     if places:
         want = {p.casefold() for p in places}
         items = [i for i in items if i.place.casefold() in want or not i.place]
