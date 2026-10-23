@@ -474,6 +474,37 @@ PHASE7_MUTATIONS = [
 ]
 
 
+# Phase 8 (D110, D111): mutations M146+ run against the app tests only (--phase8).
+PHASE8_TESTS = ["tests/test_app_logic.py", "tests/test_app_page.py"]
+PHASE8_MUTATIONS = [
+    ("M146 one Deps object is shared by live-on and live-off runs", "app/state.py",
+     "    k = bool(use_live)\n", "    k = True\n"),
+    ("M147 a live view may be written to the disk cache", "app/query_cache.py",
+     "    if use_live:\n        return False\n    if view.get(\"live_status\") not in DISK_LIVE_STATUSES:\n"
+     "        return False\n    return not any(s.get(\"live\") for s in (view.get(\"final\") or {})"
+     ".get(\"sources\", []))\n",
+     "    return True\n"),
+    ("M148 the terms notice is shown although the live step did not run", "app/state.py",
+     "    return live_ran(view)\n", "    return True\n"),
+    ("M149 the page redactor returns text unchanged", "app/state.py",
+     "        text = str(text)\n", "        return str(text)\n"),
+    ("M150 blog rows get the Wikipedia CC BY-SA attribution", "app/state.py",
+     "            if kind in (\"wikipedia\", \"wikivoyage\", \"reference\"):\n",
+     "            if kind in (\"wikipedia\", \"wikivoyage\", \"reference\", \"blog\"):\n"),
+    ("M151 the form's free text is added to the places passed on", "app/state.py",
+     "               \"named_places\": places}\n", "               \"named_places\": places + interests}\n"),
+    ("M152 the run lock is not released by the worker", "app/state.py",
+     "            _RUN_LOCK.release()\n            handle.done.set()\n", "            handle.done.set()\n"),
+    ("M153 the start and end city are not validated", "app/state.py",
+     "        msg = check_city(value, resolve_city)\n", "        msg = None\n"),
+    ("M154 an unknown free-text place is accepted as a place name", "app/state.py",
+     "    if len(found) != 1:\n        return \"unknown\", None\n",
+     "    if len(found) != 1:\n        return \"ok\", text\n"),
+    ("M155 the cache key leaves out use_live", "app/query_cache.py",
+     "\"use_live\": bool(use_live)}", "\"use_live\": False}"),
+]
+
+
 def main() -> int:
     survived = 0
     rows = []
@@ -481,7 +512,10 @@ def main() -> int:
     routing = [(m, ROUTING_TESTS) for m in ROUTING_MUTATIONS]
     retrieval = [(m, RETRIEVAL_TESTS) for m in RETRIEVAL_MUTATIONS]
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
-    if "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
+    phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
+    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M155
+        plan = phase8
+    elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7
     elif "--routing" in sys.argv[1:]:  # --routing runs only M30 to M41
         plan = routing
@@ -490,7 +524,7 @@ def main() -> int:
     elif "--retrieval" in sys.argv[1:]:  # --retrieval runs only M42+
         plan = retrieval
     else:
-        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7
+        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7 + phase8
     for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()
