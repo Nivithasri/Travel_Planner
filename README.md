@@ -73,8 +73,8 @@ settings and contract models), `src/collect/sources.py` (collectors) and `src/co
 stores, coverage, ensure_place, orchestrator), `src/places/places.py` (registry, Wikidata, resolver),
 `src/facts/facts.py` (facts layer), `src/process` (cleaning, chunking, enrichment), `src/retrieval` (indexes,
 fusion, query understanding, filters, freshness, rerank, MMR, corrective pass, `retrieve()`), `src/tools`
-(`travel_time`, `check_season`), `eval` (queries, qrels, metrics, ablation, significance); `tests/` has 40
-files (1,161 tests). `src/agents` and `app` are filled in later phases. `data/raw` and `data/processed` are gitignored; the frozen
+(`travel_time`, `check_season`), `eval` (queries, qrels, metrics, ablation, significance); `src/agents` (planner, writer, critic, LangGraph pipeline), `src/live` (live search layer) and
+`scripts/run_pipeline.py` (CLI); `tests/` has 51 files (1,284 tests). `app` is filled in Phase 8. `data/raw` and `data/processed` are gitignored; the frozen
 corpus rules are in [CLAUDE.md](CLAUDE.md). Results and the commands that reproduce them are in [LOG.md](LOG.md);
 decisions in [docs/decisions.md](docs/decisions.md); contracts in [docs/contracts.md](docs/contracts.md);
 the session handoff in [docs/HANDOFF.md](docs/HANDOFF.md).

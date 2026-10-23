@@ -101,6 +101,21 @@ def test_when_over_budget_the_last_corpus_items_go_first_and_are_recorded():
     assert packed.items and packed.items[0].alias == "S1"
 
 
+def test_a_prompt_at_the_char_limit_still_respects_the_reservation_budget():
+    places = ["Hampi", "Badami"]
+    long = "Visitors should plan the visit early because the site gets hot. " * 6
+    ev = {p: [item(f"{p}{i}", place=p, text=long) for i in range(3)] for p in places}
+    packed = pack(plan_for(places), ev, [], CFG)
+    full = writer.build_messages(ParsedRequest(text="trip"), plan_for(places), packed, CFG)
+    limit = writer.reservation_tokens(full, 2000) - 200  # chars are under 9000, tokens are not
+    packed = pack(plan_for(places), ev, [], CFG)
+    edge = {**CFG, "writer": {**W, "prompt_chars_max": 9000, "max_tokens": 2000,
+                              "reservation_max_tokens": limit}}
+    msgs = writer.build_messages(ParsedRequest(text="trip"), plan_for(places), packed, edge)
+    assert writer.reservation_tokens(msgs, 2000) <= limit
+    assert any(d["reason"] == "prompt_budget" for d in packed.dropped)
+
+
 def test_the_prompt_marks_live_and_limited_sources_and_frames_sources_as_data():
     ev = {"Munnar": [item("m1", place="Munnar", prov="rule_only")]}
     live = [item("live:bb", st="live", text="Road works on the ghat road this week.",

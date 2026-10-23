@@ -80,7 +80,10 @@ def build_messages(request: ParsedRequest, plan: Plan, packed: Packed, cfg: dict
         user = (f"REQUEST: {request_block(request, w['request_chars_max'])}\n"
                 f"PLAN:\n{plan_block(plan, w['plan_chars_max'])}\n"
                 f"BACKUPS: {backups}\nSOURCES:\n{evidence_block(packed)}")
-        if len(SYSTEM) + len(user) <= w["prompt_chars_max"] or not packed.items:
+        messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]
+        fits = (len(SYSTEM) + len(user) <= w["prompt_chars_max"]
+                and reservation_tokens(messages, w["max_tokens"]) <= w["reservation_max_tokens"])
+        if fits or not packed.items:
             break
         idx = max((i for i, p in enumerate(packed.items) if p.alias.startswith("S")),
                   default=None)
@@ -88,7 +91,7 @@ def build_messages(request: ParsedRequest, plan: Plan, packed: Packed, cfg: dict
             idx = len(packed.items) - 1
         gone = packed.items.pop(idx)
         packed.dropped.append({"chunk_id": gone.item.chunk_id, "reason": "prompt_budget"})
-    return [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]
+    return messages
 
 
 def reservation_tokens(messages: list[dict], max_tokens: int) -> int:

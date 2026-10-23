@@ -1,6 +1,6 @@
 # Phase status
 Tick only after verification commands were run (see LOG.md).
-Phases 1 to 6 are CLOSED; Phase 7 is IN PROGRESS. Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 7 (Valincia).
+Phases 1 to 7 are CLOSED. Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 8 (Valincia).
 
 ## Phase 0: Scaffold and shared infrastructure
 - [x] pyproject.toml, src/common/{config,cache,llm,schemas}.py (verified: `python -m pytest -q` 128 passed, `python -m ruff check .` clean)
@@ -76,7 +76,7 @@ Phases 1 to 6 are CLOSED; Phase 7 is IN PROGRESS. Phase 5 is PROVISIONAL until t
 - [ ] Caveats: chat-made round-2 labels unvalidated; freshness 0 (D32); 27 test queries; popular/hidden mix not evaluable (D44)
 - [x] Done when: the ablation table is complete and `retrieve()` is frozen (it returns ranked dense_contextual results; filters, rerank and freshness exist as measured, non-frozen options)
 
-## Phase 7: Place cards and agent pipeline (IN PROGRESS: code through C7 done, real LLM runs done with live OFF; live layer fixture-tested only; card spot-check, review and tag open)
+## Phase 7: Place cards and agent pipeline (CLOSED 2026-10-23: live layer fixture-tested only)
 - [x] Place cards (26, extractive, model-written warnings only), blind spot-check sheet produced (owner to fill and score)
 - [x] Deterministic planner (hours, daily limit, hubs never stops, excluded places only when named, relative less-visited mix), rough budget (ASSUMED figures)
 - [x] Streaming writer under the TPM budget (reservation 2.5k to 3.1k of 5k), evidence packer with injection defence, rule critic R1 to R7 with one repair pass
@@ -84,7 +84,7 @@ Phases 1 to 6 are CLOSED; Phase 7 is IN PROGRESS. Phase 5 is PROVISIONAL until t
 - [x] Five real end-to-end requests with the live layer OFF: 3 passed, 1 repaired, 1 failed_rules (Kerala in July: one evaluated place, poor season; reported not hidden)
 - [ ] Live layer: built behind the terms gate, NOT exercised (terms not verified; provider shape assumed)
 - [x] Card spot-check scored (D106): about_place 0.982, valid 0.579
-- [ ] /phase-review 7; tag phase-7-done (only after the owner confirms)
+- [x] /phase-review 7 done (D107); tag phase-7-done created on the owner's instruction
 - [ ] Done when: a query returns a cited itinerary end to end with tips, warnings, a rough budget and backups: met with live OFF; "using live evidence when the live step succeeds" is NOT yet shown.
 
 ## Phase 8: App
