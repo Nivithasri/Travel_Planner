@@ -177,7 +177,8 @@ RETRIEVAL_TESTS = ["tests/test_fusion.py", "tests/test_significance.py", "tests/
                    "tests/test_variants.py", "tests/test_query_understanding.py",
                    "tests/test_filters.py", "tests/test_freshness.py", "tests/test_mmr.py",
                    "tests/test_grader.py", "tests/test_pool2.py", "tests/test_label_batches.py",
-                   "tests/test_rescore.py", "tests/test_retrieve.py"]
+                   "tests/test_rescore.py", "tests/test_retrieve.py",
+                   "tests/test_sensitivity_binary.py", "tests/test_spotcheck_r2.py"]
 
 # Phase 6 (D84 to D94): each mutation is run against the retrieval tests (M42+).
 RETRIEVAL_MUTATIONS = [
@@ -332,6 +333,19 @@ RETRIEVAL_MUTATIONS = [
     ("M97 an explicit empty filter no longer overrides the parsed one", "src/retrieval/filters.py",
      "return cls.from_dict({**base, **(explicit or {})})",
      "return cls.from_dict({**base, **{k: v for k, v in (explicit or {}).items() if v}})"),
+    ("M99 the sensitivity collapse keeps grade 2", "scripts/sensitivity_binary.py",
+     "c: min(int(g), 1) for c, g in rels.items()", "c: int(g) for c, g in rels.items()"),
+    ("M100 chat share counts the pairs that were NOT judged in round two",
+     "scripts/sensitivity_binary.py",
+     "sum(1 for q, c in slots if c in r2.get(q, {}))",
+     "sum(1 for q, c in slots if c not in r2.get(q, {}))"),
+    ("M101 binary spot-check agreement ignores owner 2 / chat 2 cells",
+     "scripts/sensitivity_binary.py",
+     "both1 = sum(table[i][j] for i in (1, 2) for j in (1, 2))",
+     "both1 = sum(table[i][j] for i in (1, 2) for j in (1,))"),
+    ("M102 the spot-check sampler ignores the minimum blog count", "scripts/spotcheck_r2.py",
+     "    rotate([c for c in order if c[\"source_type\"] == \"blog\"], min_blog)\n",
+     "    rotate([c for c in order if c[\"source_type\"] == \"blog\"], 0)\n"),
     ("M98 the file parser raises a bare KeyError again", "src/retrieval/retrieve.py",
      "            raise QueryNotPrepared(\n                \"this query has no stored parse",
      "            raise KeyError(\n                \"this query has no stored parse"),
