@@ -150,8 +150,9 @@ class PlanLeg(BaseModel):
     origin: str
     destination: str
     hours: float
-    days: int  # travel days this leg takes under the daily limit
+    days: int  # travel days this leg takes under the daily limit (0 for a zero-hour leg)
     hill_note: bool = False
+    kind: Literal["arrival", "between", "departure"] = "between"
 
 
 class PlanDay(BaseModel):
