@@ -401,3 +401,15 @@ def test_an_alias_such_as_mysore_resolves_to_the_plan_place_and_is_kept(tmp_path
     regional = run({"Mysore": "Mysuru"}, region)
     assert not [p for p in regional.packed_obj.items if p.item.is_live]
     assert any(d["reason"] == "live_unresolved" for d in regional.final["dropped"])
+
+
+def test_a_place_the_request_named_keeps_its_live_item_even_when_it_is_not_a_stop():
+    names = ["Hampi", "Badami", "Gokarna", "Mysuru"]
+    over = {**OVER, "duration_days": 2, "named_places": names}
+    base = run_local(make_deps(), TEXT, over)
+    stops = {s.place for s in base.plan.stops}
+    left = [n for n in names if n not in stops]
+    assert left, "the test needs a named place that did not become a stop"
+    item = live_item_at("live:cc0000000005", left[0], "https://n.test/named")
+    st = run_local(make_deps(live=FakeLive([item])), TEXT, over)
+    assert {p.item.chunk_id for p in st.packed_obj.items if p.item.is_live} == {item.chunk_id}

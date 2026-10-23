@@ -614,3 +614,25 @@ def test_the_interest_list_offers_temples_and_the_other_expected_interests():
                  "wildlife", "backwaters", "waterfalls", "nature", "food"):
         assert name in S.INTEREST_CHOICES
     assert len(S.INTEREST_CHOICES) == len(set(S.INTEREST_CHOICES)) == 11
+
+
+# ---- D119: the in plan and not cited counts -----------------------------------------------------
+
+def test_the_plan_filter_and_citation_counts_come_out_exact_through_the_pipeline():
+    from tests.test_graph import FakeLive, live_item_at
+
+    items = [live_item_at("live:aa0000000001", "Hampi", "https://n.test/1"),
+             live_item_at("live:aa0000000002", "Hampi", "https://n.test/2"),
+             live_item_at("live:aa0000000003", "Hampi", "https://n.test/3"),
+             live_item_at("live:bb0000000004", "Munnar", "https://n.test/4")]  # not in the plan
+    deps = make_deps(live=FakeLive(items))
+    h = S.start_run(deps, TEXT, {**OVER, "named_places": ["Hampi"]})
+    assert h.done.wait(30) and h.error is None
+    view = S.view_from_state(h.state, 0.0, trace=h.trace, use_live=True)
+    c = view["live_counts"]
+    assert (c["in_scope"], c["in_plan"], c["merged"], c["cited"], c["not_cited"]) == (4, 3, 3, 1, 2)
+    assert S.live_status_line(view) == (
+        "live search: ok, 1 searches, 0 results, 4 in scope, 3 in plan, 3 merged, 1 cited, "
+        "2 not cited")
+    uncited = view["final"]["uncited_live"]
+    assert len(uncited) == 2 and all(u["chunk_id"].startswith("live:aa") for u in uncited)
