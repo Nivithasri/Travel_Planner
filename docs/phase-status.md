@@ -1,6 +1,6 @@
 # Phase status
 Tick only after verification commands were run (see LOG.md).
-Phases 1 to 7 are CLOSED. Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 8 (Valincia).
+Phases 1 to 7 are CLOSED. Phase 8 is BUILT and awaits the owner's hand-run and /phase-review 8 (not tagged). Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 9 (Valincia).
 
 ## Phase 0: Scaffold and shared infrastructure
 - [x] pyproject.toml, src/common/{config,cache,llm,schemas}.py (verified: `python -m pytest -q` 128 passed, `python -m ruff check .` clean)
@@ -87,9 +87,13 @@ Phases 1 to 7 are CLOSED. Phase 5 is PROVISIONAL until the owner spot-checks abo
 - [x] /phase-review 7 done (D107); tag phase-7-done created on the owner's instruction
 - [ ] Done when: a query returns a cited itinerary end to end with tips, warnings, a rough budget and backups: met with live OFF; "using live evidence when the live step succeeds" is NOT yet shown.
 
-## Phase 8: App
-- [ ] Tasks (see docs/plan.md)
-- [ ] Done when: the demo runs locally; corpus retrieval and generation need no internet, the live step does and degrades to corpus and cache without it (plan.md; live layer is D31, proposed to Valincia).
+## Phase 8: App (BUILT 2026-10-23, D110 and D111; awaiting the owner's hand-run and /phase-review 8; NOT tagged)
+- [x] One Streamlit page (app/streamlit_app.py): form, streamed itinerary, sources panel with links (live rows "live, fetched <date>"), warnings, live-status notice, collapsible timing table, query cache (corpus-only JSON on disk, live-on in session memory only), one-run-at-a-time lock, redaction, localhost config
+- [x] Verified (commands in LOG.md): pytest 1328 passed / 11 skipped (50 new), ruff clean, mutations M146-M155 all caught (full suite: 154 of 155 caught, M32 survives only because data/raw is absent here)
+- [x] Corpus path needs no internet beyond the hosted model; live search is optional, off by default, and the page works from the corpus without it (headless tests with a fake pipeline)
+- [ ] Not verified: no real browser session, no real pipeline run, LLM call or live search through the page (the owner's hand-run)
+- [ ] Known gaps: live search covers the request's named places or states, not the planner's stops (D107 a); 25 to 40 s model load on the first request; card items 58% useful (labelled)
+- [ ] Done when: the demo runs locally (headless-tested; the owner's hand-run confirms); corpus retrieval and generation need no internet beyond the hosted model, and the live step degrades to the corpus without it.
 
 ## Phase 9: Evaluation and analysis
 - [ ] Tasks (see docs/plan.md)
