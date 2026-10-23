@@ -83,7 +83,8 @@ Phases 1 to 6 are CLOSED; Phase 7 is IN PROGRESS. Phase 5 is PROVISIONAL until t
 - [x] LangGraph graph with a local fallback, CLI, per-node timing logs
 - [x] Five real end-to-end requests with the live layer OFF: 3 passed, 1 repaired, 1 failed_rules (Kerala in July: one evaluated place, poor season; reported not hidden)
 - [ ] Live layer: built behind the terms gate, NOT exercised (terms not verified; provider shape assumed)
-- [ ] Card spot-check scored by the owner; /phase-review 7; tag phase-7-done (only after the owner confirms)
+- [x] Card spot-check scored (D106): about_place 0.982, valid 0.579
+- [ ] /phase-review 7; tag phase-7-done (only after the owner confirms)
 - [ ] Done when: a query returns a cited itinerary end to end with tips, warnings, a rough budget and backups: met with live OFF; "using live evidence when the live step succeeds" is NOT yet shown.
 
 ## Phase 8: App
