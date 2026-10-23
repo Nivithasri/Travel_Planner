@@ -343,3 +343,61 @@ def test_live_items_in_the_prompt_but_not_cited_are_listed_without_any_text():
     assert "bazaar" not in str(uncited)  # ids, labels and a link only
     none = run_local(make_deps(), TEXT, OVER)
     assert none.final["uncited_live"] == []
+
+
+# ---- D119: live results are filtered to the plan before the writer sees them --------------------
+
+def live_item_at(cid, place, url):
+    return EvidenceItem(chunk_id=cid, place=place, source_type="live", url=url,
+                        provenance="live", fetch_date="2026-10-24", score=0.9,
+                        text=f"News from {place or 'the region'}: the gates now open at nine.")
+
+
+def test_live_items_for_other_places_or_no_place_never_reach_the_writer():
+    items = [live_item_at("live:in0000000001", "Hampi", "https://n.test/a"),
+             live_item_at("live:out000000002", "Munnar", "https://n.test/b"),  # not in the plan
+             live_item_at("live:none00000003", "", "https://n.test/c")]  # region-level
+    client = FakeClient()
+    st = run_local(make_deps(client=client, live=FakeLive(items)), TEXT,
+                   {**OVER, "named_places": ["Hampi"]})
+    prompt = " ".join(m["content"] for msgs in client.messages for m in msgs)
+    assert "live:in0000000001" in {p.item.chunk_id for p in st.packed_obj.items}
+    assert {p.item.chunk_id for p in st.packed_obj.items if p.item.is_live} == {"live:in0000000001"}
+    assert "Munnar: the gates" not in prompt and "the region: the gates" not in prompt
+    reasons = {d["chunk_id"]: d["reason"] for d in st.final["dropped"]}
+    assert reasons["live:out000000002"] == "live_out_of_plan"
+    assert reasons["live:none00000003"] == "live_unresolved"
+    assert "2 live search result(s) were left out" in st.final["text"]
+    assert all(u["chunk_id"] == "live:in0000000001" or not u["live"] for u in
+               st.final["sources"] + st.final["uncited_live"])
+    assert not any(u["chunk_id"] in reasons for u in st.final["uncited_live"])
+
+
+def test_an_alias_such_as_mysore_resolves_to_the_plan_place_and_is_kept(tmp_path):
+    from src.live.search import LiveRetriever
+    from src.live.store import DayCache, Ledger
+    from tests.test_live import LABELS, NAMES, TODAY, cfg
+    from tests.test_live import FakeClient as SearchClient
+
+    mysore = {"url": "https://a.test/m", "title": "Mysore palace", "published_date": None,
+              "content": "Mysore palace opens at ten in the morning on weekdays."}
+    region = {"url": "https://a.test/k", "title": "Karnataka tourism", "published_date": None,
+              "content": "Karnataka palaces and forts open at ten on weekdays this month."}
+
+    def run(alias_map, result):
+        c = cfg(cache_dir=str(tmp_path / "live"))
+        live = LiveRetriever(c, api_key="k", client=SearchClient(results=[result]),
+                             cache=DayCache(tmp_path / "live", False, lambda: "2026-10-24"),
+                             ledger=Ledger(tmp_path / "l.json", c.monthly_stop_at,
+                                           c.monthly_credits, lambda: "2026-10-24"),
+                             place_labels=LABELS, place_names=NAMES, alias_map=alias_map,
+                             today=lambda: TODAY)
+        return run_local(make_deps(live=live), "Mysuru palace", {
+            **OVER, "named_places": ["Mysuru"], "duration_days": 3})
+
+    kept = run({"Mysore": "Mysuru"}, mysore)
+    assert [p.item.place for p in kept.packed_obj.items if p.item.is_live] == ["Mysuru"]
+    # a result that names only the state is in scope for the search but resolves to no place
+    regional = run({"Mysore": "Mysuru"}, region)
+    assert not [p for p in regional.packed_obj.items if p.item.is_live]
+    assert any(d["reason"] == "live_unresolved" for d in regional.final["dropped"])

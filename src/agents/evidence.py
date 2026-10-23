@@ -117,7 +117,7 @@ def _rank(item: EvidenceItem, interests=()) -> tuple:
 
 
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
-         cfg: dict | None = None, interests=()) -> Packed:
+         cfg: dict | None = None, interests=(), named_places=()) -> Packed:
     """At most `items_per_stop` corpus items per planned stop (warnings first) and `live_items`
     live items. Order is the plan's stop order, then live; aliases follow that order."""
     w = (cfg or load_pipeline_config())["writer"]
@@ -147,7 +147,16 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
             out.items.append(PackedItem(f"S{n_s}", item, text, stop.evidence_class == "limited"))
             taken += 1
     taken = 0
+    # D119: a live item reaches the writer only if its resolved place is a stop of the plan or a
+    # place the request named; items about other places, or about no resolved place, are dropped.
+    in_plan = {s.place for s in plan.stops} | set(named_places)
     for item in sorted(live, key=lambda i: (-i.score, i.chunk_id)):
+        if not item.place:
+            out.dropped.append({"chunk_id": item.chunk_id, "reason": "live_unresolved"})
+            continue
+        if item.place not in in_plan:
+            out.dropped.append({"chunk_id": item.chunk_id, "reason": "live_out_of_plan"})
+            continue
         if taken >= w["live_items"]:
             break
         flags = injection_flags(item.text) + injection_flags(item.url)

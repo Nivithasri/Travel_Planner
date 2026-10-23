@@ -605,6 +605,27 @@ PHASE8B_MUTATIONS = [
     ("M188 the purge accepts data/ and eval/ inside a .cache path", "scripts/purge_cache.py",
      "        if p == root or root in p.parents:\n",
      "        if False:\n"),
+    ("M189 named places do not count as in the plan", "src/agents/evidence.py",
+     "in_plan = {s.place for s in plan.stops} | set(named_places)",
+     "in_plan = {s.place for s in plan.stops}"),
+    ("M190 live items with no resolved place are kept", "src/agents/evidence.py",
+     "        if not item.place:\n",
+     "        if False:\n"),
+    ("M191 live items about other places are kept", "src/agents/evidence.py",
+     "        if item.place not in in_plan:\n",
+     "        if False:\n"),
+    ("M192 the named places are not given to the packer", "src/agents/nodes.py",
+     "named_places=req.named_places)",
+     "named_places=())"),
+    ("M193 the in-plan count ignores the items that were left out", "app/state.py",
+     "\"in_plan\": max(t.in_scope - left_out, 0)",
+     "\"in_plan\": t.in_scope"),
+    ("M194 the not-cited count is wrong", "app/state.py",
+     "\"not_cited\": max(merged - cited, 0)",
+     "\"not_cited\": cited"),
+    ("M195 the answer does not say that live results were left out", "src/agents/nodes.py",
+     "    if n_live_out:\n",
+     "    if False:\n"),
 ]
 
 
@@ -632,7 +653,7 @@ def main() -> int:
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
     phase8 += [(m, PHASE8B_TESTS) for m in PHASE8B_MUTATIONS]
-    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M188
+    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M195
         plan = phase8
     elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7

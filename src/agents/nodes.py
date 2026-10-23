@@ -262,7 +262,7 @@ def write_node(state: RunState, deps: Deps) -> dict:
         return {"draft": "", "packed": {}, "packed_obj": E.Packed()}
     stop_ev = {s.place: state.corpus_evidence.get(s.place, []) for s in plan.stops}
     packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg,
-                    interests=req.interests)
+                    interests=req.interests, named_places=req.named_places)
     messages = W.build_messages(req, plan, packed, deps.pipeline_cfg)
     before = deps.tokens_used()
     draft = W.write(deps.client, deps.model, messages, deps.pipeline_cfg, deps.on_piece)
@@ -337,6 +337,10 @@ def finalize_node(state: RunState, deps: Deps) -> dict:
     dropped = state.packed_obj.dropped if state.packed_obj else []
     if any(d["reason"] == "blog_excluded" for d in dropped):
         notes.append("blog sources were left out of the writer's context (no terms)")
+    n_live_out = sum(1 for d in dropped if d["reason"] in ("live_out_of_plan", "live_unresolved"))
+    if n_live_out:
+        notes.append(f"{n_live_out} live search result(s) were left out because they are not about "
+                     "a place in your plan")
     lines += ["", "## Notes and warnings", *[f"- {n}" for n in dict.fromkeys(notes)]]
     cited = {s["alias"] for s in sources}
     uncited_live = [

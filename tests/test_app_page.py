@@ -360,9 +360,11 @@ def test_the_page_drains_the_streamed_pieces_of_the_real_pipeline(
 
 
 LIVE_OUTCOMES = [
-    ("ok", {}, "live search: ok, 2 searches, 8 results, 2 in scope, 2 merged, 1 cited"),
+    ("ok", {}, "live search: ok, 2 searches, 8 results, 2 in scope, 2 in plan, 2 merged, "
+               "1 cited, 1 not cited"),
     ("empty", {"client": "empty"},
-     "live search: empty, 2 searches, 0 results, 0 in scope, 0 merged, 0 cited"),
+     "live search: empty, 2 searches, 0 results, 0 in scope, 0 in plan, 0 merged, 0 cited, "
+     "0 not cited"),
     ("error", {"client": "boom"},
      "live search: error: live search failed; answers use the corpus only"),
     ("no_key", {"key": None}, "live search: no key"),

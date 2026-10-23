@@ -118,8 +118,8 @@ def test_a_prompt_at_the_char_limit_still_respects_the_reservation_budget():
 
 def test_the_prompt_marks_live_and_limited_sources_and_frames_sources_as_data():
     ev = {"Munnar": [item("m1", place="Munnar", prov="rule_only")]}
-    live = [item("live:bb", st="live", text="Road works on the ghat road this week.",
-                 fetch_date="2026-10-23")]
+    live = [item("live:bb", place="Munnar", st="live",
+                 text="Road works on the ghat road this week.", fetch_date="2026-10-23")]
     packed = pack(plan_for(["Munnar"], limited=("Munnar",)), ev, live, CFG)
     msgs = writer.build_messages(ParsedRequest(text="Munnar trip"), plan_for(["Munnar"]),
                                  packed, CFG)
@@ -262,3 +262,35 @@ def test_the_writer_rule_prefers_live_sources_for_hours_prices_and_closures():
     assert "prefer an L source over an S source" in writer.SYSTEM
     assert "hours, prices and closures" in writer.SYSTEM
     assert len(writer.SYSTEM) <= W["system_chars_max"]
+
+
+# ---- D119: live items are kept only for a plan stop or a named place ----------------------------
+
+def live_at(cid, place, score=0.5):
+    return item(cid, place=place, st="live", text="The gate timings changed this week.",
+                fetch_date="2026-10-24", score=score)
+
+
+def test_a_live_item_is_kept_only_when_its_place_is_a_stop_or_was_named():
+    live = [live_at("live:stop", "Hampi", 0.9), live_at("live:named", "Gokarna", 0.8),
+            live_at("live:other", "Badami", 0.7), live_at("live:none", "", 0.95)]
+    p = pack(plan_for(["Hampi"]), {}, live, CFG, named_places=["Gokarna"])
+    assert [x.item.chunk_id for x in p.items] == ["live:stop", "live:named"]
+    assert [x.alias for x in p.items] == ["L1", "L2"]
+    reasons = {d["chunk_id"]: d["reason"] for d in p.dropped}
+    assert reasons == {"live:other": "live_out_of_plan", "live:none": "live_unresolved"}
+
+
+def test_an_unresolved_item_is_never_sent_to_the_writer_even_with_room_to_spare():
+    p = pack(plan_for(["Hampi"]), {}, [live_at("live:none", "")], CFG)
+    assert p.items == [] and p.dropped == [{"chunk_id": "live:none",
+                                           "reason": "live_unresolved"}]
+    msgs = writer.build_messages(ParsedRequest(text="t"), plan_for(["Hampi"]), p, CFG)
+    assert not writer.holds_live_text(msgs)
+
+
+def test_dropped_live_items_do_not_use_up_the_live_item_cap():
+    live = [live_at(f"live:o{i}", "Badami", 0.9 - i / 100) for i in range(5)]
+    live += [live_at(f"live:i{i}", "Hampi", 0.5 - i / 100) for i in range(6)]
+    p = pack(plan_for(["Hampi"]), {}, live, CFG)
+    assert [x.item.chunk_id for x in p.items] == ["live:i0", "live:i1", "live:i2", "live:i3"]

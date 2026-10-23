@@ -483,8 +483,11 @@ def live_counts(state, trace: LiveTrace | None) -> dict:
     merged = sum(1 for p in getattr(packed, "items", []) if p.item.is_live)
     cited = sum(1 for s in (state.final or {}).get("sources", []) if s.get("live"))
     t = trace or LiveTrace()
+    left_out = sum(1 for d in (state.final or {}).get("dropped", [])
+                   if d.get("reason") in ("live_out_of_plan", "live_unresolved"))
     return {"searches": t.searches, "results": t.results, "in_scope": t.in_scope,
-            "merged": merged, "cited": cited}
+            "in_plan": max(t.in_scope - left_out, 0), "merged": merged, "cited": cited,
+            "not_cited": max(merged - cited, 0)}
 
 
 def view_from_state(state, wall_s: float = 0.0, trace: LiveTrace | None = None,
@@ -507,7 +510,8 @@ def live_status_line(view: dict) -> str | None:
     if status in ("ok", "empty"):
         return (f"live search: {status}, {c.get('searches', 0)} searches, "
                 f"{c.get('results', 0)} results, {c.get('in_scope', 0)} in scope, "
-                f"{c.get('merged', 0)} merged, {c.get('cited', 0)} cited")
+                f"{c.get('in_plan', 0)} in plan, {c.get('merged', 0)} merged, "
+                f"{c.get('cited', 0)} cited, {c.get('not_cited', 0)} not cited")
     if status == "error":
         reason = (view.get("live_note") or "").replace(TERMS_NOTICE, "").strip(" ;")
         return f"live search: error: {redact(reason or 'the search failed')}"

@@ -482,9 +482,10 @@ def run_live(tmp_path, *, client=None, key="k", **kw):
 def test_the_live_status_line_gives_counts_for_a_successful_search(tmp_path):
     _, h, view = run_live(tmp_path)
     line = S.live_status_line(view)
-    assert line == "live search: ok, 2 searches, 8 results, 2 in scope, 2 merged, 1 cited"
-    assert view["live_counts"] == {"searches": 2, "results": 8, "in_scope": 2, "merged": 2,
-                                   "cited": 1}
+    assert line == ("live search: ok, 2 searches, 8 results, 2 in scope, 2 in plan, 2 merged, "
+                    "1 cited, 1 not cited")
+    assert view["live_counts"] == {"searches": 2, "results": 8, "in_scope": 2, "in_plan": 2,
+                                   "merged": 2, "cited": 1, "not_cited": 1}
     assert not any(w in line for w in ("ruins", "Hampi", "Badami", "Paris", "http"))
     sources = h.state.final["sources"]
     assert [s["live"] for s in sources].count(True) == 1  # the cited live item reaches Sources
@@ -493,7 +494,8 @@ def test_the_live_status_line_gives_counts_for_a_successful_search(tmp_path):
 def test_the_live_status_line_for_empty_error_no_key_and_not_used(tmp_path):
     _, _, empty = run_live(tmp_path, client=SearchClient(results=[]))
     assert S.live_status_line(empty) == (
-        "live search: empty, 2 searches, 0 results, 0 in scope, 0 merged, 0 cited")
+        "live search: empty, 2 searches, 0 results, 0 in scope, 0 in plan, 0 merged, 0 cited, "
+        "0 not cited")
     _, _, err = run_live(tmp_path, client=SearchClient(boom=True))
     line = S.live_status_line(err)
     assert line == "live search: error: live search failed; answers use the corpus only"
