@@ -71,8 +71,10 @@ Use the project virtual environment (`.venv/Scripts/python.exe` on Windows): `bm
 `src/common/{http,cache,llm,schemas}.py` (HTTP client with allowlist and request log; disk cache; Ollama client;
 settings and contract models), `src/collect/sources.py` (collectors) and `src/collect/run.py` (raw and live
 stores, coverage, ensure_place, orchestrator), `src/places/places.py` (registry, Wikidata, resolver),
-`src/facts/facts.py` (facts layer); `tests/` has six files. `src/process`, `src/retrieval`, `src/agents`, `src/tools`,
-`eval`, `app`, `index` are filled in later phases. `data/raw` and `data/processed` are gitignored; the frozen
+`src/facts/facts.py` (facts layer), `src/process` (cleaning, chunking, enrichment), `src/retrieval` (indexes,
+fusion, query understanding, filters, freshness, rerank, MMR, corrective pass, `retrieve()`), `src/tools`
+(`travel_time`, `check_season`), `eval` (queries, qrels, metrics, ablation, significance); `tests/` has 40
+files (1,161 tests). `src/agents` and `app` are filled in later phases. `data/raw` and `data/processed` are gitignored; the frozen
 corpus rules are in [CLAUDE.md](CLAUDE.md). Results and the commands that reproduce them are in [LOG.md](LOG.md);
 decisions in [docs/decisions.md](docs/decisions.md); contracts in [docs/contracts.md](docs/contracts.md);
 the session handoff in [docs/HANDOFF.md](docs/HANDOFF.md).
