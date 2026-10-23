@@ -14,6 +14,7 @@ from app import state as S  # noqa: E402
 from src.agents.state import RunState  # noqa: E402
 from src.common.schemas import REPO_ROOT  # noqa: E402
 from src.live.config import TERMS_NOTICE  # noqa: E402
+from tests.test_graph import make_deps  # noqa: E402
 
 APP = str(REPO_ROOT / "app" / "streamlit_app.py")
 WIKI = "https://en.wikivoyage.org/wiki/Hampi"
@@ -163,6 +164,7 @@ def test_a_corpus_only_run_shows_the_itinerary_sources_and_labels_and_caches_to_
     assert "CC BY-SA" not in sources.loc[1, "Licence"] and sources.loc[1, "Title"] == (
         "Hampi travelogue")
     assert "card warning" in sources.loc[0, "Flags"]
+    assert tuple(sources.columns) == S.SOURCE_FIELDS
     assert "recent" not in page.casefold().replace("last good", "")
 
 
@@ -202,8 +204,9 @@ def test_a_live_on_run_always_runs_shows_the_notice_and_writes_nothing(fake):
     assert TERMS_NOTICE in page and "corpus only: no live search" not in page
     assert len(files(fake)) == 1  # nothing new on disk
     sources = next(d for d in at.dataframe if "Licence" in d.value.columns).value
-    live_row = sources[sources["Source"] == "live"].iloc[0]
-    assert live_row["When"] == "live, fetched 2026-10-23" and "recent" not in str(live_row).lower()
+    live_row = sources[sources["Source"].str.startswith("live")].iloc[0]
+    assert live_row["Source"] == "live, fetched 2026-10-23"
+    assert live_row["Fetch date"] == "2026-10-23" and "recent" not in str(live_row).lower()
     at = submit(at)  # the same inputs again with the tick box still on: still a fresh run
     assert len(fake.calls) == 3
     on_disk = " ".join(p.read_text(encoding="utf-8") for p in files(fake))
@@ -304,3 +307,36 @@ def test_critic_failure_and_repair_are_visible(fake):
     fake.next = lambda use_live: make_state(critic="repaired", repaired=True)
     at = submit(app(), **{"checkbox__f_force": True})
     assert "repaired the draft once" in blob(at)
+
+
+# ---- the real pipeline runner behind the page -----------------------------------------------
+
+@pytest.mark.parametrize("langgraph_available", [True, False])
+def test_the_page_drains_the_streamed_pieces_of_the_real_pipeline(
+        tmp_path, monkeypatch, langgraph_available):
+    """No fake runner: the default runner (run_graph, or run_local without langgraph) runs the
+    real nodes on fake dependencies in the worker thread; the page's loop receives the pieces."""
+    monkeypatch.setattr(QC, "CACHE_DIR", tmp_path / "appcache")
+    monkeypatch.setattr(S, "get_deps", lambda use_live, factory=None: make_deps())
+    monkeypatch.setattr(S, "load_cards", lambda: CARDS)
+    monkeypatch.setattr(S, "load_attribution", lambda: ATTR)
+    monkeypatch.setattr(S, "live_availability",
+                        lambda: {"key_present": True, "enabled": True, "terms_status": "x"})
+    if not langgraph_available:
+        monkeypatch.setitem(__import__("sys").modules, "langgraph", None)
+    seen = []
+    original = S.RunHandle.drain
+
+    def spy(self):
+        out = original(self)
+        seen.append(out)
+        return out
+
+    monkeypatch.setattr(S.RunHandle, "drain", spy)
+    at = submit(app())
+    streamed = "".join(seen)
+    assert "Visitors enjoy" in streamed and "## Day 1" in streamed
+    page = blob(at)
+    assert "# South India itinerary" in page and "## Sources" in page
+    assert "Visitors enjoy" in page and "fresh run" in page
+    assert not S.run_lock_held()

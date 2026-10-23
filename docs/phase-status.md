@@ -89,7 +89,7 @@ Phases 1 to 7 are CLOSED. Phase 8 is BUILT and awaits the owner's hand-run and /
 
 ## Phase 8: App (BUILT 2026-10-23, D110 and D111; awaiting the owner's hand-run and /phase-review 8; NOT tagged)
 - [x] One Streamlit page (app/streamlit_app.py): form, streamed itinerary, sources panel with links (live rows "live, fetched <date>"), warnings, live-status notice, collapsible timing table, query cache (corpus-only JSON on disk, live-on in session memory only), one-run-at-a-time lock, redaction, localhost config
-- [x] Verified (commands in LOG.md): pytest 1328 passed / 11 skipped (50 new), ruff clean, mutations M146-M155 all caught (full suite: 154 of 155 caught, M32 survives only because data/raw is absent here)
+- [x] Verified (commands in LOG.md): pytest 1334 passed / 11 skipped (56 new), ruff clean, mutations M146-M157 all caught (full suite: 154 of 155 caught, M32 survives only because data/raw is absent here)
 - [x] Corpus path needs no internet beyond the hosted model; live search is optional, off by default, and the page works from the corpus without it (headless tests with a fake pipeline)
 - [ ] Not verified: no real browser session, no real pipeline run, LLM call or live search through the page (the owner's hand-run)
 - [ ] Known gaps: live search covers the request's named places or states, not the planner's stops (D107 a); 25 to 40 s model load on the first request; card items 58% useful (labelled)

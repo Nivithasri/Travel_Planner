@@ -441,16 +441,25 @@ def terms_notice_visible(view: dict) -> bool:
     return live_ran(view)
 
 
+SOURCE_FIELDS = ("Alias", "Title", "Place", "Source", "Date", "Fetch date", "Link", "Licence",
+                 "Flags")
+SOURCE_FLAGS = ("card warning", "limited evidence")
+
+
 def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> list[dict]:
-    """Rows for the sources panel. Only links, titles and labels: no chunk text, ever."""
+    """Rows for the sources panel: only the fields in SOURCE_FIELDS, built one by one from short
+    labels, links and dates. No chunk text or excerpt can reach a row, whatever the source dict
+    carries."""
     rows = []
     for s in final.get("sources", []):
         info = attribution.get(s.get("url", ""), {})
         kind = s.get("source_type", "")
         if s.get("live"):
+            fetched = s.get("fetch_date") or "unknown date"
             title, licence = "live web result", "see the linked page"
-            when = f"live, fetched {s.get('fetch_date') or 'unknown date'}"
+            source, date_label = f"live, fetched {fetched}", "undated"
         else:
+            fetched = ""
             title = info.get("title") or s.get("place") or "corpus page"
             if kind in ("wikipedia", "wikivoyage", "reference"):
                 licence = CC_BY_SA
@@ -458,15 +467,15 @@ def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> l
                 licence = "link and title only; no licence terms found"
             else:
                 licence = info.get("license") or "see the linked page"
-            when = (f"published {s['date']}" if kind == "blog" and s.get("date")
-                    else "undated or wiki revision (not a current date)")
+            source = kind
+            date_label = s["date"] if kind == "blog" and s.get("date") else "undated"
         flags = []
         if s.get("chunk_id") in card_warning_ids:
-            flags.append("card warning")
+            flags.append(SOURCE_FLAGS[0])
         if s.get("limited"):
-            flags.append("limited evidence")
+            flags.append(SOURCE_FLAGS[1])
         rows.append({"Alias": s.get("alias", ""), "Title": title, "Place": s.get("place") or "",
-                     "Source": "live" if s.get("live") else kind, "When": when,
+                     "Source": source, "Date": date_label, "Fetch date": fetched,
                      "Link": s.get("url", ""), "Licence": licence, "Flags": ", ".join(flags)})
     return rows
 

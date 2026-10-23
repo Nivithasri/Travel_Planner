@@ -488,9 +488,10 @@ PHASE8_MUTATIONS = [
      "    return live_ran(view)\n", "    return True\n"),
     ("M149 the page redactor returns text unchanged", "app/state.py",
      "        text = str(text)\n", "        return str(text)\n"),
-    ("M150 blog rows get the Wikipedia CC BY-SA attribution", "app/state.py",
-     "            if kind in (\"wikipedia\", \"wikivoyage\", \"reference\"):\n",
-     "            if kind in (\"wikipedia\", \"wikivoyage\", \"reference\", \"blog\"):\n"),
+    ("M150 a source row gets an excerpt field", "app/state.py",
+     "\"Licence\": licence, \"Flags\": \", \".join(flags)})\n",
+     "\"Licence\": licence, \"Flags\": \", \".join(flags),\n"
+     "                     \"Excerpt\": s.get(\"text\", \"\")})\n"),
     ("M151 the form's free text is added to the places passed on", "app/state.py",
      "               \"named_places\": places}\n", "               \"named_places\": places + interests}\n"),
     ("M152 the run lock is not released by the worker", "app/state.py",
@@ -502,6 +503,12 @@ PHASE8_MUTATIONS = [
      "    if len(found) != 1:\n        return \"ok\", text\n"),
     ("M155 the cache key leaves out use_live", "app/query_cache.py",
      "\"use_live\": bool(use_live)}", "\"use_live\": False}"),
+    ("M156 the default runner never falls back to run_local", "app/state.py",
+     "    except ImportError:\n        from src.agents.graph import run_local\n",
+     "    except ZeroDivisionError:\n        from src.agents.graph import run_local\n"),
+    ("M157 the default runner is always run_local", "app/state.py",
+     "    from src.agents.graph import run_graph\n\n    return run_graph\n",
+     "    from src.agents.graph import run_local\n\n    return run_local\n"),
 ]
 
 
@@ -513,7 +520,7 @@ def main() -> int:
     retrieval = [(m, RETRIEVAL_TESTS) for m in RETRIEVAL_MUTATIONS]
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
-    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M155
+    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M157
         plan = phase8
     elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7

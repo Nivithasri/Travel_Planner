@@ -19,6 +19,7 @@ from src.live.config import LiveConfig
 from src.live.search import LiveRetriever
 from src.live.store import DayCache, Ledger
 from src.tools.travel_time import load_matrix
+from tests.test_graph import OVER, TEXT, make_deps
 
 SENTINELS = ("zzqxsentinelstyle", "zzqxsentinelinterest", "zzqxsentinelconstraint",
              "zzqxsentinelplace")
@@ -302,6 +303,43 @@ def test_the_default_runner_is_the_graph_with_a_local_fallback(monkeypatch):
     assert S.default_runner() is run_local
 
 
+@pytest.mark.parametrize("langgraph_available", [True, False])
+def test_pieces_stream_from_the_real_pipeline_to_the_page_queue_in_both_runner_modes(
+        monkeypatch, langgraph_available):
+    """The worker thread runs the real run_graph (or run_local when langgraph cannot be
+    imported) on fake dependencies; the writer's pieces reach the handle's queue, the final
+    state comes back, and the dependencies are left without a callback."""
+    from src.agents.graph import run_graph, run_local
+
+    if not langgraph_available:
+        monkeypatch.setitem(__import__("sys").modules, "langgraph", None)
+    runner = S.default_runner()
+    assert runner is (run_graph if langgraph_available else run_local)
+    deps = make_deps()
+    handle = S.start_run(deps, TEXT, OVER)  # no runner given: the default one is used
+    assert handle.done.wait(30)
+    assert handle.error is None and handle.state is not None
+    streamed = handle.drain()
+    assert "Visitors enjoy" in streamed and "## Day 1" in streamed  # the raw draft, in pieces
+    assert streamed.count("## Day") == handle.state.draft.count("## Day") >= 1
+    assert set(handle.state.timings) >= {"parse", "write", "critic", "finalize"}
+    assert deps.on_piece is None and not S.run_lock_held()
+    view = S.view_from_state(handle.state)
+    assert "## Sources" in view["final"]["text"] and view["timings"]["write"] >= 0
+
+
+def test_both_runner_modes_give_the_same_itinerary(monkeypatch):
+    texts = []
+    for blocked in (False, True):
+        with monkeypatch.context() as m:
+            if blocked:
+                m.setitem(__import__("sys").modules, "langgraph", None)
+            h = S.start_run(make_deps(), TEXT, OVER)
+            assert h.done.wait(30) and h.error is None
+            texts.append(h.state.final["text"])
+    assert texts[0] == texts[1] and "[chunk:" in texts[0]
+
+
 # ---- redaction ---------------------------------------------------------------------------------
 
 def test_redact_removes_keys_and_api_hosts_but_keeps_page_links():
@@ -345,25 +383,46 @@ ATTR = {"https://en.wikivoyage.org/wiki/Hampi": {"title": "Hampi - Wikivoyage",
                                          "license": "no terms found; copyright (personal blog)"}}
 
 
-def test_source_rows_show_links_titles_and_labels_never_text_or_a_recent_badge():
+LEAK = "SECRET-EXCERPT-the-temple-closes-at-dusk-and-the-guide-charges-a-fee"
+
+
+def mixed_sources():
+    """Corpus, blog and live sources; every dict also carries text-like fields that must never
+    reach a row (the real sources data has none, so this is the guard against a future one)."""
     final = corpus_view()["final"]
-    final["sources"] = [
-        *final["sources"],
+    extras = {"text": LEAK, "excerpt": LEAK, "snippet": LEAK, "content": LEAK,
+              "context_note": LEAK}
+    return {**final, "sources": [
+        {**final["sources"][0], **extras},
         {"alias": "S2", "chunk_id": "blogchunk", "place": "Hampi", "source_type": "blog",
          "url": "https://inditales.test/hampi", "live": False, "fetch_date": None,
-         "date": "2024-11-21", "provenance": "rule_only", "limited": False},
-        live_view()["final"]["sources"][0]]
-    rows = S.source_rows(final, ATTR, {"abc"})
-    wiki, blog, live = rows
+         "date": "2024-11-21", "provenance": "rule_only", "limited": False, **extras},
+        {**live_view()["final"]["sources"][0], **extras}]}
+
+
+def test_a_source_row_has_only_the_whitelisted_fields_and_never_text():
+    rows = S.source_rows(mixed_sources(), ATTR, {"abc"})
+    allowed = ("Alias", "Title", "Place", "Source", "Date", "Fetch date", "Link", "Licence")
+    assert S.SOURCE_FIELDS[:-1] == allowed and S.SOURCE_FIELDS[-1] == "Flags"
+    assert len(rows) == 3
+    for r in rows:
+        assert tuple(r) == S.SOURCE_FIELDS  # no extra key, none missing
+        assert all(isinstance(v, str) for v in r.values())
+        assert LEAK not in json.dumps(r) and "closes at dusk" not in json.dumps(r)
+        assert set(filter(None, (x.strip() for x in r["Flags"].split(",")))) <= set(
+            S.SOURCE_FLAGS)  # the one label-only field takes enumerated values only
+
+
+def test_source_rows_show_links_titles_dates_licences_and_no_recent_badge():
+    wiki, blog, live = S.source_rows(mixed_sources(), ATTR, {"abc"})
     assert wiki["Licence"].startswith("Wikipedia and Wikivoyage text: CC BY-SA")
     assert wiki["Title"] == "Hampi - Wikivoyage" and wiki["Flags"] == "card warning"
+    assert wiki["Link"] == "https://en.wikivoyage.org/wiki/Hampi"
     assert blog["Title"] == "Hampi travelogue" and "CC BY-SA" not in blog["Licence"]
-    assert blog["When"] == "published 2024-11-21"
-    assert live["When"] == "live, fetched 2026-10-23" and live["Source"] == "live"
-    assert wiki["When"] == "undated or wiki revision (not a current date)"
-    allowed = {"Alias", "Title", "Place", "Source", "When", "Link", "Licence", "Flags"}
-    assert all(set(r) == allowed for r in rows)
-    assert "recent" not in json.dumps(rows).casefold().replace("not a current", "")
+    assert blog["Date"] == "2024-11-21" and blog["Fetch date"] == ""
+    assert live["Source"] == "live, fetched 2026-10-23" and live["Fetch date"] == "2026-10-23"
+    assert wiki["Date"] == "undated" and live["Date"] == "undated"
+    assert "recent" not in json.dumps([wiki, blog, live]).casefold()
 
 
 def test_the_terms_notice_is_visible_only_when_the_live_step_ran():
