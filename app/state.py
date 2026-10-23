@@ -374,9 +374,16 @@ class RunHandle:
 
 
 def default_runner():
-    from src.agents.graph import run_local
+    """run_graph (the CLI default, LangGraph); run_local when langgraph cannot be imported."""
+    try:
+        import langgraph  # noqa: F401
+    except ImportError:
+        from src.agents.graph import run_local
 
-    return run_local
+        return run_local
+    from src.agents.graph import run_graph
+
+    return run_graph
 
 
 def _worker(handle: RunHandle, deps, text: str, overrides: dict, runner) -> None:

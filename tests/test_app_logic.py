@@ -294,6 +294,14 @@ def test_a_failure_to_start_the_worker_releases_the_lock(monkeypatch):
     assert not S.run_lock_held()
 
 
+def test_the_default_runner_is_the_graph_with_a_local_fallback(monkeypatch):
+    from src.agents.graph import run_graph, run_local
+
+    assert S.default_runner() is run_graph
+    monkeypatch.setitem(__import__("sys").modules, "langgraph", None)  # import now fails
+    assert S.default_runner() is run_local
+
+
 # ---- redaction ---------------------------------------------------------------------------------
 
 def test_redact_removes_keys_and_api_hosts_but_keeps_page_links():
