@@ -303,3 +303,43 @@ def test_the_live_node_says_not_requested_without_a_retriever_and_switched_off_w
     assert "not requested" in out["live_note"] and "switched off" not in out["live_note"]
     off = live_node(st, make_deps(live=live_retriever(tmp_path, enabled=False)))
     assert off["live_status"] == "disabled" and "switched off" in off["live_note"]  # a real one
+
+
+# ---- D116: interests reach the packer; uncited live items are listed ----------------------------
+
+def test_a_temple_interest_brings_a_model_written_temple_chunk_into_the_prompt(monkeypatch):
+    temple = {**row("tmpl1", "Hampi", "The Virupaksha temple has carved gateways and shrines.",
+                    aspect="history"), "place_type": "temple"}
+    monkeypatch.setitem(PROV, "tmpl1", "llm")
+    rows = corpus([temple])
+    with_interest = run_local(make_deps(rows=rows), TEXT, {**OVER, "interests": ["temples"]})
+    without = run_local(make_deps(rows=rows), TEXT, {**OVER, "interests": ["jazz"]})
+    cited_with = {s["chunk_id"] for s in with_interest.final["sources"]}
+    cited_without = {s["chunk_id"] for s in without.final["sources"]}
+    packed_with = {p.item.chunk_id for p in with_interest.packed_obj.items}
+    packed_without = {p.item.chunk_id for p in without.packed_obj.items}
+    assert "tmpl1" in packed_with and "tmpl1" not in packed_without
+    assert cited_with != cited_without or packed_with != packed_without
+
+
+def two_live_items():
+    a = live_item()
+    b = EvidenceItem(chunk_id="live:def456abc123", place="Hampi", source_type="live",
+                     url="https://news.test/b", provenance="live", fetch_date="2026-10-23",
+                     text="Hampi bazaar opens at nine on weekdays.", score=0.8)
+    return [a, b]
+
+
+def test_live_items_in_the_prompt_but_not_cited_are_listed_without_any_text():
+    st = run_local(make_deps(live=FakeLive(two_live_items())), TEXT,
+                   {**OVER, "named_places": ["Hampi"]})
+    cited = [s for s in st.final["sources"] if s["live"]]
+    uncited = st.final["uncited_live"]
+    assert len(cited) == 1 and len(uncited) == 1  # the fake writer cites only the first L tag
+    assert uncited[0]["alias"] not in {s["alias"] for s in cited}
+    assert uncited[0]["chunk_id"].startswith("live:") and uncited[0]["fetch_date"] == "2026-10-23"
+    assert set(uncited[0]) == {"alias", "chunk_id", "place", "source_type", "url", "live",
+                               "fetch_date", "date", "provenance", "limited"}
+    assert "bazaar" not in str(uncited)  # ids, labels and a link only
+    none = run_local(make_deps(), TEXT, OVER)
+    assert none.final["uncited_live"] == []

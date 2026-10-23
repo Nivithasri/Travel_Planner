@@ -267,6 +267,10 @@ if view:
     t_rows, total = S.timing_rows(view.get("timings") or {})
     with st.expander("Timing per node", expanded=False):
         st.dataframe(t_rows, hide_index=True)
+        wl = S.writer_line(view)
+        if wl:
+            st.caption(wl + "; the text is written from the cited sources, which is why many "
+                       "bullets stay close to the source sentences")
         tok_rows = S.token_rows(view.get("tokens") or {})
         if tok_rows:
             st.dataframe(tok_rows, hide_index=True)

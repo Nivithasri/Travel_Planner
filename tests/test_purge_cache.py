@@ -69,3 +69,39 @@ def test_live_prompts_are_deleted_only_when_asked(tmp_path):
     base = make_cache(tmp_path)
     assert P.main(["--live-prompts", "--execute", "--cache-dir", str(base)]) == 0
     assert sorted(p.stem for p in base.rglob("*.json")) == ["aa11", "bb22", "dd44", "e1", "e2"]
+
+
+# ---- the guard: only a .cache directory, never data/, eval/ and the other repository folders ----
+
+def test_the_purge_refuses_anything_that_is_not_a_cache_directory(tmp_path):
+    import pytest
+
+    for bad in (tmp_path, REPO_ROOT / "data", REPO_ROOT / "eval", REPO_ROOT / "index",
+                REPO_ROOT / "config", REPO_ROOT / "data" / "processed", REPO_ROOT):
+        with pytest.raises(SystemExit):
+            P.safe_cache_dir(bad)
+    with pytest.raises(SystemExit):  # a '.cache' lookalike inside data/ is still refused
+        P.safe_cache_dir(REPO_ROOT / "data" / ".cache")
+    assert P.safe_cache_dir(REPO_ROOT / ".cache") == (REPO_ROOT / ".cache").resolve()
+    assert P.safe_cache_dir(tmp_path / ".cache") == (tmp_path / ".cache").resolve()
+
+
+def test_main_refuses_a_protected_directory_before_scanning_or_deleting(tmp_path):
+    import pytest
+
+    probe = REPO_ROOT / "eval" / ".purge_probe_never_created"
+    with pytest.raises(SystemExit):
+        P.main(["--garbled", "--execute", "--cache-dir", str(REPO_ROOT / "eval")])
+    assert not probe.exists()
+
+
+def test_the_purge_only_ever_deletes_json_files_under_the_three_cache_kinds(tmp_path):
+    base = make_cache(tmp_path)
+    keep = base / "llm_chat" / "zz" / "notes.txt"
+    keep.parent.mkdir(parents=True, exist_ok=True)
+    keep.write_text(GARBLED, encoding="utf-8")
+    other = base / "http" / "aa" / "x.json"
+    other.parent.mkdir(parents=True, exist_ok=True)
+    other.write_text(json.dumps({"value": GARBLED}), encoding="utf-8")
+    assert P.main(["--garbled", "--live-prompts", "--execute", "--cache-dir", str(base)]) == 0
+    assert keep.exists() and other.exists()  # not a .json cache entry / not a purged kind

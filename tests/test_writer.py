@@ -207,3 +207,58 @@ def test_write_does_not_cache_a_prompt_with_live_text_and_caches_a_corpus_prompt
     corpus = pack(plan, {"Hampi": [item("t1")]}, [], CFG)
     writer.write(corpus_client, "m", writer.build_messages(req, plan, corpus, CFG), CFG)
     assert corpus_client.kwargs == {}  # the default: cached as before
+
+
+# ---- D116: interests rank the evidence; writer rule 10 ------------------------------------------
+
+def typed(cid, place_type, aspect, *, prov="llm", score=0.5, **kw):
+    return item(cid, aspect=aspect, prov=prov, score=score, place_type=place_type, **kw)
+
+
+def packed_ids(ev, interests):
+    return [x.item.chunk_id for x in pack(plan_for(["Hampi"]), {"Hampi": ev}, [], CFG,
+                                          interests=interests).items]
+
+
+def test_a_matching_interest_beats_the_aspect_priority_but_not_a_warning():
+    ev = [typed("price1", "other", "price"), typed("time1", "other", "timing"),
+          typed("safe1", "other", "safety"), typed("temple1", "temple", "history"),
+          item("warn1", warn=True, aspect="safety", prov="llm")]
+    assert packed_ids(ev, []) == ["warn1", "time1", "price1"]  # the old order, no interest
+    assert packed_ids(ev, ["temples"]) == ["warn1", "temple1", "time1"]  # warning stays first
+    assert packed_ids(ev, ["Temples "]) == ["warn1", "temple1", "time1"]  # case and spaces
+
+
+def test_rule_based_rows_never_match_an_interest_and_unknown_interests_match_nothing():
+    ev = [typed("price1", "other", "price"), typed("time1", "other", "timing"),
+          typed("temple_rule", "temple", "history", prov="rule_only"),
+          typed("temple_fb", "temple", "history", prov="fallback")]
+    old_order = packed_ids(ev, [])
+    assert old_order == ["time1", "price1", "temple_fb"]  # aspect priority, then the id
+    assert packed_ids(ev, ["temples"]) == old_order  # rule-based rows get no boost
+    assert packed_ids(ev, ["jazz clubs", "", "adventure"]) == old_order
+
+
+def test_every_form_interest_maps_to_real_place_types_and_aspects():
+    from app.state import INTEREST_CHOICES
+    from src.agents.evidence import INTEREST_MAP
+    from src.common.schemas import Aspect, PlaceType
+
+    assert set(INTEREST_CHOICES) == set(INTEREST_MAP)  # the list and the mapping cannot drift
+    for name, m in INTEREST_MAP.items():
+        assert m["place_types"] or m["aspects"], name
+        assert {x.value for x in PlaceType} >= set(m["place_types"]), name
+        assert {x.value for x in Aspect} >= set(m["aspects"]), name
+    assert "temples" in INTEREST_MAP and INTEREST_MAP["temples"]["place_types"] == ("temple",)
+
+
+def test_the_food_interest_matches_the_food_aspect():
+    ev = [typed("price1", "other", "price"), typed("food1", "other", "food"),
+          typed("time1", "other", "timing")]
+    assert packed_ids(ev, ["food"])[0] == "food1"
+
+
+def test_the_writer_rule_prefers_live_sources_for_hours_prices_and_closures():
+    assert "prefer an L source over an S source" in writer.SYSTEM
+    assert "hours, prices and closures" in writer.SYSTEM
+    assert len(writer.SYSTEM) <= W["system_chars_max"]

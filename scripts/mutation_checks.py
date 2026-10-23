@@ -569,7 +569,58 @@ PHASE8B_MUTATIONS = [
     ("M176 the purge script deletes without --execute", "scripts/purge_cache.py",
      "            if args.execute:\n                p.unlink(missing_ok=True)\n",
      "            if True:\n                p.unlink(missing_ok=True)\n"),
+    ("M177 interests do not rank the evidence", "src/agents/evidence.py",
+     "    matched = 0 if interest_match(item, interests) else 1\n",
+     "    matched = 1\n"),
+    ("M178 rule-based rows can match an interest", "src/agents/evidence.py",
+     "    if item.provenance != \"llm\":\n        return False\n",
+     "    if False:\n        return False\n"),
+    ("M179 the interest match ranks below the aspect priority", "src/agents/evidence.py",
+     "(0 if is_warn else 1, matched, PRIORITY.get(key, 5), -item.score, item.chunk_id)",
+     "(0 if is_warn else 1, PRIORITY.get(key, 5), matched, -item.score, item.chunk_id)"),
+    ("M180 the temples interest maps to the wrong place type", "src/agents/evidence.py",
+     "\"temples\": {\"place_types\": (\"temple\",)",
+     "\"temples\": {\"place_types\": (\"beach\",)"),
+    ("M181 the writer rule prefers the S source", "src/agents/writer.py",
+     "prefer an L source over an S source",
+     "prefer an S source over an L source"),
+    ("M182 no uncited live item is listed", "src/agents/nodes.py",
+     "        if p.item.is_live and p.alias not in cited]\n",
+     "        if False]\n"),
+    ("M183 cited live items are listed as uncited too", "src/agents/nodes.py",
+     "        if p.item.is_live and p.alias not in cited]\n",
+     "        if p.item.is_live]\n"),
+    ("M184 the packer is not given the interests", "src/agents/nodes.py",
+     "                    interests=req.interests)",
+     "                    interests=())"),
+    ("M185 the page drops the uncited live rows", "app/state.py",
+     "    entries += [(s, True) for s in final.get(\"uncited_live\", [])]\n",
+     "    entries += []\n"),
+    ("M186 a replayed write is reported as a live call", "app/state.py",
+     "    if int(tokens.get(\"write\") or 0) > 0:\n",
+     "    if True:\n"),
+    ("M187 the purge accepts a directory that is not a .cache", "scripts/purge_cache.py",
+     "    if \".cache\" not in p.parts:\n",
+     "    if False:\n"),
+    ("M188 the purge accepts data/ and eval/ inside a .cache path", "scripts/purge_cache.py",
+     "        if p == root or root in p.parents:\n",
+     "        if False:\n"),
 ]
+
+
+def restore(path, original, tries=8):
+    """Write the original bytes back, retrying a transient OS error (seen once on Windows)."""
+    import time
+
+    for attempt in range(tries):
+        try:
+            path.write_bytes(original)
+            return
+        except OSError:
+            if attempt == tries - 1:
+                print(f"COULD NOT RESTORE {path}: run git checkout -- that file", flush=True)
+                raise
+            time.sleep(0.5 * (attempt + 1))
 
 
 def main() -> int:
@@ -581,7 +632,7 @@ def main() -> int:
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
     phase8 += [(m, PHASE8B_TESTS) for m in PHASE8B_MUTATIONS]
-    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M176
+    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M188
         plan = phase8
     elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7
@@ -606,7 +657,7 @@ def main() -> int:
         try:
             summary, failed = run_tests(tests)
         finally:
-            path.write_bytes(original)
+            restore(path, original)
         restored = sha(path) == before
         rows.append((name, len(failed), restored))
         print(f"\n{name}\n  {summary}\n  restored byte-identical: {restored}")

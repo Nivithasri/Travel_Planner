@@ -136,7 +136,7 @@ def item_from_row(row: dict, provenance: dict[str, str]) -> EvidenceItem:
     return EvidenceItem(
         chunk_id=row["chunk_id"], place=row["place"], source_type=row["source_type"],
         url=row["url"], text=row["text"], aspect=row.get("aspect"),
-        is_warning=bool(row.get("is_warning")),
+        place_type=row.get("place_type"), is_warning=bool(row.get("is_warning")),
         provenance=provenance.get(row["chunk_id"], "unknown"), date=row.get("date"),
         score=float(row.get("score") or 0.0))
 
@@ -261,7 +261,8 @@ def write_node(state: RunState, deps: Deps) -> dict:
     if not plan.feasible:
         return {"draft": "", "packed": {}, "packed_obj": E.Packed()}
     stop_ev = {s.place: state.corpus_evidence.get(s.place, []) for s in plan.stops}
-    packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg)
+    packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg,
+                    interests=req.interests)
     messages = W.build_messages(req, plan, packed, deps.pipeline_cfg)
     before = deps.tokens_used()
     draft = W.write(deps.client, deps.model, messages, deps.pipeline_cfg, deps.on_piece)
@@ -337,10 +338,18 @@ def finalize_node(state: RunState, deps: Deps) -> dict:
     if any(d["reason"] == "blog_excluded" for d in dropped):
         notes.append("blog sources were left out of the writer's context (no terms)")
     lines += ["", "## Notes and warnings", *[f"- {n}" for n in dict.fromkeys(notes)]]
+    cited = {s["alias"] for s in sources}
+    uncited_live = [
+        {"alias": p.alias, "chunk_id": p.item.chunk_id, "place": p.item.place,
+         "source_type": p.item.source_type, "url": p.item.url, "live": True,
+         "fetch_date": p.item.fetch_date, "date": p.item.date, "provenance": p.item.provenance,
+         "limited": False}
+        for p in (state.packed_obj.items if state.packed_obj else [])
+        if p.item.is_live and p.alias not in cited]
     final = {"text": "\n".join(lines) + "\n", "sources": sources, "plan": plan.model_dump(),
              "critic": state.critic.model_dump() if state.critic else None,
              "live_status": state.live_status, "warnings": state.warnings,
-             "dropped": dropped, "request": req.model_dump()}
+             "dropped": dropped, "request": req.model_dump(), "uncited_live": uncited_live}
     return {"final": final}
 
 

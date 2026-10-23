@@ -25,8 +25,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 BUDGET_TIERS = ("budget", "mid", "luxury")
 PARTIES = ("solo", "couple", "family", "group")
-INTEREST_CHOICES = ("temples", "heritage", "beaches", "hill stations", "wildlife", "backwaters",
-                    "food", "nature", "culture", "history")
+INTEREST_CHOICES = ("temples", "heritage", "history", "culture", "beaches", "hill stations",
+                    "wildlife", "backwaters", "waterfalls", "nature", "food")
 MAX_FREE_CHARS = 200
 LIVE_RAN = ("ok", "empty", "error")
 BUSY_MESSAGE = "another run is in progress"
@@ -546,7 +546,7 @@ def terms_notice_visible(view: dict) -> bool:
 
 SOURCE_FIELDS = ("Alias", "Chunk id", "Title", "Place", "Source", "Date", "Fetch date", "Link",
                  "Licence", "Flags")
-SOURCE_FLAGS = ("card warning", "limited evidence")
+SOURCE_FLAGS = ("card warning", "limited evidence", "retrieved, not cited")
 
 
 def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> list[dict]:
@@ -554,7 +554,9 @@ def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> l
     labels, links and dates. No chunk text or excerpt can reach a row, whatever the source dict
     carries."""
     rows = []
-    for s in final.get("sources", []):
+    entries = [(s, False) for s in final.get("sources", [])]
+    entries += [(s, True) for s in final.get("uncited_live", [])]
+    for s, uncited in entries:
         info = attribution.get(s.get("url", ""), {})
         kind = s.get("source_type", "")
         if s.get("live"):
@@ -577,6 +579,8 @@ def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> l
             flags.append(SOURCE_FLAGS[0])
         if s.get("limited"):
             flags.append(SOURCE_FLAGS[1])
+        if uncited:
+            flags.append(SOURCE_FLAGS[2])
         cid = str(s.get("chunk_id", ""))
         rows.append({"Alias": s.get("alias", ""),
                      "Chunk id": cid if s.get("live") else f"chunk:{cid}",
@@ -593,6 +597,18 @@ def card_warning_chunk_ids(cards: dict) -> set[str]:
 def timing_rows(timings: dict) -> tuple[list[dict], float]:
     rows = [{"Node": k, "Seconds": v} for k, v in timings.items()]
     return rows, round(sum(timings.values()), 3)
+
+
+def writer_line(view: dict) -> str | None:
+    """Which writer produced the text. There is no template writer: the itinerary is always the
+    hosted language model's reply (a live call, or a replay of an earlier reply from the local LLM
+    cache when the prompt was identical). None when no write step ran (an infeasible plan)."""
+    tokens = view.get("tokens") or {}
+    if "write_reservation" not in tokens and not tokens.get("write"):
+        return None
+    if int(tokens.get("write") or 0) > 0:
+        return f"write step: language model, live call ({int(tokens['write'])} tokens)"
+    return "write step: language model reply replayed from the local cache (0 tokens sent)"
 
 
 def token_rows(tokens: dict) -> list[dict]:

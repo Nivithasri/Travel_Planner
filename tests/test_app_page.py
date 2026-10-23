@@ -181,6 +181,7 @@ def test_the_timing_breakdown_is_collapsed_and_complete(fake):
     assert dict(zip(steps["Step"], steps["Value"])) == {
         "parse (tokens)": 844, "write (tokens)": 1171, "repair (tokens)": 0}
     assert "0 means the step was served from the local LLM cache" in blob(at)
+    assert "write step: language model, live call (1171 tokens)" in blob(at)
     assert next(e for e in at.expander if e.label.startswith("Sources")).proto.expanded is True
 
 
@@ -389,10 +390,12 @@ def test_the_page_shows_a_counts_only_live_status_line(tmp_path, monkeypatch, na
     assert files_in(tmp_path) == []  # a live-on answer writes nothing
     sources = next(d for d in at.dataframe if "Chunk id" in d.value.columns).value
     live_rows = sources[sources["Source"].str.startswith("live")]
-    assert len(live_rows) == (1 if name == "ok" else 0)  # live rows only when a live item was cited
+    # ok: one cited live item and one that was in the prompt but not cited
+    assert len(live_rows) == (2 if name == "ok" else 0)
     if name == "ok":
-        assert live_rows.iloc[0]["Chunk id"].startswith("live:")
-        assert live_rows.iloc[0]["Fetch date"] != ""
+        assert all(live_rows["Chunk id"].str.startswith("live:"))
+        assert all(live_rows["Fetch date"] != "")
+        assert sorted(live_rows["Flags"]) == ["", "retrieved, not cited"]
     assert (TERMS_NOTICE in page) is (name != "no_key")
 
 

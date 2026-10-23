@@ -77,6 +77,19 @@ def scan(cache_dir: Path, *, garbled: bool, live_prompts: bool) -> dict[str, lis
     return found
 
 
+def safe_cache_dir(path: Path) -> Path:
+    """The directory to scan, or SystemExit: it must be a '.cache' directory or inside one, and
+    must not be (or lie inside) data/, eval/, index/ or config/ of this repository."""
+    p = Path(path).resolve()
+    if ".cache" not in p.parts:
+        raise SystemExit(f"refused: {p} is not a .cache directory")
+    for protected in ("data", "eval", "index", "config", "src", "docs"):
+        root = (ROOT / protected).resolve()
+        if p == root or root in p.parents:
+            raise SystemExit(f"refused: {p} is inside {protected}/")
+    return p
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--garbled", action="store_true")
@@ -86,7 +99,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if not (args.garbled or args.live_prompts):
         ap.error("choose --garbled and/or --live-prompts")
-    found = scan(args.cache_dir, garbled=args.garbled, live_prompts=args.live_prompts)
+    cache_dir = safe_cache_dir(args.cache_dir)
+    found = scan(cache_dir, garbled=args.garbled, live_prompts=args.live_prompts)
     deleted = 0
     for label, paths in found.items():
         if label == "garbled" and not args.garbled or label == "live_prompts" and (

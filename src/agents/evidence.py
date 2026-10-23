@@ -34,6 +34,24 @@ INJECTION = re.compile(
     r"system prompt|you (must|should) now|new instructions?|act as (a|an)\b|"
     r"(^|\n)\s*(assistant|system|user)\s*:|do not follow|override (the )?(rules|instructions)|"
     r"reveal (your|the) (prompt|instructions)|jailbreak", re.I)
+# The closed interest list of the form mapped to the chunk fields it can match (D53 enums). Fixed
+# by hand and not tuned on any query (D116). A chunk matches an interest when its place_type or
+# its aspect is listed AND its fields are model-written (provenance llm; rule-based fields are
+# exempt, D69). Interests outside the list match nothing.
+INTEREST_MAP = {
+    "temples": {"place_types": ("temple",), "aspects": ("history",)},
+    "heritage": {"place_types": ("heritage", "temple"), "aspects": ("history",)},
+    "history": {"place_types": ("heritage",), "aspects": ("history",)},
+    "culture": {"place_types": ("temple", "heritage"), "aspects": ("history",)},
+    "beaches": {"place_types": ("beach",), "aspects": ("scenery",)},
+    "hill stations": {"place_types": ("hill_station",), "aspects": ("scenery",)},
+    "wildlife": {"place_types": ("wildlife",), "aspects": ("scenery",)},
+    "backwaters": {"place_types": ("backwater",), "aspects": ("scenery",)},
+    "waterfalls": {"place_types": ("waterfall",), "aspects": ("scenery",)},
+    "nature": {"place_types": ("wildlife", "waterfall", "hill_station", "backwater"),
+               "aspects": ("scenery",)},
+    "food": {"place_types": (), "aspects": ("food",)},
+}
 PRIORITY = {"warning": 0, "timing": 1, "closure": 1, "price": 2, "safety": 2, "food": 3,
             "scenery": 4, "history": 4, "other": 5}
 
@@ -78,13 +96,28 @@ class Packed:
         return next((p for p in self.items if p.alias == alias), None)
 
 
-def _rank(item: EvidenceItem) -> tuple:
-    key = "warning" if (item.is_warning and item.provenance == "llm") else (item.aspect or "other")
-    return (PRIORITY.get(key, 5), -item.score, item.chunk_id)
+def interest_match(item: EvidenceItem, interests) -> bool:
+    """True when a model-written chunk matches one of the closed-list interests (D116)."""
+    if item.provenance != "llm":
+        return False
+    for name in interests or ():
+        m = INTEREST_MAP.get(str(name).strip().casefold())
+        if m and (item.place_type in m["place_types"] or item.aspect in m["aspects"]):
+            return True
+    return False
+
+
+def _rank(item: EvidenceItem, interests=()) -> tuple:
+    """Model-written warnings first, then chunks that match an interest, then the aspect
+    priority; with no interest the order is the old one."""
+    is_warn = item.is_warning and item.provenance == "llm"
+    key = "warning" if is_warn else (item.aspect or "other")
+    matched = 0 if interest_match(item, interests) else 1
+    return (0 if is_warn else 1, matched, PRIORITY.get(key, 5), -item.score, item.chunk_id)
 
 
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
-         cfg: dict | None = None) -> Packed:
+         cfg: dict | None = None, interests=()) -> Packed:
     """At most `items_per_stop` corpus items per planned stop (warnings first) and `live_items`
     live items. Order is the plan's stop order, then live; aliases follow that order."""
     w = (cfg or load_pipeline_config())["writer"]
@@ -93,7 +126,7 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
     seen: set[str] = set()
     for stop in plan.stops:
         taken = 0
-        for item in sorted(corpus.get(stop.place, []), key=_rank):
+        for item in sorted(corpus.get(stop.place, []), key=lambda i: _rank(i, interests)):
             if taken >= w["items_per_stop"]:
                 break
             if item.chunk_id in seen or item.is_live:

@@ -211,6 +211,7 @@ class EvidenceItem(BaseModel):
     url: str
     text: str
     aspect: str | None = None
+    place_type: str | None = None  # the chunk's subject (D53); used only to match interests
     is_warning: bool = False
     provenance: str = "unknown"  # llm | fallback | rule_only | live
     date: str | None = None

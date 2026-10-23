@@ -584,3 +584,31 @@ def test_the_streamlit_config_is_local_quiet_and_has_no_file_watcher():
 def test_the_readme_says_torchvision_is_not_needed():
     text = (REPO_ROOT / "app" / "README.md").read_text(encoding="utf-8")
     assert "torchvision" in text and "must not be installed" in text
+
+
+# ---- D116: uncited live rows, writer line, interest list ---------------------------------------
+
+def test_live_items_retrieved_but_not_cited_get_a_flagged_row_without_text():
+    final = mixed_sources()
+    live = final["sources"][2]
+    final["uncited_live"] = [{**live, "alias": "L2", "chunk_id": "live:2", "text": LEAK}]
+    rows = S.source_rows(final, ATTR, set())
+    assert len(rows) == 4 and rows[3]["Flags"] == "retrieved, not cited"
+    assert rows[3]["Chunk id"] == "live:2" and rows[3]["Source"].startswith("live, fetched")
+    assert rows[2]["Flags"] == "" and tuple(rows[3]) == S.SOURCE_FIELDS
+    assert LEAK not in json.dumps(rows) and "retrieved, not cited" in S.SOURCE_FLAGS
+
+
+def test_the_writer_line_says_live_call_replay_or_nothing():
+    assert S.writer_line({"tokens": {"write": 1171, "write_reservation": 2901}}) == (
+        "write step: language model, live call (1171 tokens)")
+    assert S.writer_line({"tokens": {"write": 0, "write_reservation": 2895}}) == (
+        "write step: language model reply replayed from the local cache (0 tokens sent)")
+    assert S.writer_line({"tokens": {}}) is None and S.writer_line({}) is None  # no write ran
+
+
+def test_the_interest_list_offers_temples_and_the_other_expected_interests():
+    for name in ("temples", "heritage", "history", "culture", "beaches", "hill stations",
+                 "wildlife", "backwaters", "waterfalls", "nature", "food"):
+        assert name in S.INTEREST_CHOICES
+    assert len(S.INTEREST_CHOICES) == len(set(S.INTEREST_CHOICES)) == 11

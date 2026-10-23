@@ -30,6 +30,8 @@ SYSTEM = (
     "8. End with '## Backup options' and list the BACKUPS as bullets of names only.\n"
     "9. Never repeat a bullet on another day. A place visited for several days gets each fact "
     "once; later days use the no-details bullet.\n"
+    "10. For opening hours, prices and closures prefer an L source over an S source when both "
+    "speak to the place, and cite it with its L tag.\n"
     "Plain English. No tables.")
 ALIAS = re.compile(r"\[((?:S|L)\d+)\]")
 LIVE_BLOCK = re.compile(r"<<L\d+ \|")  # an evidence block of a live item (evidence_block)
