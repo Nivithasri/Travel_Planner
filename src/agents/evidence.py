@@ -18,7 +18,17 @@ from src.common.schemas import REPO_ROOT
 
 PIPELINE_CONFIG = REPO_ROOT / "config" / "pipeline.json"
 URL = re.compile(r"https?://\S+|www\.\S+", re.I)
+MOJIBAKE = re.compile("â[^\\x00-\\x7f]{1,2}")  # UTF-8 bytes read as cp1252 (the rupee sign)
 TAGLIKE = re.compile(r"\[(?:S|L|P|T)\d+\]|<<[^>]*>>|<<|>>", re.I)
+
+
+def _repair(m: re.Match) -> str:
+    try:
+        return m.group(0).encode("cp1252").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return " "
+
+
 INJECTION = re.compile(
     r"ignore (all |any |the )?(previous|prior|above)|disregard (the )?(previous|above|rules)|"
     r"system prompt|you (must|should) now|new instructions?|act as (a|an)\b|"
@@ -38,7 +48,8 @@ def injection_flags(text: str) -> list[str]:
 
 def clean_text(text: str, max_chars: int) -> str:
     """Whitespace collapsed, URLs and tag/delimiter-like strings removed, cut at a word boundary."""
-    t = URL.sub("[link removed]", str(text))
+    t = MOJIBAKE.sub(_repair, str(text)).replace("\u202f", " ").replace("\u00a0", " ")
+    t = URL.sub("[link removed]", t)
     t = TAGLIKE.sub(" ", t).replace("[", "(").replace("]", ")")
     t = " ".join(t.split())
     if len(t) <= max_chars:

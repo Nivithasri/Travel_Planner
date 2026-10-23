@@ -114,8 +114,11 @@ def parse_node(state: RunState, deps: Deps) -> dict:
     held = names_in(text, deps.registry_entries, holdout=True)
     if held:
         warnings.append(f"{', '.join(held)} is not covered by this planner and was ignored")
+    used = {}
     if deps.parse is not None and not o.get("no_llm"):
+        before = deps.tokens_used()
         parsed = deps.parse(text)
+        used = {"parse": deps.tokens_used() - before}
     else:
         named = names_in(text, deps.registry_entries, holdout=False)
         parsed = SimpleNamespace(text=text, places=named, states=[], month=None,
@@ -124,7 +127,7 @@ def parse_node(state: RunState, deps: Deps) -> dict:
     o.pop("no_llm", None)
     o.setdefault("text", text)
     req = request_from_parse(parsed, overrides=o)
-    return {"request": req, "warnings": warnings}
+    return {"request": req, "warnings": warnings, "tokens": used}
 
 
 # ---- retrieve -------------------------------------------------------------------------------
@@ -164,8 +167,8 @@ def retrieve_node(state: RunState, deps: Deps) -> dict:
         cands.append({"name": p, "state": card["state"],
                       "relevance": round(mass.get(p, 0) / top, 4),
                       "interest": round(match / max(len(rs), 1), 4), "named": p in named})
-    shortlist = [c["name"] for c in cands if c["relevance"] > 0 or c["named"]][:8]
-    shortlist = list(dict.fromkeys([*shortlist, *sorted(named)]))
+    # every candidate the planner may pick needs evidence (they are few and the queries are local)
+    shortlist = [c["name"] for c in cands]
     evidence: dict[str, list[EvidenceItem]] = {}
     for p in shortlist:
         seen: dict[str, EvidenceItem] = {}

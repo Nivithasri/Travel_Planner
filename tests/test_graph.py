@@ -70,16 +70,18 @@ class FakeClient:
         days = re.findall(r"^Day (\d+): ([^\n(\[]+)", user, re.M)
         tags = re.findall(r"<<(S\d+|L\d+) \| ([^|>]+?) \|[^>]*?>>", user)
         out = []
+        done = set()
         for n, place in days:
             place = place.strip()
             out.append(f"## Day {n}: {place}")
             mine = [t for t, p in tags if p.strip() == place]
-            if mine:
+            if mine and place not in done:
                 out.append(f"- Visitors enjoy {place} in the quiet morning. [{mine[0]}]")
             else:
                 out.append("- No source-backed details for this day.")
-            if "LIMITED EVIDENCE" in user and place == "Munnar":
+            if "LIMITED EVIDENCE" in user and place == "Munnar" and place not in done:
                 out.append(f"- Evidence for {place} is limited. [{mine[0]}]")
+            done.add(place)
             live = [t for t, p in tags if t.startswith("L")]
             if live and n == "1":
                 out.append(f"- As of today the fort schedule changed. [{live[0]}]")

@@ -171,6 +171,15 @@ def plan_trip(request: ParsedRequest, candidates: Sequence[Candidate], *, hours:
     pool = {c.name: c for c in candidates if c.named or not c.limited}
     if len(pool) < len(candidates):
         notes.append("excluded places were not used because you did not name them (D33)")
+    if request.states:  # the request names states: other states are not offered unless named
+        keep = {k: c for k, c in pool.items() if c.state in request.states or c.named}
+        if len(keep) < len(pool):
+            notes.append(f"only places in {', '.join(request.states)} were considered, as asked")
+        pool = keep
+        if not pool:
+            return Plan(feasible=False, infeasible_reason=(
+                f"no evaluated destination with evidence in {', '.join(request.states)}"),
+                limit_hours=limit, notes=notes)
     if request.avoid_hill_roads:
         for name in [k for k, c in pool.items() if c.hill and not c.named]:
             del pool[name]
@@ -330,6 +339,8 @@ def _backups(pool: dict[str, Candidate], scores: dict[str, float], order: list[s
 def _computed_lines(plan: Plan, request: ParsedRequest) -> list[str]:
     lines = []
     for leg in plan.legs:
+        if leg.hours <= 0:  # the start city is the first stop: no leg to describe
+            continue
         what = {"arrival": "arrival", "between": "transfer", "departure": "departure"}[leg.kind]
         extra = f", {leg.days} days" if leg.days > 1 else ""
         hill = " (includes a ghat/hill road: allow extra time)" if leg.hill_note else ""

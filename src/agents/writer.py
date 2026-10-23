@@ -28,6 +28,8 @@ SYSTEM = (
     "7. If nothing in SOURCES supports a day, write exactly '- No source-backed details for this "
     "day.' (no tag).\n"
     "8. End with '## Backup options' and list the BACKUPS as bullets of names only.\n"
+    "9. Never repeat a bullet on another day. A place visited for several days gets each fact "
+    "once; later days use the no-details bullet.\n"
     "Plain English. No tables.")
 ALIAS = re.compile(r"\[((?:S|L)\d+)\]")
 NO_DETAILS = "- No source-backed details for this day."

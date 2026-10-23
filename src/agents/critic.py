@@ -143,6 +143,17 @@ def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
             f"{plan.budget['cap_inr']:,} plus tolerance")))
     # R4 ---------------------------------------------------------------------------------------
     amap = ctx.packed.alias_map
+    seen_text: dict[str, int] = {}
+    for x in d.days:
+        for b in x.bullets:
+            key = " ".join(ALIAS.sub("", b).split()).casefold()
+            if _is_exempt(b) or not key:
+                continue
+            if key in seen_text:
+                f.append(CriticFinding(rule="R4", day=x.number, message=(
+                    f"day {x.number}: repeats a bullet from day {seen_text[key]}: {b[:60]!r}")))
+            else:
+                seen_text[key] = x.number
     for x in d.days:
         if not x.bullets:
             f.append(CriticFinding(rule="R4", day=x.number, message=(
@@ -214,10 +225,17 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
     d = parse_draft(draft_text)
     amap = packed.alias_map
     actions: list[str] = []
+    seen_text: set[str] = set()
     for x in d.days:
         keep_lines, keep_bullets = [], []
         for line in x.lines:
             b = BULLET.match(line)
+            if b and not _is_exempt(b.group(1).strip()):
+                key = " ".join(ALIAS.sub("", b.group(1)).split()).casefold()
+                if key in seen_text:
+                    actions.append(f"day {x.number}: removed a repeated bullet {b.group(1)[:60]!r}")
+                    continue
+                seen_text.add(key)
             if b and not _is_exempt(b.group(1).strip()):
                 tags = ALIAS.findall(b.group(1))
                 if not tags or any(t not in amap for t in tags):

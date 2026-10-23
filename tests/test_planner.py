@@ -245,3 +245,24 @@ def test_a_far_place_is_mildly_penalised_against_the_start_city():
     named = plan_trip(req(duration_days=6, start_city="Start", named_places=["D"]),
                       [cand("A", 0.5), cand("D", 0.5, named=True)], hours=fake_hours)
     assert "D" in {s.place for s in named.stops}  # a named place is never penalised away
+
+
+def test_a_zero_hour_start_leg_is_not_described():
+    p = plan_trip(req(duration_days=3, start_city="A"), [cand("A", 0.9), cand("B", 0.8)],
+                  hours=fake_hours)
+    assert not any("A to A" in line for line in p.computed_lines)
+
+
+def test_requested_states_limit_the_candidates_unless_a_place_is_named():
+    cs = [Candidate("A", "KA", 0.9, 0.0, False, {"evidence_class": "full"}),
+          Candidate("B", "KL", 0.5, 0.0, False, {"evidence_class": "full"}),
+          Candidate("C", "TN", 0.9, 0.0, False, {"evidence_class": "full"})]
+    p = plan_trip(req(duration_days=2, states=["KL"]), cs, hours=fake_hours)
+    assert [s.place for s in p.stops] == ["B"]
+    assert any("only places in KL" in n for n in p.notes)
+    named = plan_trip(req(duration_days=4, states=["KL"]),
+                      [*cs[:2], Candidate("C", "TN", 0.9, 0.0, True, {"evidence_class": "full"})],
+                      hours=fake_hours)
+    assert "C" in {s.place for s in named.stops}
+    none = plan_trip(req(duration_days=2, states=["TS"]), cs, hours=fake_hours)
+    assert not none.feasible and "TS" in none.infeasible_reason

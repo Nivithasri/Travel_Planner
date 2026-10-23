@@ -146,3 +146,8 @@ def test_expand_aliases_marks_live_ids_and_leaves_unknown_tags():
     assert out == "- A. [chunk:abc123] - B. [live:ff00] - C. [S9]"
     assert writer.citations("- A. [S1][L1] and [S3]") == ["S1", "L1", "S3"]
     assert isinstance(packed.items[0], PackedItem)
+
+
+def test_clean_text_repairs_a_mangled_narrow_no_break_space():
+    mangled = "between 6 to 8" + "â\u0080¯" + "AM for a sunrise" + " " + "view"
+    assert clean_text(mangled, 200) == "between 6 to 8 AM for a sunrise view"
