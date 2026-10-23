@@ -38,12 +38,19 @@ Needs, all local or in `.env` (the page never prints them):
   place-card items are auto-generated, check before relying. No corpus item is dated within the
   last 18 months; live items show their fetch date, not a publish date.
 - Under the notices, one counts-only line reports the live step when "Add live web search" was
-  ticked: `live search: ok, N searches, N results, N in scope, N merged, N cited`, or `empty` (same
+  ticked: `live search: ok, N searches, N results, N in scope, N in plan, N merged, N cited, N not cited`, or `empty` (same
   counts), `error: <short reason>`, `no key`, or `not used (<reason>)`. "results" are what the
   provider returned, "in scope" are those that name a registry place or state and passed the
-  safety filter (after the cap of 8), "merged" are the live items put into the writer's prompt and
-  "cited" are those the written itinerary cites (only cited ones become rows of the sources
-  table). The line holds no snippet text and, like every live answer, stays in the session.
+  safety filter (after the cap of 8), "in plan" are those about a stop of the plan or a place you
+  named (the others are left out before the writer, D119), "merged" are the live items put into
+  the writer's prompt, "cited" are those the written itinerary cites and "not cited" the rest.
+  Cited items and the others (flagged "retrieved, not cited") are rows of the sources table, with
+  no snippet text. The line holds no text either and, like every live answer, stays in the session.
+- Interests offered: temples, heritage, history, culture, beaches, hill stations, wildlife,
+  backwaters, waterfalls, nature, food. They rank a stop's evidence (model-written chunks of the
+  matching place type or aspect first, D117).
+- Timing panel also says which writer ran: always the language model (a live call, or a replay of
+  an earlier reply from the local cache); there is no template writer.
 - Sources table: "Chunk id" shows the id exactly as the itinerary text prints it
   (`chunk:<id>` or `live:<id>`), so each citation in the text maps to a row.
 - Timing panel: seconds per node and the tokens the hosted model reported per step (0 = served from
@@ -87,3 +94,13 @@ itinerary.
 rows), `app/query_cache.py` (the cache), `.streamlit/config.toml` (no error details, no usage
 statistics, address 127.0.0.1). Tests: `tests/test_app_logic.py`, `tests/test_app_page.py`
 (headless, with a fake pipeline).
+
+## Hand-run checklist
+
+HAND-RUN STEPS (2026-10-24 morning; nothing is running now; the LLM and Tavily caches/credits are yours to spend):
+START: from C:\Users\valin\Travel_Planner run `.venv/Scripts/python.exe -m streamlit run app/streamlit_app.py` (.streamlit/config.toml already sets fileWatcherType none, address 127.0.0.1, headless) and open http://127.0.0.1:8501. Stop it with Ctrl+C afterwards. Do not install torchvision.
+FORM (same for every run): duration 4, budget mid, travelling as couple, style relaxed, start city Chennai, dates 2026-12-10 to 2026-12-13, max travel hours 6, interests temples and beaches (both are offered; the list is temples, heritage, history, culture, beaches, hill stations, wildlife, backwaters, waterfalls, nature, food), constraints "no night travel", places Mahabalipuram and Pondicherry. Leave "Add live web search" unticked for runs 1 to 3.
+1. CORPUS-ONLY (fresh): click "Plan my trip". The first request takes 30 to 70 s (it loads the local model and calls the hosted model for the parse and the write; the cache was purged and the writer prompt changed, so both are real calls). Expect "fresh run", "corpus only: no live search was used for this answer", the note "live search was not requested for this run" (not "switched off"), NO "live search: ..." status line, no "only places in PY ..." note (a state limit is no longer inferred from place names), Backup options with other places (for example Chennai), correct dashes and phone symbols (no garbled characters), Mahabalipuram bullets that can now mention temples (the temples interest ranks matching chunks first; not guaranteed), a Sources table whose Chunk id column matches the [chunk:...] ids in the text, and in "Timing per node" the line "write step: language model, live call (N tokens)" with parse and write tokens above 0.
+2. CACHED REPEAT: click again with nothing changed. Expect "cached answer (<time>)", an instant result, the same text.
+3. FORCE REFRESH: tick "Ignore the cache for this run" and click. Expect "fresh run", a short run (a few seconds), and "write step: language model reply replayed from the local cache (0 tokens sent)" because the earlier reply is in the LLM cache. Untick it.
+4. LIVE-ON: tick "Add live web search" and click. Expect about 6 to 10 s for the live step, two new /search lines in data/manifests/request_log.jsonl (448 now, 450 after), the notice "live search: terms not verified, owner accepted risk", and a status line "live search: ok, 2 searches, N results, N in scope, N in plan, N merged, N cited, N not cited" where in plan <= in scope, merged <= in plan and <= 4, and cited + not cited = merged. In scope counts results that name a registry place or state; in plan keeps only those about a stop of the plan or a place you named. Sources table: live rows read "live, fetched 2026-10-24" with a Chunk id live:...; a live item the model did not cite is listed with the flag "retrieved, not cited". The notes may say "N live search result(s) were left out because they are not about a place in your plan". The write step is always "language model, live call" here (live prompts are never cached) and costs tokens each time. If the status line says "0 in plan" or "0 merged", the search found nothing about Mahabalipuram or Pondicherry; if merged is above 0 and cited is 0, the model chose not to use them (rule 10 only asks).
