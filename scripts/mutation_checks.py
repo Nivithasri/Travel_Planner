@@ -354,7 +354,7 @@ RETRIEVAL_MUTATIONS = [
 
 # Phase 7 (D99 to D104): mutations M103+ run against the Phase 7 tests only (--phase7).
 PHASE7_TESTS = ["tests/test_state.py", "tests/test_place_cards.py",
-                "tests/test_spotcheck_cards.py"]
+                "tests/test_spotcheck_cards.py", "tests/test_planner.py"]
 PHASE7_MUTATIONS = [
     ("M103 the live gate ignores terms_status", "src/live/config.py",
      "        if self.terms_status != \"verified\":\n            return \"terms_not_verified\"\n",
@@ -371,6 +371,17 @@ PHASE7_MUTATIONS = [
     ("M107 hold-out text is not dropped from the cards", "src/tools/place_cards.py",
      "            if holdout is not None and holdout.text_match(c[\"text\"]):\n",
      "            if False:\n"),
+    ("M109 the planner ignores the daily travel limit", "src/agents/planner.py",
+     "    return 0 if h <= 0 else math.ceil(h / limit - 1e-9) - 1\n", "    return 0\n"),
+    ("M110 the planner uses unnamed excluded places", "src/agents/planner.py",
+     "pool = {c.name: c for c in candidates if c.named or not c.limited}",
+     "pool = {c.name: c for c in candidates}"),
+    ("M111 avoid-hill-roads is not applied", "src/agents/planner.py",
+     "    if request.avoid_hill_roads:\n", "    if False:\n"),
+    ("M112 poor-season places are not left out", "src/agents/planner.py",
+     "    if poor and len(pool) - len(poor) >= target:", "    if False:"),
+    ("M113 the budget cap ignores nothing: tolerance dropped", "src/agents/budget.py",
+     "cap_inr * (1 + cfg[\"tolerance\"])", "cap_inr"),
     ("M108 the card spot-check accepts an edited fixed column", "scripts/spotcheck_cards.py",
      "    if fixed_sha(sorted(sheet_rows, key=lambda r: int(r[\"row_id\"]))) != "
      "key[\"fixed_sha256\"]:\n",
