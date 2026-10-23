@@ -8,9 +8,9 @@
   "days_per_stop": 2,
   "cluster_hours": 4.0,
   "daily_travel_limit_hours": {"default": 5.0, "family": 3.5, "couple": 5.0, "solo": 6.0, "group": 5.0},
-  "weights": {"relevance": 1.0, "interest": 0.3, "named": 1.0, "season_poor": 0.6, "season_fair": 0.1, "hidden_bonus": 0.15},
+  "weights": {"relevance": 1.0, "interest": 0.3, "named": 1.0, "season_poor": 0.6, "season_fair": 0.1, "hidden_bonus": 0.15, "start_hours": 0.05, "start_hours_cap": 12},
   "visibility_terciles": 3,
   "backups": 2,
-  "evidence_grade": {"min_model_written": 2, "min_distinct_urls": 3},
+  "evidence_grade": {"min_model_written": 2, "min_distinct_urls": 2},
   "retrieve": {"k_request": 30, "k_place": 12, "k_thin": 30}
 }

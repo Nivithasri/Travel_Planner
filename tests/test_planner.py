@@ -235,3 +235,13 @@ def test_golden_far_start_in_one_day_is_infeasible():
     r = req(duration_days=1, start_city="Hyderabad", party="family")
     p = real_plan(r, {"Kanniyakumari": 0.9})
     assert not p.feasible
+
+
+def test_a_far_place_is_mildly_penalised_against_the_start_city():
+    # A is 1 h from Start and D is 21 h away; equal relevance: the near place wins one stop
+    cs = [cand("A", 0.5), cand("D", 0.5)]
+    p = plan_trip(req(duration_days=2, start_city="Start"), cs, hours=fake_hours)
+    assert [s.place for s in p.stops] == ["A"]
+    named = plan_trip(req(duration_days=6, start_city="Start", named_places=["D"]),
+                      [cand("A", 0.5), cand("D", 0.5, named=True)], hours=fake_hours)
+    assert "D" in {s.place for s in named.stops}  # a named place is never penalised away

@@ -69,7 +69,7 @@ def _season(season: SeasonFn | None, place: str, month: int | None) -> dict | No
 
 
 def score_candidates(cands: Sequence[Candidate], request: ParsedRequest, season: SeasonFn | None,
-                     cfg: dict) -> dict[str, float]:
+                     cfg: dict, start_hours: dict[str, float] | None = None) -> dict[str, float]:
     w = cfg["weights"]
     out = {}
     for c in cands:
@@ -80,6 +80,8 @@ def score_candidates(cands: Sequence[Candidate], request: ParsedRequest, season:
             s -= {"poor": w["season_poor"], "fair": w["season_fair"]}.get(sd["verdict"], 0.0)
         if c.tercile == cfg["visibility_terciles"]:
             s += w["hidden_bonus"]
+        if start_hours and not c.named:  # a far place costs travel time: mild preference for near
+            s -= w["start_hours"] * min(start_hours.get(c.name, 0.0), w["start_hours_cap"])
         out[c.name] = round(s, 6)
     return out
 
@@ -177,7 +179,10 @@ def plan_trip(request: ParsedRequest, candidates: Sequence[Candidate], *, hours:
     if not pool:
         return Plan(feasible=False, infeasible_reason="no candidate destination with evidence",
                     limit_hours=limit, notes=notes)
-    scores = score_candidates(list(pool.values()), request, season, cfg)
+    start_hours = None
+    if request.start_city:
+        start_hours = {k: h(request.start_city, k) for k in pool}
+    scores = score_candidates(list(pool.values()), request, season, cfg, start_hours)
     named_n = sum(1 for c in pool.values() if c.named)
     target = max(request.duration_days // cfg["days_per_stop"], 1, min(named_n, cfg["max_stops"]))
     target = min(target, cfg["max_stops"], request.duration_days, len(pool))
