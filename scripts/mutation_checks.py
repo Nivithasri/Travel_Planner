@@ -355,7 +355,7 @@ RETRIEVAL_MUTATIONS = [
 # Phase 7 (D99 to D104): mutations M103+ run against the Phase 7 tests only (--phase7).
 PHASE7_TESTS = ["tests/test_state.py", "tests/test_place_cards.py",
                 "tests/test_spotcheck_cards.py", "tests/test_planner.py",
-                "tests/test_writer.py", "tests/test_stream.py"]
+                "tests/test_writer.py", "tests/test_stream.py", "tests/test_critic.py"]
 PHASE7_MUTATIONS = [
     ("M103 the live gate ignores terms_status", "src/live/config.py",
      "        if self.terms_status != \"verified\":\n            return \"terms_not_verified\"\n",
@@ -398,6 +398,21 @@ PHASE7_MUTATIONS = [
      "        return f\"[chunk:{cid}]\"\n"),
     ("M119 the writer does not enforce the reservation budget", "src/agents/writer.py",
      "> w[\"reservation_max_tokens\"]:", "> 10**9:"),
+    ("M120 an uncited bullet is not flagged", "src/agents/critic.py",
+     "            if not tags:\n                f.append(", "            if False:\n                f.append("),
+    ("M121 recency words on corpus claims are allowed", "src/agents/critic.py",
+     "            if RECENCY.search(b) and not any(t.startswith(\"L\") for t in tags):\n",
+     "            if False:\n"),
+    ("M122 hold-out and excluded mentions are allowed", "src/agents/critic.py",
+     "        if name.casefold() not in allowed and _mentions(full, name):\n",
+     "        if False:\n"),
+    ("M123 the LLM repair pass never runs", "src/agents/critic.py",
+     "    if findings and days and repair is not None:\n", "    if False:\n"),
+    ("M124 the cannot-confirm line is not added", "src/agents/critic.py",
+     "    if not request.time_sensitive or live_status == \"ok\" or STATUS_LINE in draft_text:\n",
+     "    if True:\n"),
+    ("M125 season conflicts are not checked", "src/agents/critic.py",
+     "        if s.season_verdict == \"poor\" or s.access_risk == \"high\":\n", "        if False:\n"),
     ("M108 the card spot-check accepts an edited fixed column", "scripts/spotcheck_cards.py",
      "    if fixed_sha(sorted(sheet_rows, key=lambda r: int(r[\"row_id\"]))) != "
      "key[\"fixed_sha256\"]:\n",
