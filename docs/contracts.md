@@ -28,7 +28,7 @@ retrieve(query, filters=None, k=10) -> list[dict]   # chunk fields + "score"    
 travel_time(place_a, place_b) -> float              # hours; destinations and hubs; UnknownPlaceError (D81)  (Phase 5)
 check_season(place, month) -> dict                  # suitability + notes + evidence; 26 destinations only; UnknownPlaceError (D81)  (Phase 5)
 get_place_card(place) -> dict                       # tips, warnings, citations         (Phase 7)
-live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type "live"    (Phase 7, Valincia; D31 PROPOSED, not binding until she acknowledges)
+live_retrieve(query, places=None, k=5) -> list[dict]  # live chunks, source_type "live"    (Phase 7, Valincia; D100; query must pass the closed-vocabulary check, UnsafeLiveQuery otherwise)
 ```
 
 ## retrieve() (Phase 6, D96)
@@ -106,3 +106,8 @@ data/manifests/raw_manifest.jsonl (url, source, place, retrieved_at, sha256, byt
 - travel_time(a, b) -> float hours: names, registry aliases, hub names/aliases/IATA, node ids, and airport codes in airport_aliases (COK, HYD, IXM, MAA, MYQ, PNY, TIR, WGC) which stand for the nearest destination.
 - check_season returns: place, month, verdict, reasons, access_risk, climate, evidence (model_written | fallback | rule_only counts), warning_chunk_ids, warning_sources, confidence, nearest_airport, caveats.
 - travel_km(a, b) is NOT reliable on hill legs: road km is great-circle km x one plain factor for every edge, and on the four hill routes with reference values it is 20 to 26% short (Coimbatore airport-Ooty -25.9%, Madurai-Kodaikanal -25.4%, Kochi-Munnar -23.9%, Hyderabad-Srisailam -20.2%; reference values UNVERIFIED). Use hours (travel_time) for planning and daily-travel limits; the ghat surcharge is in hours only (D78 amended).
+
+## Phase 7 interfaces (D99 to D105)
+- `get_place_card(place) -> dict` (src/tools/place_cards.py): reads index/place_cards.json (gitignored, built by scripts/build_place_cards.py). Fields: place, aliases, state, popularity, visibility_tercile (1 to 3, full-evidence places only), evidence_class (full | limited), hill, nearest_airport, best_months {good, fair, poor, access_risk, confidence, basis}, tips/warnings/highlights [{text, chunk_id, source_type, aspect, provenance, url}], counts, recency, caveats. Warnings are model-written only (D69). Unknown names, hubs and hold-outs raise UnknownPlaceError.
+- `live_retrieve(query, places=None, k=5)` (src/live/search.py): live chunks as dicts of the chunk fields plus "score" (source_type "live", chunk_id "live:<hash>", fetch_date, date only if the provider gave one). Same-day cache only, minimal stored fields, gated by config/live.json (terms_status must be "verified" by the owner for any real call). Never part of retrieve(), the corpus, the indexes or the qrels.
+- Pipeline: `scripts/run_pipeline.py` runs parse -> (retrieve || live) -> merge_grade -> plan -> write -> critic -> finalize (src/agents/graph.py: LangGraph, with run_local as the sequential fallback). The answer object holds text, sources (alias, chunk id, live flag, fetch date), plan, critic report (passed | repaired | failed_rules), live status and warnings.
