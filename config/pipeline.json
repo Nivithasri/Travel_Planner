@@ -1,0 +1,20 @@
+{
+  "_comment": "Prompt and token budgets of the Phase 7 writer (D103). Effective TPM under the owner's limits is 6,400 (80% of 8,000); a call is reserved as prompt_chars // 3 + 1 + max_tokens, so reservation_max_tokens leaves room for the parse call (about 0.8k tokens) in the same minute.",
+  "writer": {
+    "max_tokens": 2000,
+    "reasoning_effort": "low",
+    "prompt_chars_max": 9000,
+    "system_chars_max": 1900,
+    "plan_chars_max": 700,
+    "request_chars_max": 300,
+    "items_per_stop": 3,
+    "item_chars": 300,
+    "live_items": 4,
+    "live_item_chars": 300,
+    "reservation_max_tokens": 5000,
+    "allow_blog": false
+  },
+  "repair": {"max_tokens": 1500, "reasoning_effort": "low", "prompt_chars_max": 5400},
+  "tpm_effective": 6400,
+  "parse_tokens_estimate": 1100
+}

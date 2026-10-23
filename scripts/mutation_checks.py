@@ -354,7 +354,8 @@ RETRIEVAL_MUTATIONS = [
 
 # Phase 7 (D99 to D104): mutations M103+ run against the Phase 7 tests only (--phase7).
 PHASE7_TESTS = ["tests/test_state.py", "tests/test_place_cards.py",
-                "tests/test_spotcheck_cards.py", "tests/test_planner.py"]
+                "tests/test_spotcheck_cards.py", "tests/test_planner.py",
+                "tests/test_writer.py", "tests/test_stream.py"]
 PHASE7_MUTATIONS = [
     ("M103 the live gate ignores terms_status", "src/live/config.py",
      "        if self.terms_status != \"verified\":\n            return \"terms_not_verified\"\n",
@@ -382,6 +383,21 @@ PHASE7_MUTATIONS = [
      "    if poor and len(pool) - len(poor) >= target:", "    if False:"),
     ("M113 the budget cap ignores nothing: tolerance dropped", "src/agents/budget.py",
      "cap_inr * (1 + cfg[\"tolerance\"])", "cap_inr"),
+    ("M114 blog chunks reach the writer", "src/agents/evidence.py",
+     "            if item.source_type == \"blog\" and not w[\"allow_blog\"]:\n",
+     "            if False:\n"),
+    ("M115 injection-pattern corpus text is not dropped", "src/agents/evidence.py",
+     "            flags = injection_flags(item.text)\n            if flags:\n",
+     "            flags = []\n            if flags:\n"),
+    ("M116 URLs stay in packed evidence", "src/agents/evidence.py",
+     "    t = URL.sub(\"[link removed]\", str(text))\n", "    t = str(text)\n"),
+    ("M117 a finished stream is not cached", "src/common/llm.py",
+     "        self.cache.set(\"llm_chat\", model, inputs, text)\n", "        pass\n"),
+    ("M118 live ids are not marked in the expanded text", "src/agents/writer.py",
+     "        return f\"[{cid}]\" if cid.startswith(\"live:\") else f\"[chunk:{cid}]\"\n",
+     "        return f\"[chunk:{cid}]\"\n"),
+    ("M119 the writer does not enforce the reservation budget", "src/agents/writer.py",
+     "> w[\"reservation_max_tokens\"]:", "> 10**9:"),
     ("M108 the card spot-check accepts an edited fixed column", "scripts/spotcheck_cards.py",
      "    if fixed_sha(sorted(sheet_rows, key=lambda r: int(r[\"row_id\"]))) != "
      "key[\"fixed_sha256\"]:\n",

@@ -777,7 +777,7 @@ class OpenAICompatClient(OllamaClient):
         return chars // 3 + 1 + payload["max_tokens"]  # conservative: 3 characters per token
 
     # ---- transport -------------------------------------------------------------------------
-    def _call(self, send: Callable[[], Any], what: str) -> Any:
+    def _call(self, send: Callable[[], Any], what: str, *, parse_json: bool = True) -> Any:
         try:
             resp = send()
         except (requests.exceptions.MissingSchema, requests.exceptions.InvalidSchema,
@@ -819,6 +819,8 @@ class OpenAICompatClient(OllamaClient):
                 raise InvalidGeneration(str(err.get("failed_generation") or ""))
         if status != 200:
             raise LLMError(f"HTTP {status} from the API: {self._scrub(resp.text[:300])!r}")
+        if not parse_json:  # a streamed reply: the caller reads the body line by line
+            return resp
         try:
             return resp.json()
         except ValueError as exc:
@@ -865,6 +867,82 @@ class OpenAICompatClient(OllamaClient):
             return _chat_completion_text(body)
 
         return self._with_budget(attempt)
+
+    def chat_stream(self, messages: list[dict], model: str, *, options: dict | None = None,
+                    replay_chars: int = 160):
+        """Yield the assistant text piece by piece (server-sent events). Phase 7 writer (D103).
+
+        The cache entry is the SAME one `chat` uses (kind llm_chat, same key), written once the
+        stream has ended with non-empty text; a hit is replayed in pieces of `replay_chars`
+        without a call. The rate limiter reserves before sending and is corrected with the usage
+        the final event reports (else the estimate stays charged). Retries happen only before the
+        first byte; a break mid-stream raises LLMError and nothing is cached. Reasoning text is
+        never read or stored."""
+        payload = self._payload(model, messages, options, None)
+        inputs = {"messages": messages, "options": self._key_options(payload), "format": None,
+                  "path": self.chat_path}
+        hit = self.cache.get("llm_chat", model, inputs)
+        if isinstance(hit, str) and hit:
+            for i in range(0, len(hit), replay_chars):
+                yield hit[i:i + replay_chars]
+            return
+        wire = {**payload, "stream": True, "stream_options": {"include_usage": True}}
+        est = self._estimate_tokens(payload)
+
+        def open_stream(timeout: tuple[float, float]):
+            entry = self.limiter.before_call(est) if self.limiter else None
+            try:
+                resp = self._call(
+                    lambda: self._post(self.base_url + self.chat_path, json=wire,
+                                       headers=self._headers(), timeout=timeout, stream=True),
+                    f"model {model!r}", parse_json=False)
+            except BaseException as exc:
+                if entry is not None:
+                    self.limiter.failed(entry, entry[1] if isinstance(exc, InvalidGeneration)
+                                        else 0)
+                raise
+            return resp, entry
+
+        resp, entry = self._with_budget(open_stream)
+        parts: list[str] = []
+        usage = None
+        try:
+            for raw in resp.iter_lines(decode_unicode=True):
+                line = (raw or "").strip()
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    event = json.loads(data)
+                except ValueError:
+                    continue
+                if isinstance(event.get("usage"), dict):
+                    usage = event["usage"]
+                elif isinstance(event.get("x_groq"), dict) and isinstance(
+                        event["x_groq"].get("usage"), dict):
+                    usage = event["x_groq"]["usage"]
+                for choice in event.get("choices") or []:
+                    piece = (choice.get("delta") or {}).get("content")
+                    if piece:
+                        parts.append(piece)
+                        yield piece
+        except GeneratorExit:
+            if entry is not None:
+                self.limiter.failed(entry, est)
+            raise
+        except requests.RequestException as exc:
+            if entry is not None:
+                self.limiter.failed(entry, est)
+            raise LLMError(f"the stream broke ({type(exc).__name__}); nothing was cached") from None
+        text = "".join(parts)
+        actual = self._record_usage({"usage": usage} if usage else {}, est)
+        if entry is not None:
+            self.limiter.after_call(entry, actual, parse_rate_headers(self._last_headers))
+        if not text.strip():
+            raise BadResponseError("the stream ended with no text; nothing was cached")
+        self.cache.set("llm_chat", model, inputs, text)
 
     def list_models(self) -> list[str]:
         """Model ids the key can use (GET /models). Not cached, not rate-limited: a health check."""
