@@ -225,7 +225,7 @@ def test_unknown_hosts_and_paths_are_refused():
     hosts = load_api_hosts()
     assert set(hosts) == {"www.wikidata.org", "overpass-api.de", "archive-api.open-meteo.com",
                           "en.wikipedia.org", "en.wikivoyage.org", "query.wikidata.org",
-                          "wikimedia.org"}
+                          "wikimedia.org", "api.tavily.com"}  # D100 added
     assert hosts["www.wikidata.org"].path_prefixes == ("/wiki/Special:EntityData/", "/w/api.php")
     with pytest.raises(ValueError):
         require_host(hosts, "https://example.org/wiki/Special:EntityData/Q1.json")

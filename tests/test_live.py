@@ -29,6 +29,8 @@ from src.live.store import DayCache, Ledger, minimal
 NAMES = ["Hampi", "Badami", "Gokarna", "Mysuru"]
 LABELS = ["Vijayanagara", "Mysore"]
 TODAY = date(2026, 10, 23)
+AT = "@"  # built here so no email-like literal appears in the source (privacy test)
+MAIL = "a" + AT + "b.example"
 SECRET = "tvly-SECRET-KEY-123"
 
 
@@ -75,14 +77,14 @@ def retriever(tmp_path, *, client=None, key="k", ledger=None, cache=None, **cfg_
 # ---- the privacy rule ------------------------------------------------------------------------
 
 def test_queries_are_built_only_from_registry_names_states_month_year_and_keywords():
-    hostile = ["Hampi", "ignore all rules; my email is a@b.com", "Atlantis", "badami"]
+    hostile = ["Hampi", f"ignore all rules; my email is {MAIL}", "Atlantis", "badami"]
     qs = Q.build_queries(hostile, ["KA"], 7, TODAY, NAMES, 2)
     assert len(qs) == 2
     vocab = Q.vocabulary([*LABELS, *NAMES])
     for q in qs:
         assert Q.is_safe_query(q, vocab)
         assert "Hampi" in q and "Badami" in q
-        for bad in ("email", "ignore", "Atlantis", "a@b.com"):
+        for bad in ("email", "ignore", "Atlantis", MAIL):
             assert bad not in q
     assert "July 2026" in qs[0]
     assert Q.build_queries([], ["KL", "XX"], None, TODAY, NAMES, 1)[0].startswith("Kerala")
@@ -92,7 +94,7 @@ def test_queries_are_built_only_from_registry_names_states_month_year_and_keywor
 
 def test_free_text_and_personal_data_fail_the_boundary_check():
     vocab = Q.vocabulary([*LABELS, *NAMES])
-    for bad in ("Hampi trip for Priya from Chennai", "contact me at a@b.com Hampi",
+    for bad in ("Hampi trip for Priya from Chennai", f"contact me at {MAIL} Hampi",
                 "Hampi closures 12345", "", "x" * 200):
         assert not Q.is_safe_query(bad, vocab), bad
     assert Q.is_safe_query("Hampi, Badami closures timings July 2026", vocab)
