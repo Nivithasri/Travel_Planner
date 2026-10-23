@@ -36,7 +36,7 @@ SECRET = "tvly-SECRET-KEY-123"
 
 def cfg(**kw):
     base = json.loads((REPO_ROOT / "config" / "live.json").read_text(encoding="utf-8"))
-    return LiveConfig(**{**base, "terms_status": "verified", **kw})
+    return LiveConfig(**{**base, "terms_status": "owner_accepted_risk", **kw})
 
 
 def result(url, title, content, published=None):
@@ -109,10 +109,11 @@ def test_live_retrieve_refuses_an_unsafe_query_before_anything_else(tmp_path):
 
 # ---- gates and degradation ---------------------------------------------------------------------
 
-def test_the_committed_config_never_makes_a_real_call():
-    assert load_live_config().real_calls_status() == "terms_not_verified"
+def test_an_unaccepted_terms_status_never_makes_a_real_call():
+    c = load_live_config().model_copy(update={"terms_status": "not_verified"})
+    assert c.real_calls_status() == "terms_not_verified"
     client = FakeClient()
-    r = LiveRetriever(load_live_config(), api_key="k", client=client,
+    r = LiveRetriever(c, api_key="k", client=client,
                       cache=DayCache("unused", False), place_labels=LABELS, place_names=NAMES,
                       today=lambda: TODAY)
     res = r.run(["Hampi"], ["KA"], 7)
@@ -147,9 +148,29 @@ def test_a_verified_run_returns_scoped_cleaned_tagged_items_and_spends_credits(t
     assert top.place == "Hampi" and "SHOULD NOT" not in top.text
 
 
+def test_a_run_under_the_risk_acceptance_carries_the_terms_notice(tmp_path):
+    from src.live.config import TERMS_NOTICE
+
+    res = retriever(tmp_path).run(["Hampi"], ["KA"], 7)
+    assert res.status == "ok" and TERMS_NOTICE in res.note
+    assert TERMS_NOTICE == "live search: terms not verified, owner accepted risk"
+    failed = retriever(tmp_path / "f", client=FakeClient(boom=True)).run(["Hampi"], [], 7)
+    assert "corpus only" in failed.note and TERMS_NOTICE in failed.note
+    gated = retriever(tmp_path / "g", terms_status="not_verified").run(["Hampi"], [], 7)
+    assert TERMS_NOTICE not in gated.note
+
+
+def test_the_committed_config_keeps_the_result_cache_off(tmp_path):
+    c = load_live_config()
+    assert c.cache_enabled is False
+    cache = DayCache(tmp_path / "live", c.cache_enabled, lambda: "2026-10-23")
+    cache.put("q", [{"url": "https://a.test/1"}])
+    assert not (tmp_path / "live").exists() and cache.get("q") is None
+
+
 def test_the_same_day_cache_serves_a_rerun_without_calls_or_credits(tmp_path):
     client = FakeClient()
-    r = retriever(tmp_path, client=client)
+    r = retriever(tmp_path, client=client, cache_enabled=True)
     first = r.run(["Hampi"], [], 7)
     again = r.run(["Hampi"], [], 7)
     assert len(client.queries) == 2 and again.cache_hits == 2 and again.searches == 0

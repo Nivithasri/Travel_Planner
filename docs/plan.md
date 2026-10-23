@@ -257,14 +257,14 @@ Add one component at a time and run `eval/run_eval.py` after each. Develop again
 **Outputs:** `index/place_cards.json`, `src/agents/`, a CLI that runs a query end to end.
 **Done when:** a query returns a cited itinerary end to end, with practical tips and warnings, a rough budget estimate, and backup alternatives, using live evidence when the live step succeeds and degrading cleanly when it does not.
 
-**Amendments recorded in docs/decisions.md D99 to D107 (2026-10-23):**
+**Amendments recorded in docs/decisions.md D99 to D109 (2026-10-23):**
 - Retrieval is the frozen `retrieve()` (dense_contextual); `FULL_CONFIG` is not used (D99).
 - The live node uses search snippets only (no result-page fetching: the D43 allowlist refuses unlisted hosts), a same-day cache, minimal stored fields, no personal data in queries, and a terms gate (`terms_status` in `config/live.json`, currently NOT VERIFIED); live results are not reproducible after the day they were fetched (D100).
 - The popular/hidden mix is a relative visibility tercile among the 17 eligible destinations (all are labelled popular); excluded places only when named (D101).
 - Place cards are extractive, offline, without an LLM, and cannot claim recency (D102).
 - Route, season and budget lines are computed by code and tagged with tool provenance; every sentence the model writes carries a chunk alias (D103).
 - The grader step of the Retrieve node is a deterministic evidence grade plus one extra search; rules R1 to R7 in the critic (D104).
-- Known deviations at close (D107): the live node searches the request's named places or states, not the planner's stops; live evidence is not part of the evidence grade; the live layer was never called for real; place-card items are useful in 58% of the owner's spot-check (D106).
+- Known deviations at close (D107): the live node searches the request's named places or states, not the planner's stops; live evidence is not part of the evidence grade; the live layer was never called for real; place-card items are useful in 58% of the owner's spot-check (D106). After a smoke test (D108) the live layer runs under the owner's recorded risk acceptance, terms NOT VERIFIED, result cache off, notice on every live answer (D109).
 
 ## Phase 8: App
 

@@ -19,7 +19,7 @@ from datetime import date, datetime, timezone
 from src.agents.evidence import clean_text, injection_flags
 from src.agents.state import EvidenceItem
 from src.common.http import FetchError, HttpClient
-from src.live.config import LiveConfig, load_live_config
+from src.live.config import TERMS_NOTICE, LiveConfig, load_live_config
 from src.live.queries import STATE_NAMES, build_queries, is_safe_query, vocabulary
 from src.live.store import DayCache, Ledger, minimal
 
@@ -207,6 +207,9 @@ class LiveRetriever:
             bad = next((s for s in statuses if s not in ("ok", "empty")), None)
             res.status = bad or "empty"
         res.note = NOTES.get(res.status, "")
+        accepted = self.cfg.terms_status == "owner_accepted_risk"
+        if accepted and res.status in ("ok", "empty", "error"):
+            res.note = f"{res.note}; {TERMS_NOTICE}" if res.note else TERMS_NOTICE
         res.seconds = round(self._clock() - t0, 3)
         return res
 

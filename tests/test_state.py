@@ -82,18 +82,24 @@ def test_run_state_starts_empty():
 
 # ---- live configuration --------------------------------------------------------------------
 
-def test_the_committed_live_config_is_gated_off_until_the_owner_verifies_the_terms():
+def test_the_committed_live_config_records_the_owner_risk_acceptance_and_keeps_the_cache_off():
     cfg = load_live_config()
-    assert cfg.terms_status == "not_verified" and cfg.real_calls_status() == "terms_not_verified"
+    assert cfg.terms_status == "owner_accepted_risk" and cfg.real_calls_status() == "ok"
     assert cfg.credits_per_search == 2 and cfg.max_credits_per_request == 6
-    assert cfg.endpoint_host == "api.tavily.com" and cfg.cache_enabled
+    assert cfg.endpoint_host == "api.tavily.com" and not cfg.cache_enabled
+    raw = json.loads((REPO_ROOT / "config" / "live.json").read_text(encoding="utf-8"))
+    assert "assumed, not measured" in raw["credits_basis"]
+    with pytest.raises(ValidationError):  # the terms are never 'verified' (D109)
+        LiveConfig(**{**raw, "terms_status": "verified"})
 
 
 def test_real_calls_status_follows_enabled_and_terms():
     base = json.loads((REPO_ROOT / "config" / "live.json").read_text(encoding="utf-8"))
-    assert LiveConfig(**{**base, "enabled": False, "terms_status": "verified"}
+    assert LiveConfig(**{**base, "enabled": False, "terms_status": "owner_accepted_risk"}
                       ).real_calls_status() == "disabled"
-    assert LiveConfig(**{**base, "terms_status": "verified"}).real_calls_status() == "ok"
+    assert LiveConfig(**{**base, "terms_status": "owner_accepted_risk"}).real_calls_status() == "ok"
+    assert LiveConfig(**{**base, "terms_status": "not_verified"}
+                      ).real_calls_status() == "terms_not_verified"
 
 
 def test_inconsistent_live_budgets_are_refused():

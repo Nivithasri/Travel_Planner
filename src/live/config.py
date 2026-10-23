@@ -11,6 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from src.common.schemas import REPO_ROOT
 
 LIVE_CONFIG = REPO_ROOT / "config" / "live.json"
+# Shown with every answer whose live step ran under the owner's risk acceptance (D109).
+TERMS_NOTICE = "live search: terms not verified, owner accepted risk"
 
 
 class LiveConfig(BaseModel):
@@ -18,7 +20,7 @@ class LiveConfig(BaseModel):
 
     provider: Literal["tavily"] = "tavily"
     enabled: bool = True
-    terms_status: Literal["not_verified", "verified"] = "not_verified"
+    terms_status: Literal["not_verified", "owner_accepted_risk"] = "not_verified"
     terms_evidence: str = ""
     endpoint_host: str
     endpoint_path: str
@@ -48,10 +50,11 @@ class LiveConfig(BaseModel):
 
     def real_calls_status(self) -> str:
         """'ok' when a real network call is permitted by the configuration, else why not:
-        'disabled' or 'terms_not_verified' (the key is checked separately)."""
+        'disabled' or 'terms_not_verified' (the key is checked separately). The terms are never
+        'verified' (D109): a real call needs the owner's recorded risk acceptance."""
         if not self.enabled:
             return "disabled"
-        if self.terms_status != "verified":
+        if self.terms_status != "owner_accepted_risk":
             return "terms_not_verified"
         return "ok"
 
