@@ -257,9 +257,10 @@ def test_post_json_fails_cleanly_and_never_follows_redirects_or_retries(tmp_path
     for status in (500, 429, 302, 401):
         client, calls, _ = http_with(tmp_path / str(status), [TransportResponse(
             status, {"location": "https://evil.test/"}, "x")])
-        with pytest.raises(FetchError):
+        with pytest.raises(FetchError) as err:
             client.post_json(URL, {"query": "q"}, secret_headers={"Authorization": "Bearer k"})
         assert len(calls) == 1
+        assert ("redirect not followed" in str(err.value)) == (status == 302)
 
 
 def test_post_json_obeys_the_allowlist_and_the_per_host_cap(tmp_path):

@@ -213,8 +213,12 @@ class CriticReport(BaseModel):
 class RunState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    input_text: str = ""
+    overrides: dict = Field(default_factory=dict)  # CLI flags / form fields (no free text to live)
     request: ParsedRequest | None = None
     candidates: list[dict] = Field(default_factory=list)
+    grades: dict = Field(default_factory=dict)  # per place: thin flag and why
+    packed_obj: Any = None  # the evidence.Packed object (aliases, dropped items)
     corpus_evidence: dict[str, list[EvidenceItem]] = Field(default_factory=dict)
     live_evidence: list[EvidenceItem] = Field(default_factory=list)
     live_status: LiveStatus = "not_run"

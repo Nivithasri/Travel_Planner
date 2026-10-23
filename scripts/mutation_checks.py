@@ -357,7 +357,8 @@ RETRIEVAL_MUTATIONS = [
 PHASE7_TESTS = ["tests/test_state.py", "tests/test_place_cards.py",
                 "tests/test_spotcheck_cards.py", "tests/test_planner.py",
                 "tests/test_writer.py", "tests/test_stream.py", "tests/test_critic.py",
-                "tests/test_live.py", "tests/test_guards.py"]
+                "tests/test_live.py", "tests/test_guards.py", "tests/test_graph.py",
+                "tests/test_cli.py"]
 PHASE7_MUTATIONS = [
     ("M103 the live gate ignores terms_status", "src/live/config.py",
      "        if self.terms_status != \"verified\":\n            return \"terms_not_verified\"\n",
@@ -439,6 +440,22 @@ PHASE7_MUTATIONS = [
     ("M134 post_json follows the allowlist no more (body logged)", "src/common/http.py",
      "        if resp.status in REDIRECT_STATUS:\n            raise FetchError(f\"redirect not followed",
      "        if False:\n            raise FetchError(f\"redirect not followed"),
+    ("M135 hold-out names in the request are not warned about", "src/agents/nodes.py",
+     "    if held:\n        warnings.append(", "    if False:\n        warnings.append("),
+    ("M136 unnamed excluded places become eligible", "src/agents/nodes.py",
+     "    eligible = {n for n, c in deps.cards.items() if c[\"evidence_class\"] == \"full\"} | named\n",
+     "    eligible = set(deps.cards) | named\n"),
+    ("M137 node warnings replace instead of accumulate", "src/agents/nodes.py",
+     "            state.warnings.extend(v)\n", "            state.warnings = list(v)\n"),
+    ("M138 an unknown start city is kept", "src/agents/nodes.py",
+     "                setattr(req, field_name, None)\n", "                pass\n"),
+    ("M139 the freshness note is left out of the answer", "src/agents/nodes.py",
+     "DOC_NOTES[\"freshness\"], DOC_NOTES[\"budget\"]", "DOC_NOTES[\"budget\"]"),
+    ("M140 node timings are not recorded", "src/agents/graph.py",
+     "        upd[\"timings\"] = {**upd.get(\"timings\", {}), name: round(deps.clock() - t0, 3)}\n",
+     "        upd[\"timings\"] = {}\n"),
+    ("M141 the run log stores the request text", "scripts/run_pipeline.py",
+     "\"request_sha256\": hashlib.sha256(text.encode()", "\"request_text\": text, \"request_sha256\": hashlib.sha256(text.encode()"),
     ("M108 the card spot-check accepts an edited fixed column", "scripts/spotcheck_cards.py",
      "    if fixed_sha(sorted(sheet_rows, key=lambda r: int(r[\"row_id\"]))) != "
      "key[\"fixed_sha256\"]:\n",
