@@ -1,0 +1,301 @@
+{
+ "include_blog": false,
+ "inputs_sha256": {
+  "chunks.jsonl": "e4885c84031e871a2765b706dbdd9f4c0780c1b6f8ee1fb98479e9be18185135",
+  "core_places.json": "7306f460da9d32e3117a93779d6fd6c47241573e177782ca82ab0f22e63ab150",
+  "d33_excluded.json": "a712d7b6cef25c9c5b0a0d932e45ef12e4088353640cdf60f20a251ee61b3041",
+  "provenance.jsonl": "7cea884442c34fe93dac853248663b7f173f9f9f9bbf6d12e24775619778ac12",
+  "season_data.json": "1f06666399767e958668e645a8cf8316ee2baba818ce3261c3b5f48418652801"
+ },
+ "n_places": 26,
+ "place_cards_sha256": "c7f6724a002cf39f526133852a65760ef7bb997c3e8a3b00601160a9b7dc4a3a",
+ "places": {
+  "Alappuzha": {
+   "blog_excluded": 0,
+   "chunks_total": 55,
+   "evidence_class": "limited",
+   "highlights": 6,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 2,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Auroville": {
+   "blog_excluded": 0,
+   "chunks_total": 33,
+   "evidence_class": "limited",
+   "highlights": 6,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 3,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Badami": {
+   "blog_excluded": 21,
+   "chunks_total": 38,
+   "evidence_class": "full",
+   "highlights": 2,
+   "model_written_warnings": 2,
+   "rule_based_warning_flags": 2,
+   "tips": 5,
+   "visibility_tercile": 3,
+   "warnings": 2
+  },
+  "Bengaluru": {
+   "blog_excluded": 33,
+   "chunks_total": 152,
+   "evidence_class": "full",
+   "highlights": 2,
+   "model_written_warnings": 14,
+   "rule_based_warning_flags": 9,
+   "tips": 5,
+   "visibility_tercile": 1,
+   "warnings": 5
+  },
+  "Bhadrachalam": {
+   "blog_excluded": 0,
+   "chunks_total": 12,
+   "evidence_class": "limited",
+   "highlights": 2,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 3,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Chennai": {
+   "blog_excluded": 3,
+   "chunks_total": 106,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 7,
+   "rule_based_warning_flags": 0,
+   "tips": 5,
+   "visibility_tercile": 1,
+   "warnings": 5
+  },
+  "Gokarna": {
+   "blog_excluded": 25,
+   "chunks_total": 57,
+   "evidence_class": "full",
+   "highlights": 3,
+   "model_written_warnings": 9,
+   "rule_based_warning_flags": 3,
+   "tips": 5,
+   "visibility_tercile": 3,
+   "warnings": 5
+  },
+  "Hampi": {
+   "blog_excluded": 17,
+   "chunks_total": 100,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 8,
+   "rule_based_warning_flags": 2,
+   "tips": 5,
+   "visibility_tercile": 2,
+   "warnings": 5
+  },
+  "Hyderabad": {
+   "blog_excluded": 42,
+   "chunks_total": 148,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 10,
+   "rule_based_warning_flags": 6,
+   "tips": 5,
+   "visibility_tercile": 1,
+   "warnings": 5
+  },
+  "Kanniyakumari": {
+   "blog_excluded": 16,
+   "chunks_total": 49,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 6,
+   "rule_based_warning_flags": 1,
+   "tips": 5,
+   "visibility_tercile": 2,
+   "warnings": 5
+  },
+  "Kochi": {
+   "blog_excluded": 6,
+   "chunks_total": 155,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 12,
+   "rule_based_warning_flags": 0,
+   "tips": 5,
+   "visibility_tercile": 1,
+   "warnings": 5
+  },
+  "Kodagu": {
+   "blog_excluded": 45,
+   "chunks_total": 74,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 3,
+   "rule_based_warning_flags": 8,
+   "tips": 5,
+   "visibility_tercile": 3,
+   "warnings": 3
+  },
+  "Kodaikanal": {
+   "blog_excluded": 0,
+   "chunks_total": 41,
+   "evidence_class": "limited",
+   "highlights": 6,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 4,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Madurai": {
+   "blog_excluded": 7,
+   "chunks_total": 94,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 7,
+   "rule_based_warning_flags": 1,
+   "tips": 5,
+   "visibility_tercile": 2,
+   "warnings": 5
+  },
+  "Mahabalipuram": {
+   "blog_excluded": 3,
+   "chunks_total": 33,
+   "evidence_class": "full",
+   "highlights": 2,
+   "model_written_warnings": 2,
+   "rule_based_warning_flags": 1,
+   "tips": 5,
+   "visibility_tercile": 3,
+   "warnings": 2
+  },
+  "Munnar": {
+   "blog_excluded": 0,
+   "chunks_total": 37,
+   "evidence_class": "limited",
+   "highlights": 6,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 5,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Mysuru": {
+   "blog_excluded": 12,
+   "chunks_total": 103,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 4,
+   "rule_based_warning_flags": 0,
+   "tips": 5,
+   "visibility_tercile": 2,
+   "warnings": 4
+  },
+  "Ooty": {
+   "blog_excluded": 13,
+   "chunks_total": 54,
+   "evidence_class": "full",
+   "highlights": 4,
+   "model_written_warnings": 5,
+   "rule_based_warning_flags": 2,
+   "tips": 5,
+   "visibility_tercile": 2,
+   "warnings": 5
+  },
+  "Pondicherry": {
+   "blog_excluded": 4,
+   "chunks_total": 56,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 2,
+   "rule_based_warning_flags": 0,
+   "tips": 5,
+   "visibility_tercile": 1,
+   "warnings": 2
+  },
+  "Rameswaram": {
+   "blog_excluded": 0,
+   "chunks_total": 39,
+   "evidence_class": "limited",
+   "highlights": 6,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 3,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Srisailam": {
+   "blog_excluded": 0,
+   "chunks_total": 10,
+   "evidence_class": "limited",
+   "highlights": 2,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 3,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Tirupati": {
+   "blog_excluded": 11,
+   "chunks_total": 56,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 3,
+   "rule_based_warning_flags": 0,
+   "tips": 5,
+   "visibility_tercile": 2,
+   "warnings": 3
+  },
+  "Varkala": {
+   "blog_excluded": 0,
+   "chunks_total": 27,
+   "evidence_class": "limited",
+   "highlights": 6,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 2,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  },
+  "Visakhapatnam": {
+   "blog_excluded": 7,
+   "chunks_total": 76,
+   "evidence_class": "full",
+   "highlights": 6,
+   "model_written_warnings": 1,
+   "rule_based_warning_flags": 0,
+   "tips": 5,
+   "visibility_tercile": 1,
+   "warnings": 1
+  },
+  "Warangal": {
+   "blog_excluded": 18,
+   "chunks_total": 32,
+   "evidence_class": "full",
+   "highlights": 2,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 2,
+   "tips": 5,
+   "visibility_tercile": 3,
+   "warnings": 0
+  },
+  "Wayanad": {
+   "blog_excluded": 0,
+   "chunks_total": 59,
+   "evidence_class": "limited",
+   "highlights": 6,
+   "model_written_warnings": 0,
+   "rule_based_warning_flags": 11,
+   "tips": 5,
+   "visibility_tercile": null,
+   "warnings": 0
+  }
+ },
+ "version": "cards-v1"
+}

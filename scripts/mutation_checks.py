@@ -353,11 +353,28 @@ RETRIEVAL_MUTATIONS = [
 
 
 # Phase 7 (D99 to D104): mutations M103+ run against the Phase 7 tests only (--phase7).
-PHASE7_TESTS = ["tests/test_state.py"]
+PHASE7_TESTS = ["tests/test_state.py", "tests/test_place_cards.py",
+                "tests/test_spotcheck_cards.py"]
 PHASE7_MUTATIONS = [
     ("M103 the live gate ignores terms_status", "src/live/config.py",
      "        if self.terms_status != \"verified\":\n            return \"terms_not_verified\"\n",
      "        if False:\n            return \"terms_not_verified\"\n"),
+    ("M104 a rule-based row is shown as a warning", "src/tools/place_cards.py",
+     "if p == \"llm\" and c.get(\"is_warning\")]", "if c.get(\"is_warning\")]"),
+    ("M105 blog chunks enter the cards by default", "src/tools/place_cards.py",
+     "            if c[\"source_type\"] == \"blog\" and not include_blog:\n",
+     "            if False:\n"),
+    ("M106 a full place uses rule-based rows", "src/tools/place_cards.py",
+     "            usable = prov == \"llm\" or (limited and prov in (\"rule_only\", "
+     "\"fallback\"))\n",
+     "            usable = True\n"),
+    ("M107 hold-out text is not dropped from the cards", "src/tools/place_cards.py",
+     "            if holdout is not None and holdout.text_match(c[\"text\"]):\n",
+     "            if False:\n"),
+    ("M108 the card spot-check accepts an edited fixed column", "scripts/spotcheck_cards.py",
+     "    if fixed_sha(sorted(sheet_rows, key=lambda r: int(r[\"row_id\"]))) != "
+     "key[\"fixed_sha256\"]:\n",
+     "    if False:\n"),
 ]
 
 
