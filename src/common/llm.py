@@ -366,10 +366,14 @@ class OllamaClient:
         *,
         options: dict | None = None,
         format: Any = None,
+        cache: bool = True,
     ) -> str:
         """Return the assistant text. Cached on (model, path, messages, options, format).
-        Empty or malformed replies raise and are never cached."""
+        Empty or malformed replies raise and are never cached. `cache=False` neither reads nor
+        writes the cache (a prompt that holds live search text must not be stored, D109)."""
         payload = self._payload(model, messages, options, format)
+        if not cache:
+            return self._request(payload)
         inputs = {
             "messages": messages,
             "options": self._key_options(payload),
@@ -869,7 +873,7 @@ class OpenAICompatClient(OllamaClient):
         return self._with_budget(attempt)
 
     def chat_stream(self, messages: list[dict], model: str, *, options: dict | None = None,
-                    replay_chars: int = 160):
+                    replay_chars: int = 160, cache: bool = True):
         """Yield the assistant text piece by piece (server-sent events). Phase 7 writer (D103).
 
         The cache entry is the SAME one `chat` uses (kind llm_chat, same key), written once the
@@ -877,11 +881,14 @@ class OpenAICompatClient(OllamaClient):
         without a call. The rate limiter reserves before sending and is corrected with the usage
         the final event reports (else the estimate stays charged). Retries happen only before the
         first byte; a break mid-stream raises LLMError and nothing is cached. Reasoning text is
-        never read or stored."""
+        never read or stored. `cache=False` neither reads nor writes the cache (a prompt that
+        holds live search text must not be stored, D109). The body is decoded as UTF-8: the API
+        sends text/event-stream without a charset and requests would otherwise assume
+        ISO-8859-1 (D115)."""
         payload = self._payload(model, messages, options, None)
         inputs = {"messages": messages, "options": self._key_options(payload), "format": None,
                   "path": self.chat_path}
-        hit = self.cache.get("llm_chat", model, inputs)
+        hit = self.cache.get("llm_chat", model, inputs) if cache else None
         if isinstance(hit, str) and hit:
             for i in range(0, len(hit), replay_chars):
                 yield hit[i:i + replay_chars]
@@ -906,6 +913,7 @@ class OpenAICompatClient(OllamaClient):
         resp, entry = self._with_budget(open_stream)
         parts: list[str] = []
         usage = None
+        resp.encoding = "utf-8"
         try:
             for raw in resp.iter_lines(decode_unicode=True):
                 line = (raw or "").strip()
@@ -942,7 +950,8 @@ class OpenAICompatClient(OllamaClient):
             self.limiter.after_call(entry, actual, parse_rate_headers(self._last_headers))
         if not text.strip():
             raise BadResponseError("the stream ended with no text; nothing was cached")
-        self.cache.set("llm_chat", model, inputs, text)
+        if cache:
+            self.cache.set("llm_chat", model, inputs, text)
 
     def list_models(self) -> list[str]:
         """Model ids the key can use (GET /models). Not cached, not rate-limited: a health check."""

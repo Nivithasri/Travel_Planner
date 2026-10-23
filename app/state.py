@@ -19,6 +19,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from src.live.config import TERMS_NOTICE
+from src.live.search import NOTES as LIVE_NOTES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -34,7 +35,7 @@ PRIVACY_HINT = "do not enter personal information"
 RECENCY_NOTE = ("no corpus item is dated within the last 18 months; live items show their fetch "
                 "date, not a publish date")
 SEASON_NOTE = "trip spans several months; season check uses the start month only"
-NOT_REQUESTED_NOTE = "live search was not requested for this run; answers use the corpus only"
+NOT_REQUESTED_NOTE = LIVE_NOTES["not_requested"]  # the pipeline now says it itself (D115)
 CARD_LABEL = "auto-generated, check before relying"
 BUDGET_LABEL = "rough estimate, not verified"
 TRAVEL_LABEL = "provisional"

@@ -3,6 +3,7 @@ plan, the evidence items and the run state. Pure data, no I/O except the config 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Literal
 
@@ -21,6 +22,10 @@ EvidenceClass = Literal["full", "limited"]
 STYLE_TO_PARTY = {"family": "family", "honeymoon": "couple", "backpacker": "solo"}
 HILL_AVOID_WORDS = ("avoid hill", "no hill", "no ghat", "avoid ghat", "avoid mountain")
 NIGHT_WORDS = ("no night", "avoid night", "daytime only", "no overnight travel")
+# How a state is NAMED in a request (D115). "Pondicherry" is deliberately absent from PY: it is
+# also the town, and naming the town is not asking for the territory only.
+STATE_WORDS = {"TN": ("tamil nadu", "tamilnadu"), "KL": ("kerala",), "KA": ("karnataka",),
+               "AP": ("andhra pradesh", "andhra"), "TS": ("telangana",), "PY": ("puducherry",)}
 
 
 def load_planner_config(path: Path = PLANNER_CONFIG) -> dict:
@@ -85,6 +90,13 @@ class ParsedRequest(BaseModel):
         return float(table.get(self.party, table["default"]))
 
 
+def states_named_in(text: str) -> list[str]:
+    """State codes whose name appears in the text (whole words, any case)."""
+    low = (text or "").casefold()
+    return [code for code, words in STATE_WORDS.items()
+            if any(re.search(rf"\b{re.escape(w)}\b", low) for w in words)]
+
+
 def request_from_parse(parsed: Any, *, overrides: dict | None = None) -> ParsedRequest:
     """Build a ParsedRequest from a ValidatedQuery (src/retrieval/query_understanding.py) or any
     object with the same attributes, plus explicit overrides (CLI flags or a form). Missing fields
@@ -107,6 +119,19 @@ def request_from_parse(parsed: Any, *, overrides: dict | None = None) -> ParsedR
     if party is None:
         party = "group"
         notes.append("party not given: 'group' assumed")
+    # A state restricts the plan only when the user named it (or passed it explicitly, as the CLI
+    # does). The parse also lists the states of the places a request names; those are not a
+    # restriction (D115): naming Mahabalipuram and Pondicherry did not ask for Puducherry only.
+    if o.get("states"):
+        states = list(o["states"])
+    else:
+        inferred = list(getattr(parsed, "states", []) or [])
+        named = set(states_named_in(str(o.get("text", getattr(parsed, "text", "")) or "")))
+        states = [s for s in inferred if s in named]
+        dropped = [s for s in inferred if s not in named]
+        if dropped:
+            notes.append(f"state(s) {', '.join(dropped)} came from the places you named, not from "
+                         "a state you named: not used to limit the plan")
     req = ParsedRequest(
         text=o.get("text", getattr(parsed, "text", "")),
         duration_days=pick("duration_days", getattr(parsed, "duration_days", None),
@@ -121,7 +146,7 @@ def request_from_parse(parsed: Any, *, overrides: dict | None = None) -> ParsedR
         constraints=list(o.get("constraints") or []),
         max_daily_travel_hours=o.get("max_daily_travel_hours"),
         named_places=list(o.get("named_places") or getattr(parsed, "places", []) or []),
-        states=list(o.get("states") or getattr(parsed, "states", []) or []),
+        states=states,
         place_types=list(getattr(parsed, "place_types", []) or []),
         time_sensitive=bool(o.get("time_sensitive", getattr(parsed, "time_sensitive", False))),
         notes=notes + list(getattr(parsed, "notes", []) or []))

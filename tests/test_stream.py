@@ -118,3 +118,73 @@ def test_the_writer_cap_is_a_per_client_setting_and_the_default_stays_400(tmp_pa
     small, _, _ = make(tmp_path / "s", Resp(sse(["x"])), cap=400)
     with pytest.raises(ValueError, match="max_tokens"):
         list(small.chat_stream(MSGS, "openai/gpt-oss-20b", options=big))
+
+
+# ---- D115: UTF-8 stream decoding and cache=False ---------------------------------------------
+
+def real_sse_response(lines, charset=None):
+    """A real requests.Response the way the adapter builds it: a text/event-stream body with no
+    charset in the content type gets ISO-8859-1 (requests.utils.get_encoding_from_headers)."""
+    import io
+
+    body = "".join(line + chr(10) for line in lines).encode("utf-8")
+    r = requests.Response()
+    r.status_code = 200
+    r.headers["content-type"] = "text/event-stream" + (f"; charset={charset}" if charset else "")
+    r.raw = io.BytesIO(body)
+    r.encoding = requests.utils.get_encoding_from_headers(r.headers)
+    return r
+
+
+def raw_utf8_lines(text):
+    event = {"choices": [{"delta": {"content": text}}]}
+    return ["data: " + json.dumps(event, ensure_ascii=False), "data: [DONE]"]
+
+
+def test_a_stream_without_a_charset_is_decoded_as_utf_8_not_latin_1(tmp_path):
+    text = "6AM" + chr(0x2013) + "12:30PM " + chr(0x260F) + " +91 44"
+    resp = real_sse_response(raw_utf8_lines(text))
+    assert resp.encoding == "ISO-8859-1"  # what requests assumes for this content type
+    client, _, _ = make(tmp_path, resp)
+    out = "".join(client.chat_stream(MSGS, "openai/gpt-oss-20b", options=OPTS))
+    assert out == text
+    assert not any(0x80 <= ord(ch) <= 0x9F for ch in out)  # no latin-1 control characters
+    # the cached copy is the clean text too, and a replay returns it
+    assert "".join(client.chat_stream(MSGS, "openai/gpt-oss-20b", options=OPTS)) == text
+
+
+def test_the_old_latin_1_decoding_is_what_produced_the_garbled_characters():
+    text = "6AM" + chr(0x2013) + "12"
+    garbled = text.encode("utf-8").decode("latin-1")
+    assert garbled == "6AM" + chr(0xE2) + chr(0x80) + chr(0x93) + "12"
+    assert garbled.encode("latin-1").decode("utf-8") == text
+
+
+def test_cache_false_neither_reads_nor_writes_the_cache_in_a_stream(tmp_path):
+    client, post, _ = make(tmp_path, Resp(sse(["one"])))
+    assert "".join(client.chat_stream(MSGS, "openai/gpt-oss-20b", options=OPTS,
+                                      cache=False)) == "one"
+    assert list((tmp_path / "c").rglob("*.json")) == []  # nothing was stored
+    assert "".join(client.chat_stream(MSGS, "openai/gpt-oss-20b", options=OPTS,
+                                      cache=False)) == "one"
+    assert len(post.calls) == 2  # and nothing was read
+    assert "".join(client.chat_stream(MSGS, "openai/gpt-oss-20b", options=OPTS)) == "one"
+    assert len(list((tmp_path / "c").rglob("*.json"))) == 1  # a normal call does store
+    assert "".join(client.chat_stream(MSGS, "openai/gpt-oss-20b", options=OPTS,
+                                      cache=False)) == "one"
+    assert len(post.calls) == 4  # an existing entry is ignored by cache=False
+
+
+class JsonResp(Resp):
+    def json(self):
+        return {"choices": [{"message": {"content": "hello"}}], "usage": {"total_tokens": 9}}
+
+
+def test_cache_false_neither_reads_nor_writes_the_cache_in_chat(tmp_path):
+    client, post, _ = make(tmp_path, JsonResp())
+    assert client.chat(MSGS, "openai/gpt-oss-20b", options=OPTS, cache=False) == "hello"
+    assert list((tmp_path / "c").rglob("*.json")) == []
+    assert client.chat(MSGS, "openai/gpt-oss-20b", options=OPTS) == "hello"
+    assert len(list((tmp_path / "c").rglob("*.json"))) == 1
+    assert client.chat(MSGS, "openai/gpt-oss-20b", options=OPTS, cache=False) == "hello"
+    assert len(post.calls) == 3  # the stored entry was not used

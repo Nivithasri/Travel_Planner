@@ -32,6 +32,7 @@ SYSTEM = (
     "once; later days use the no-details bullet.\n"
     "Plain English. No tables.")
 ALIAS = re.compile(r"\[((?:S|L)\d+)\]")
+LIVE_BLOCK = re.compile(r"<<L\d+ \|")  # an evidence block of a live item (evidence_block)
 NO_DETAILS = "- No source-backed details for this day."
 
 
@@ -99,15 +100,23 @@ def reservation_tokens(messages: list[dict], max_tokens: int) -> int:
     return sum(len(m["content"]) for m in messages) // 3 + 1 + max_tokens
 
 
+def holds_live_text(messages: list[dict]) -> bool:
+    """True when a prompt carries a live search item: such a prompt is never written to the LLM
+    cache (D109, D115). Corpus text cannot forge the marker: evidence cleaning removes '<<'."""
+    return any(LIVE_BLOCK.search(m.get("content", "")) for m in messages)
+
+
 def write(client, model: str, messages: list[dict], cfg: dict | None = None,
           on_piece: Callable[[str], None] | None = None) -> str:
-    """One streamed call; returns the whole text. `on_piece` receives each piece as it arrives."""
+    """One streamed call; returns the whole text. `on_piece` receives each piece as it arrives.
+    A prompt that holds live text is sent with cache=False (neither read nor stored)."""
     w = (cfg or load_pipeline_config())["writer"]
     options = {"max_tokens": w["max_tokens"], "reasoning_effort": w["reasoning_effort"]}
     if reservation_tokens(messages, w["max_tokens"]) > w["reservation_max_tokens"]:
         raise ValueError("the prompt would reserve more tokens than reservation_max_tokens")
     parts = []
-    for piece in client.chat_stream(messages, model, options=options):
+    extra = {"cache": False} if holds_live_text(messages) else {}
+    for piece in client.chat_stream(messages, model, options=options, **extra):
         parts.append(piece)
         if on_piece:
             on_piece(piece)

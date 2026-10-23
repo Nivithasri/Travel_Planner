@@ -316,14 +316,18 @@ def repair_messages(ctx: CriticContext, draft_text: str, findings: list[CriticFi
 
 def make_repair(client, model: str, ctx: CriticContext, cfg: dict | None = None
                 ) -> Callable[[str, list[CriticFinding]], str]:
-    """The repair callable for run_cycle: ONE cached, non-streamed call with the repair options."""
+    """The repair callable for run_cycle: ONE non-streamed call with the repair options, cached
+    unless its prompt holds live text (D109, D115)."""
     from src.agents.evidence import load_pipeline_config
+    from src.agents.writer import holds_live_text
 
     r = (cfg or load_pipeline_config())["repair"]
 
     def repair(draft_text: str, findings: list[CriticFinding]) -> str:
         msgs = repair_messages(ctx, draft_text, findings, cfg)
+        extra = {"cache": False} if holds_live_text(msgs) else {}
         return client.chat(msgs, model, options={"max_tokens": r["max_tokens"],
-                                                 "reasoning_effort": r["reasoning_effort"]})
+                                                 "reasoning_effort": r["reasoning_effort"]},
+                           **extra)
 
     return repair

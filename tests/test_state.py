@@ -34,8 +34,9 @@ def test_defaults_are_applied_and_noted():
 
 
 def test_parsed_values_and_overrides_win_over_defaults():
-    p = parsed(duration_days=6, budget_tier="luxury", month=7, travel_style="family",
-               places=["Hampi"], states=["KA"], interests=["temples"], time_sensitive=True)
+    p = parsed(text="temples in Karnataka", duration_days=6, budget_tier="luxury", month=7,
+               travel_style="family", places=["Hampi"], states=["KA"], interests=["temples"],
+               time_sensitive=True)
     req = request_from_parse(p, overrides={"duration_days": 3, "start_city": "Bengaluru",
                                            "constraints": ["avoid hill roads"]})
     assert (req.duration_days, req.budget_tier, req.month) == (3, "luxury", 7)
@@ -118,3 +119,35 @@ def test_live_key_is_never_in_a_repr(monkeypatch, tmp_path):
     assert s.has_key and "secret" not in repr(s)
     monkeypatch.delenv("LIVE_SEARCH_API_KEY", raising=False)
     assert not LiveSettings().has_key
+
+
+# ---- states are a restriction only when the user named them (D115) -----------------------------
+
+def test_states_of_the_named_places_are_not_a_restriction():
+    p = parsed(text="Places: Pondicherry, Mahabalipuram.", places=["Pondicherry", "Mahabalipuram"],
+               states=["PY"])
+    req = request_from_parse(p, overrides={"text": p.text})
+    assert req.states == [] and req.named_places == ["Pondicherry", "Mahabalipuram"]
+    assert any("PY came from the places you named" in n for n in req.notes)
+
+
+def test_a_state_named_in_the_text_is_kept_and_an_inferred_one_is_dropped():
+    p = parsed(text="Kerala backwaters and Hampi", places=["Hampi"], states=["KL", "KA"])
+    req = request_from_parse(p, overrides={"text": p.text})
+    assert req.states == ["KL"]
+    assert any("KA came from the places" in n for n in req.notes)
+
+
+def test_explicit_states_override_the_text_rule():
+    p = parsed(text="a trip", states=["KA"])
+    req = request_from_parse(p, overrides={"states": ["TN"], "text": p.text})
+    assert req.states == ["TN"] and not any("came from" in n for n in req.notes)
+
+
+def test_states_named_in_matches_whole_state_names_only():
+    from src.agents.state import states_named_in
+
+    assert states_named_in("Tamil Nadu and Kerala, maybe ANDHRA") == ["TN", "KL", "AP"]
+    assert states_named_in("Pondicherry and Hampi") == []  # a town, not the territory
+    assert states_named_in("Puducherry beaches") == ["PY"]
+    assert states_named_in("Keralan food, Telanganas") == []  # not a whole word

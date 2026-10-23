@@ -187,3 +187,24 @@ def test_a_bullet_repeated_on_another_day_is_flagged_and_removed():
     text, report, actions = C.run_cycle(twice, ctx)
     assert report.status == "repaired" and text.count("Ferries cross") == 1
     assert C.NO_DETAILS in text and any("repeated bullet" in a for a in actions)
+
+
+# ---- D115: the repair call is not cached when its prompt holds live text -----------------------
+
+class RepairClient:
+    def __init__(self):
+        self.kwargs = None
+
+    def chat(self, messages, model, *, options=None, **kwargs):
+        self.kwargs = kwargs
+        return "## Day 1: Hampi\n- Ferries cross the river every morning. [S1]\n"
+
+
+def test_the_repair_call_skips_the_cache_only_when_the_prompt_holds_live_text():
+    finding = C.CriticFinding(rule="R4", message="a bullet has no tag", day=1)
+    draft = "## Day 1: Hampi\n- Ferries cross the river every morning.\n"
+    live_item = item("live:abc123def456", st="live", fetch_date="2026-10-23")
+    plain, withlive = RepairClient(), RepairClient()
+    C.make_repair(plain, "m", ctx_for(make_plan()), CFG)(draft, [finding])
+    C.make_repair(withlive, "m", ctx_for(make_plan(), live=[live_item]), CFG)(draft, [finding])
+    assert plain.kwargs == {} and withlive.kwargs == {"cache": False}

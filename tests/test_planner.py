@@ -266,3 +266,24 @@ def test_requested_states_limit_the_candidates_unless_a_place_is_named():
     assert "C" in {s.place for s in named.stops}
     none = plan_trip(req(duration_days=2, states=["TS"]), cs, hours=fake_hours)
     assert not none.feasible and "TS" in none.infeasible_reason
+
+
+def test_the_state_note_says_when_named_places_outside_the_states_were_kept():
+    cs = [Candidate("A", "KA", 0.9, 0.0, False, {"evidence_class": "full"}),
+          Candidate("B", "KL", 0.5, 0.0, True, {"evidence_class": "full"}),
+          Candidate("C", "TN", 0.9, 0.0, True, {"evidence_class": "full"})]
+    p = plan_trip(req(duration_days=4, states=["KL"]), cs, hours=fake_hours)
+    note = next(n for n in p.notes if "limited to KL" in n)
+    assert "as you asked" in note and "named outside it were kept (C)" in note
+    assert not any("only places in KL" in n for n in p.notes)
+
+
+def test_without_a_state_restriction_other_states_supply_the_backups():
+    named = [Candidate("A", "TN", 0.9, 0.0, True, {"evidence_class": "full"}),
+             Candidate("B", "PY", 0.8, 0.0, True, {"evidence_class": "full"})]
+    rest = [Candidate("C", "TN", 0.7, 0.0, False, {"evidence_class": "full"}),
+            Candidate("D", "KA", 0.6, 0.0, False, {"evidence_class": "full"})]
+    free = plan_trip(req(duration_days=4), [*named, *rest], hours=fake_hours)
+    assert {b["place"] for b in free.backups} <= {"C", "D"} and free.backups
+    stuck = plan_trip(req(duration_days=4, states=["PY"]), [*named, *rest], hours=fake_hours)
+    assert stuck.backups == []  # the old behaviour of an inferred restriction: nothing left

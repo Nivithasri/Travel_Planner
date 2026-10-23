@@ -192,7 +192,7 @@ def retrieve_node(state: RunState, deps: Deps) -> dict:
 def live_node(state: RunState, deps: Deps) -> dict:
     req = state.request
     if deps.live is None:
-        return {"live_status": "disabled", "live_note": LIVE_NOTES["disabled"]}
+        return {"live_status": "disabled", "live_note": LIVE_NOTES["not_requested"]}
     res = deps.live.run(list(req.named_places), list(req.states), req.month)
     upd: dict = {"live_evidence": res.items, "live_status": res.status, "live_note": res.note,
                  "tokens": {"live_credits": res.credits}}

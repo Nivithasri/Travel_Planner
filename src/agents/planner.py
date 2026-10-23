@@ -174,7 +174,14 @@ def plan_trip(request: ParsedRequest, candidates: Sequence[Candidate], *, hours:
     if request.states:  # the request names states: other states are not offered unless named
         keep = {k: c for k, c in pool.items() if c.state in request.states or c.named}
         if len(keep) < len(pool):
-            notes.append(f"only places in {', '.join(request.states)} were considered, as asked")
+            outside = sorted(k for k, c in keep.items()
+                             if c.named and c.state not in request.states)
+            where = ", ".join(request.states)
+            if outside:
+                notes.append(f"unnamed places were limited to {where}, as you asked; places you "
+                             f"named outside it were kept ({', '.join(outside)})")
+            else:
+                notes.append(f"only places in {where} were considered, as asked")
         pool = keep
         if not pool:
             return Plan(feasible=False, infeasible_reason=(

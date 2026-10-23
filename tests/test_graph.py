@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from src.agents.evidence import load_pipeline_config
 from src.agents.graph import ORDER, run_graph, run_local
 from src.agents.nodes import Deps
-from src.agents.state import EvidenceItem, load_planner_config
+from src.agents.state import EvidenceItem, ParsedRequest, load_planner_config
 from src.live.search import LiveResult
 from src.tools.check_season import check_season
 from src.tools.travel_time import travel_time
@@ -62,9 +62,11 @@ class FakeClient:
     def __init__(self, tamper=None):
         self.messages, self.calls, self.tamper = [], 0, tamper
         self.last_usage = {"total": 0}
+        self.cache_flags = []  # the cache argument of every call (False: a live prompt)
 
-    def chat_stream(self, messages, model, *, options=None):
+    def chat_stream(self, messages, model, *, options=None, cache=True):
         self.calls += 1
+        self.cache_flags.append(cache)
         self.messages.append(messages)
         user = messages[1]["content"]
         days = re.findall(r"^Day (\d+): ([^\n(\[]+)", user, re.M)
@@ -89,8 +91,9 @@ class FakeClient:
         text = "\n".join(out)
         yield self.tamper(text) if self.tamper else text
 
-    def chat(self, messages, model, *, options=None):
+    def chat(self, messages, model, *, options=None, cache=True):
         self.calls += 1
+        self.cache_flags.append(cache)
         return ""
 
 
@@ -131,7 +134,8 @@ def test_end_to_end_gives_a_cited_itinerary_with_computed_lines_and_notes():
     assert "(computed: check_season)" in f and "Rough budget" in f
     assert "[chunk:" in f and "## Sources" in f and "## Notes and warnings" in f
     assert "provisional road model" in f and "no page published in the last 18 months" in f
-    assert "live search is switched off" in f  # no live retriever: visible degradation
+    assert "live search was not requested for this run" in f  # no live retriever: visible note
+    assert "switched off" not in f
     assert set(st.timings) == set(ORDER)
     assert all(s["chunk_id"] in f for s in st.final["sources"])
 
@@ -255,3 +259,47 @@ def test_the_retrieve_node_never_offers_an_unnamed_excluded_place():
     out2 = retrieve_node(RunState(request=named), deps)
     assert next(c for c in out2["candidates"] if c["name"] == "Munnar")["named"] is True
     assert "Munnar" in out2["corpus_evidence"]
+
+
+# ---- D115: live prompts are not cached, states are not inferred, the not-requested note ---------
+
+def test_a_write_call_holding_live_text_is_not_cached_and_a_corpus_write_is():
+    live_client, plain_client = FakeClient(), FakeClient()
+    run_local(make_deps(client=live_client, live=FakeLive([live_item()])), TEXT,
+              {**OVER, "named_places": ["Hampi"]})
+    run_local(make_deps(client=plain_client), TEXT, OVER)
+    assert live_client.cache_flags and all(flag is False for flag in live_client.cache_flags)
+    assert plain_client.cache_flags and all(flag is True for flag in plain_client.cache_flags)
+
+
+def test_naming_two_places_does_not_restrict_the_plan_to_one_of_their_states():
+    text = "Hampi and Munnar for four days"
+
+    def parse(_text):  # the model returned only the state of one of the two places
+        return SimpleNamespace(text=text, places=["Hampi", "Munnar"], states=["KL"], month=1,
+                               duration_days=4, budget_tier=None, travel_style=None,
+                               interests=[], place_types=[], time_sensitive=False, notes=[])
+
+    st = run_local(make_deps(parse=parse), text, {"duration_days": 4, "month": 1})
+    assert st.request.states == []
+    assert not any("only places in" in n for n in st.plan.notes)
+    assert st.plan.backups, "with no state restriction the other states supply backups"
+    assert any("KL came from the places you named" in n for n in st.request.notes)
+    named = run_local(make_deps(parse=parse), text + " in Kerala", {
+        "duration_days": 4, "month": 1, "text": text + " in Kerala"})
+    assert named.request.states == ["KL"]
+
+
+def test_the_live_node_says_not_requested_without_a_retriever_and_switched_off_with_one(
+        tmp_path):
+    from src.agents.nodes import live_node
+    from src.agents.state import RunState
+    from src.live.search import NOTES
+    from tests.test_live import retriever as live_retriever
+
+    st = RunState(request=ParsedRequest(text="t"))
+    out = live_node(st, make_deps())
+    assert out["live_status"] == "disabled" and out["live_note"] == NOTES["not_requested"]
+    assert "not requested" in out["live_note"] and "switched off" not in out["live_note"]
+    off = live_node(st, make_deps(live=live_retriever(tmp_path, enabled=False)))
+    assert off["live_status"] == "disabled" and "switched off" in off["live_note"]  # a real one

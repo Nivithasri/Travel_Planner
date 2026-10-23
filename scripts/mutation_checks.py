@@ -530,6 +530,48 @@ PHASE8_MUTATIONS = [
 ]
 
 
+# Phase 8 round 3 (D115): mutations of the src changes; they run the app tests and the Phase 7 tests.
+PHASE8B_TESTS = [*PHASE8_TESTS, *PHASE7_TESTS, "tests/test_purge_cache.py"]
+PHASE8B_MUTATIONS = [
+    ("M165 the stream is decoded with the charset requests assumed", "src/common/llm.py",
+     "        resp.encoding = \"utf-8\"\n",
+     ""),
+    ("M166 chat_stream stores the text although cache is False", "src/common/llm.py",
+     "        if cache:\n            self.cache.set(\"llm_chat\", model, inputs, text)\n",
+     "        if True:\n            self.cache.set(\"llm_chat\", model, inputs, text)\n"),
+    ("M167 chat_stream reads the cache although cache is False", "src/common/llm.py",
+     "hit = self.cache.get(\"llm_chat\", model, inputs) if cache else None",
+     "hit = self.cache.get(\"llm_chat\", model, inputs)"),
+    ("M168 chat goes through the cache although cache is False", "src/common/llm.py",
+     "        if not cache:\n            return self._request(payload)\n",
+     "        if False:\n            return self._request(payload)\n"),
+    ("M169 the writer caches a prompt that holds live text", "src/agents/writer.py",
+     "    extra = {\"cache\": False} if holds_live_text(messages) else {}\n",
+     "    extra = {}\n"),
+    ("M170 the repair call caches a prompt that holds live text", "src/agents/critic.py",
+     "        extra = {\"cache\": False} if holds_live_text(msgs) else {}\n",
+     "        extra = {}\n"),
+    ("M171 inferred states are used as a restriction again", "src/agents/state.py",
+     "        states = [s for s in inferred if s in named]\n",
+     "        states = inferred\n"),
+    ("M172 explicit states are ignored", "src/agents/state.py",
+     "    if o.get(\"states\"):\n        states = list(o[\"states\"])\n",
+     "    if False:\n        states = list(o[\"states\"])\n"),
+    ("M173 the state note leaves out the named places that were kept", "src/agents/planner.py",
+     "            if outside:\n",
+     "            if False:\n"),
+    ("M174 the live node says switched off when live was not requested", "src/agents/nodes.py",
+     "LIVE_NOTES[\"not_requested\"]",
+     "LIVE_NOTES[\"disabled\"]"),
+    ("M175 the purge script misses the high C1 characters", "scripts/purge_cache.py",
+     "C1 = re.compile(\"[\\u0080-\\u009f]\")",
+     "C1 = re.compile(\"[\\u0080-\\u008f]\")"),
+    ("M176 the purge script deletes without --execute", "scripts/purge_cache.py",
+     "            if args.execute:\n                p.unlink(missing_ok=True)\n",
+     "            if True:\n                p.unlink(missing_ok=True)\n"),
+]
+
+
 def main() -> int:
     survived = 0
     rows = []
@@ -538,7 +580,8 @@ def main() -> int:
     retrieval = [(m, RETRIEVAL_TESTS) for m in RETRIEVAL_MUTATIONS]
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
-    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M164
+    phase8 += [(m, PHASE8B_TESTS) for m in PHASE8B_MUTATIONS]
+    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M176
         plan = phase8
     elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7

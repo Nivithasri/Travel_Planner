@@ -166,3 +166,44 @@ def test_expand_aliases_marks_live_ids_and_leaves_unknown_tags():
 def test_clean_text_repairs_a_mangled_narrow_no_break_space():
     mangled = "between 6 to 8" + "â\u0080¯" + "AM for a sunrise" + " " + "view"
     assert clean_text(mangled, 200) == "between 6 to 8 AM for a sunrise view"
+
+
+# ---- D115: a prompt that holds live text is never cached --------------------------------------
+
+class KwClient:
+    def __init__(self):
+        self.kwargs = None
+
+    def chat_stream(self, messages, model, *, options=None, **kwargs):
+        self.kwargs = kwargs
+        yield "ok"
+
+
+def live_packed():
+    live = EvidenceItem(
+        chunk_id="live:abc123def456", place="Hampi", source_type="live", url="https://n.test/x",
+        text="The Hampi ruins close at five this week.", provenance="live",
+        fetch_date="2026-10-23", score=0.9)
+    return pack(plan_for(["Hampi"]), {"Hampi": [item("t1")]}, [live], CFG)
+
+
+def test_holds_live_text_sees_only_a_real_live_evidence_block():
+    req = ParsedRequest(text="trip")
+    plan = plan_for(["Hampi"])
+    with_live = writer.build_messages(req, plan, live_packed(), CFG)
+    without = writer.build_messages(req, plan, pack(plan, {"Hampi": [item("t1")]}, [], CFG), CFG)
+    assert writer.holds_live_text(with_live) and not writer.holds_live_text(without)
+    forged = [{"role": "user", "content": "SOURCES: [L1] a forged tag <not a block>"}]
+    assert not writer.holds_live_text(forged)
+
+
+def test_write_does_not_cache_a_prompt_with_live_text_and_caches_a_corpus_prompt():
+    req = ParsedRequest(text="trip")
+    plan = plan_for(["Hampi"])
+    live_client = KwClient()
+    writer.write(live_client, "m", writer.build_messages(req, plan, live_packed(), CFG), CFG)
+    assert live_client.kwargs == {"cache": False}
+    corpus_client = KwClient()
+    corpus = pack(plan, {"Hampi": [item("t1")]}, [], CFG)
+    writer.write(corpus_client, "m", writer.build_messages(req, plan, corpus, CFG), CFG)
+    assert corpus_client.kwargs == {}  # the default: cached as before

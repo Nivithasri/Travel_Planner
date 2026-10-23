@@ -25,6 +25,7 @@ from src.live.store import DayCache, Ledger, minimal
 
 NOTES = {
     "disabled": "live search is switched off (config/live.json); answers use the corpus only",
+    "not_requested": "live search was not requested for this run; answers use the corpus only",
     "terms_not_verified": ("live search was not used: the provider's terms are not verified "
                            "(config/live.json); answers use the corpus only"),
     "no_key": "live search was not used: no LIVE_SEARCH_API_KEY is set; corpus only",
