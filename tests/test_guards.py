@@ -161,7 +161,7 @@ def test_every_api_host_entry_has_a_plain_hostname_and_a_decision():
     cfg = json.loads((root / "config" / "sources.json").read_text("utf-8"))
     for h in cfg["api_hosts"]["hosts"]:
         assert h["host"] == h["host"].lower() and "/" not in h["host"] and "[" not in h["host"]
-        assert h["decision"] in ("D37", "D43") and h["robots_exempt"] is True
+        assert h["decision"] in ("D37", "D43", "D100") and h["robots_exempt"] is True
         if h["decision"] == "D43":
             assert h["min_delay_s"] == 1.0 and h["max_requests_per_run"] == 30 and h["terms_status"]
 
@@ -264,7 +264,8 @@ PLAIN_HOST = re.compile(r"[a-z0-9]([a-z0-9.-]*[a-z0-9])?")
 
 
 # (host, path_prefix, min_delay_s, max_requests_per_run, robots_exempt): the three original
-# entries (D37) plus the five D43 entries. Any change to this list is a reviewed config change.
+# entries (D37) plus the five D43 entries plus the D100 live-search entry. Any change to this
+# list is a reviewed config change.
 GOLDEN = [
     ("www.wikidata.org", "/wiki/Special:EntityData/", 1.0, 30, True),
     ("overpass-api.de", "/api/interpreter", 30.0, 30, True),
@@ -274,6 +275,7 @@ GOLDEN = [
     ("www.wikidata.org", "/w/api.php", 1.0, 30, True),
     ("query.wikidata.org", "/sparql", 1.0, 30, True),
     ("wikimedia.org", "/api/rest_v1/metrics/pageviews/per-article/", 1.0, 30, True),
+    ("api.tavily.com", "/search", 1.0, 3, True),  # D100 (Phase 7 live layer)
 ]
 
 
@@ -286,7 +288,7 @@ def test_api_hosts_match_the_golden_list_exactly():
     got = [(h["host"], h["path_prefix"], h["min_delay_s"], h["max_requests_per_run"],
             h["robots_exempt"]) for h in entries()]
     assert got == GOLDEN  # fails on any entry added, removed, reordered or changed
-    assert len(got) == 8
+    assert len(got) == 9
 
 
 def test_every_api_host_value_is_a_plain_hostname():

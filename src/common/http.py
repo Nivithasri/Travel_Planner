@@ -240,11 +240,13 @@ class TransportResponse:
 
 
 def requests_transport(
-    method: str, url: str, headers: Mapping[str, str], timeout: tuple[float, float]
+    method: str, url: str, headers: Mapping[str, str], timeout: tuple[float, float],
+    body: bytes | None = None
 ) -> TransportResponse:
     try:
+        # redirects are followed by HttpClient, never here
         r = requests.request(method, url, headers=dict(headers), timeout=timeout,
-                             allow_redirects=False)  # redirects are followed by HttpClient
+                             allow_redirects=False, data=body)
     except requests.exceptions.SSLError as exc:
         raise TransportError(str(exc), "tls") from exc
     except requests.exceptions.ConnectTimeout as exc:
@@ -388,8 +390,10 @@ class HttpClient:
         with self._hosts_lock:
             return self._hosts.setdefault(host, _HostState())
 
-    def _once(self, url: str, headers: Mapping[str, str], attempt: int) -> TransportResponse:
-        """One throttled, counted, logged network request (one hop, one attempt)."""
+    def _once(self, url: str, headers: Mapping[str, str], attempt: int, method: str = "GET",
+              body: bytes | None = None) -> TransportResponse:
+        """One throttled, counted, logged network request (one hop, one attempt). `body` is only
+        passed to the transport for a POST (D100); the request log never sees it."""
         host = urlsplit(url).netloc.lower()
         if self.allowlist is not None:
             why = self.allowlist.reason(url)
@@ -428,7 +432,10 @@ class HttpClient:
                         f"per-host cap reached: {cap} network requests to {host}")
                 self._requests[host] += 1
             try:
-                resp = self._transport("GET", url, headers, self.timeout)
+                if body is None:
+                    resp = self._transport(method, url, headers, self.timeout)
+                else:
+                    resp = self._transport(method, url, headers, self.timeout, body)
             except TransportError as exc:
                 if exc.kind in ("tls", "dns"):
                     with self._counter_lock:  # never completed: not counted against the cap
@@ -562,6 +569,32 @@ class HttpClient:
         )
         assert res is not None
         return res
+
+    def post_json(self, url: str, body: Mapping[str, Any], *,
+                  secret_headers: Mapping[str, str] | None = None,
+                  deadline: float | None = None) -> TransportResponse:
+        """POST a JSON body to a documented API endpoint (D100). Allowlist, throttle, per-host cap
+        and request log apply; there is NO robots check (the allowlist only admits listed API
+        hosts), NO retry (a repeated call can cost credits), NO redirect following and NO cache,
+        so the response body is never stored by this client. `secret_headers` (the API key) are
+        sent but never logged or stored. Non-200 raises FetchError."""
+        if deadline is not None and self._clock() >= deadline:
+            raise DeadlineExceeded(f"deadline reached before posting to {strip_query(url)}")
+        data = json.dumps(body, sort_keys=True).encode("utf-8")
+        headers = {"User-Agent": self.user_agent, "Content-Type": "application/json",
+                   "Accept": "application/json"}
+        headers.update(secret_headers or {})
+        try:
+            resp = self._once(url, headers, 1, "POST", data)
+        except TransportError as exc:
+            raise FetchError(f"transport error for {strip_query(url)}: "
+                             f"{redact(exc)[:120]}") from exc
+        if resp.status in REDIRECT_STATUS:
+            raise FetchError(f"redirect not followed for a POST to {strip_query(url)}",
+                             resp.status)
+        if resp.status != 200:
+            raise FetchError(f"HTTP {resp.status} for {strip_query(url)}", resp.status)
+        return resp
 
     def _fetch(
         self,

@@ -208,6 +208,18 @@
         "max_requests_per_run": 30,
         "decision": "D43",
         "terms_status": "UNVERIFIED (owner will paste a quote)"
+      },
+      {
+        "host": "api.tavily.com",
+        "purpose": "live web search for the Phase 7 live layer (POST /search; D100)",
+        "path_prefix": "/search",
+        "robots_exempt": true,
+        "terms_url": "https://tavily.com/terms",
+        "licence": "UNVERIFIED",
+        "min_delay_s": 1.0,
+        "max_requests_per_run": 3,
+        "decision": "D100",
+        "terms_status": "NOT VERIFIED: Platform ToS (2026-05-04) limits use to internal business purposes and does not mention academic use; an older Search API Agreement (2023-11-30, tavily.com/policy) forbids storing or caching output and ML use, supersession unconfirmed (owner read 2026-10-23). Real calls are also gated by config/live.json terms_status."
       }
     ]
   }

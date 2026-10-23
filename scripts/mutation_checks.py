@@ -7,6 +7,7 @@ prints the failing test names, and restores the file byte-for-byte (sha256 compa
 after). A mutation that no test catches is reported as SURVIVED and the exit code is 1.
 Nothing is committed or left changed: `git diff --stat` must be empty afterwards.
 """
+# ruff: noqa: E501  (the mutation tables hold exact source lines that must not be wrapped)
 from __future__ import annotations
 
 import hashlib
@@ -355,7 +356,8 @@ RETRIEVAL_MUTATIONS = [
 # Phase 7 (D99 to D104): mutations M103+ run against the Phase 7 tests only (--phase7).
 PHASE7_TESTS = ["tests/test_state.py", "tests/test_place_cards.py",
                 "tests/test_spotcheck_cards.py", "tests/test_planner.py",
-                "tests/test_writer.py", "tests/test_stream.py", "tests/test_critic.py"]
+                "tests/test_writer.py", "tests/test_stream.py", "tests/test_critic.py",
+                "tests/test_live.py", "tests/test_guards.py"]
 PHASE7_MUTATIONS = [
     ("M103 the live gate ignores terms_status", "src/live/config.py",
      "        if self.terms_status != \"verified\":\n            return \"terms_not_verified\"\n",
@@ -415,6 +417,28 @@ PHASE7_MUTATIONS = [
     ("M125 season conflicts are not checked", "src/agents/critic.py",
      "        if s.season_verdict == \"poor\" or s.access_risk == \"high\":\n",
      "        if False:\n"),
+    ("M126 a live query may carry any text", "src/live/search.py",
+     "        if not is_safe_query(query, self.vocab):\n", "        if False:\n"),
+    ("M127 unknown words pass the query boundary", "src/live/queries.py",
+     "    return all(t in vocab or (t.isdigit() and len(t) == 4) for t in toks)\n",
+     "    return True\n"),
+    ("M128 places are not filtered through the registry when building queries",
+     "src/live/queries.py",
+     "        canon = known.get(str(p).casefold())\n", "        canon = known.get(str(p).casefold(), str(p))\n"),
+    ("M129 the same-day cache is written when it is switched off", "src/live/store.py",
+     "    def put(self, query: str, results: list[dict]) -> None:\n        if not self.enabled:\n",
+     "    def put(self, query: str, results: list[dict]) -> None:\n        if False:\n"),
+    ("M130 the cache keeps other days", "src/live/store.py",
+     "            if not f.name.startswith(self._today() + \"_\"):\n", "            if False:\n"),
+    ("M131 the credit stop is ignored", "src/live/store.py",
+     "        return self.credits + credits <= self.stop_at\n", "        return True\n"),
+    ("M132 the terms gate is skipped for real calls", "src/live/search.py",
+     "        if gate != \"ok\":\n            return [], gate, False\n", "        if False:\n            pass\n"),
+    ("M133 out-of-scope live results are kept", "src/live/search.py",
+     "        if not r.get(\"url\") or not any(", "        if not r.get(\"url\") or False and not any("),
+    ("M134 post_json follows the allowlist no more (body logged)", "src/common/http.py",
+     "        if resp.status in REDIRECT_STATUS:\n            raise FetchError(f\"redirect not followed",
+     "        if False:\n            raise FetchError(f\"redirect not followed"),
     ("M108 the card spot-check accepts an edited fixed column", "scripts/spotcheck_cards.py",
      "    if fixed_sha(sorted(sheet_rows, key=lambda r: int(r[\"row_id\"]))) != "
      "key[\"fixed_sha256\"]:\n",
