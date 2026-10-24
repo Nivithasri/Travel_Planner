@@ -1,0 +1,8 @@
+{
+ "corpus_n": 50,
+ "corpus_precision": 0.86,
+ "corpus_supported": 43,
+ "live_n": 0,
+ "live_supported": 0,
+ "scorer": "owner (human)"
+}

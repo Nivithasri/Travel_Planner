@@ -1,0 +1,199 @@
+{
+ "comparisons": [
+  {
+   "ci": [
+    -0.9,
+    -0.1
+   ],
+   "dimension": "feasibility",
+   "first": "full_live",
+   "mean_diff": -0.5,
+   "n": 10,
+   "p": 0.125,
+   "p_holm": 0.25,
+   "second": "full_corpus"
+  },
+  {
+   "ci": [
+    -1.3,
+    -0.5
+   ],
+   "dimension": "groundedness",
+   "first": "full_live",
+   "mean_diff": -0.9,
+   "n": 10,
+   "p": 0.0156,
+   "p_holm": 0.0469,
+   "second": "full_corpus"
+  },
+  {
+   "ci": [
+    -2.7,
+    -1.1
+   ],
+   "dimension": "freshness",
+   "first": "full_live",
+   "mean_diff": -1.9,
+   "n": 10,
+   "p": 0.0078,
+   "p_holm": 0.0312,
+   "second": "full_corpus"
+  },
+  {
+   "ci": [
+    -0.5,
+    0.0
+   ],
+   "dimension": "personalization",
+   "first": "full_live",
+   "mean_diff": -0.2,
+   "n": 10,
+   "p": 0.5,
+   "p_holm": 0.5,
+   "second": "full_corpus"
+  }
+ ],
+ "means": [
+  {
+   "feasibility": 2.4,
+   "freshness": 4.0,
+   "groundedness": 3.8,
+   "n": 10,
+   "personalization": 2.7,
+   "system": "full_corpus"
+  },
+  {
+   "feasibility": 1.9,
+   "freshness": 2.1,
+   "groundedness": 2.9,
+   "n": 10,
+   "personalization": 2.5,
+   "system": "full_live"
+  }
+ ],
+ "n_requests": 10,
+ "per_request": {
+  "P01|full_corpus": {
+   "feasibility": 3,
+   "freshness": 5,
+   "groundedness": 4,
+   "personalization": 2
+  },
+  "P01|full_live": {
+   "feasibility": 2,
+   "freshness": 2,
+   "groundedness": 3,
+   "personalization": 2
+  },
+  "P02|full_corpus": {
+   "feasibility": 4,
+   "freshness": 3,
+   "groundedness": 4,
+   "personalization": 4
+  },
+  "P02|full_live": {
+   "feasibility": 2,
+   "freshness": 2,
+   "groundedness": 3,
+   "personalization": 3
+  },
+  "P03|full_corpus": {
+   "feasibility": 3,
+   "freshness": 3,
+   "groundedness": 4,
+   "personalization": 3
+  },
+  "P03|full_live": {
+   "feasibility": 2,
+   "freshness": 2,
+   "groundedness": 3,
+   "personalization": 3
+  },
+  "P04|full_corpus": {
+   "feasibility": 2,
+   "freshness": 5,
+   "groundedness": 4,
+   "personalization": 2
+  },
+  "P04|full_live": {
+   "feasibility": 2,
+   "freshness": 2,
+   "groundedness": 2,
+   "personalization": 2
+  },
+  "P05|full_corpus": {
+   "feasibility": 2,
+   "freshness": 4,
+   "groundedness": 4,
+   "personalization": 3
+  },
+  "P05|full_live": {
+   "feasibility": 2,
+   "freshness": 2,
+   "groundedness": 3,
+   "personalization": 3
+  },
+  "P06|full_corpus": {
+   "feasibility": 2,
+   "freshness": 4,
+   "groundedness": 4,
+   "personalization": 3
+  },
+  "P06|full_live": {
+   "feasibility": 2,
+   "freshness": 4,
+   "groundedness": 3,
+   "personalization": 3
+  },
+  "P07|full_corpus": {
+   "feasibility": 2,
+   "freshness": 4,
+   "groundedness": 3,
+   "personalization": 3
+  },
+  "P07|full_live": {
+   "feasibility": 2,
+   "freshness": 2,
+   "groundedness": 3,
+   "personalization": 2
+  },
+  "P08|full_corpus": {
+   "feasibility": 2,
+   "freshness": 5,
+   "groundedness": 4,
+   "personalization": 2
+  },
+  "P08|full_live": {
+   "feasibility": 1,
+   "freshness": 1,
+   "groundedness": 2,
+   "personalization": 2
+  },
+  "P09|full_corpus": {
+   "feasibility": 2,
+   "freshness": 4,
+   "groundedness": 3,
+   "personalization": 3
+  },
+  "P09|full_live": {
+   "feasibility": 2,
+   "freshness": 1,
+   "groundedness": 3,
+   "personalization": 3
+  },
+  "P10|full_corpus": {
+   "feasibility": 2,
+   "freshness": 3,
+   "groundedness": 4,
+   "personalization": 2
+  },
+  "P10|full_live": {
+   "feasibility": 2,
+   "freshness": 3,
+   "groundedness": 4,
+   "personalization": 2
+  }
+ },
+ "scorer": "owner (human)",
+ "set": "live"
+}

@@ -1,0 +1,796 @@
+{
+ "case_candidates": {
+  "failures": [
+   {
+    "request_id": "P04",
+    "why": "critic repaired"
+   },
+   {
+    "request_id": "P04",
+    "why": "lowest total score 10"
+   },
+   {
+    "request_id": "P01",
+    "why": "lowest total score 13"
+   },
+   {
+    "request_id": "P06",
+    "why": "lowest total score 13"
+   },
+   {
+    "request_id": "P07",
+    "why": "lowest total score 13"
+   }
+  ],
+  "live_cases": [
+   {
+    "live_cited": 1,
+    "request_id": "P01",
+    "scores_changed": false
+   },
+   {
+    "live_cited": 4,
+    "request_id": "P03",
+    "scores_changed": false
+   },
+   {
+    "live_cited": 2,
+    "request_id": "P04",
+    "scores_changed": false
+   },
+   {
+    "live_cited": 1,
+    "request_id": "P05",
+    "scores_changed": false
+   },
+   {
+    "live_cited": 2,
+    "request_id": "P08",
+    "scores_changed": false
+   }
+  ]
+ },
+ "citation_precision": {
+  "corpus_n": 50,
+  "corpus_precision": 0.86,
+  "corpus_supported": 43,
+  "live_n": 0,
+  "live_supported": 0,
+  "scorer": "owner (human)"
+ },
+ "crosscheck_agreement": {
+  "agreement": {
+   "feasibility": {
+    "exact": 0.3,
+    "n": 10,
+    "weighted_kappa": 0.21487603305785108,
+    "within_one": 0.6
+   },
+   "freshness": {
+    "exact": 0.4,
+    "n": 10,
+    "weighted_kappa": 0.8034934497816593,
+    "within_one": 0.9
+   },
+   "groundedness": {
+    "exact": 0.4,
+    "n": 10,
+    "weighted_kappa": 0.7194719471947196,
+    "within_one": 0.8
+   },
+   "personalization": {
+    "exact": 0.2,
+    "n": 10,
+    "weighted_kappa": 0.3333333333333337,
+    "within_one": 0.7
+   },
+   "pooled": {
+    "exact": 0.325,
+    "n": 40,
+    "weighted_kappa": 0.5978391356542615,
+    "within_one": 0.75
+   }
+  },
+  "n_rows": 10
+ },
+ "generated": "2026-10-24",
+ "judge": {
+  "arms": {
+   "full_corpus": {
+    "answer_relevancy": {
+     "mean": 0.663,
+     "n": 10
+    },
+    "context_precision": {
+     "mean": 0.44,
+     "n": 10
+    },
+    "faithfulness": {
+     "mean": 0.965,
+     "n": 9
+    }
+   },
+   "plain_rag": {
+    "answer_relevancy": {
+     "mean": 0.628,
+     "n": 3
+    },
+    "context_precision": {
+     "mean": 0.828,
+     "n": 3
+    },
+    "faithfulness": {
+     "mean": 0.785,
+     "n": 3
+    }
+   }
+  },
+  "context_recall": "not computed (no references)",
+  "judge": "hosted JUDGE_MODEL (not human)"
+ },
+ "latency": [
+  {
+   "arm": "latency_corpus",
+   "median_s": 0.0,
+   "n": 10,
+   "node": "critic",
+   "p90_s": 0.01
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 0.0,
+   "n": 10,
+   "node": "finalize",
+   "p90_s": 0.0
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 51.98,
+   "n": 10,
+   "node": "limiter_wait",
+   "p90_s": 55.61
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 0.0,
+   "n": 10,
+   "node": "live",
+   "p90_s": 0.0
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 0.01,
+   "n": 10,
+   "node": "merge_grade",
+   "p90_s": 0.02
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 1.82,
+   "n": 10,
+   "node": "parse",
+   "p90_s": 2.0
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 0.0,
+   "n": 10,
+   "node": "plan",
+   "p90_s": 0.02
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 0.33,
+   "n": 10,
+   "node": "retrieve",
+   "p90_s": 0.39
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 56.48,
+   "n": 10,
+   "node": "total",
+   "p90_s": 60.62
+  },
+  {
+   "arm": "latency_corpus",
+   "median_s": 54.21,
+   "n": 10,
+   "node": "write",
+   "p90_s": 58.77
+  }
+ ],
+ "live": {
+  "requests": 10,
+  "requests_with_live_cited": 5,
+  "same_day": true,
+  "status": {
+   "empty": 1,
+   "ok": 9
+  },
+  "totals": {
+   "cited": 10,
+   "dropped_excluded": 1,
+   "in_plan": 54,
+   "in_scope": 57,
+   "merged": 34,
+   "not_cited": 24,
+   "results": 100,
+   "searches": 20
+  },
+  "utc_dates": [
+   "2026-10-24"
+  ]
+ },
+ "live_scores": {
+  "comparisons": [
+   {
+    "ci": [
+     -0.9,
+     -0.1
+    ],
+    "dimension": "feasibility",
+    "first": "full_live",
+    "mean_diff": -0.5,
+    "n": 10,
+    "p": 0.125,
+    "p_holm": 0.25,
+    "second": "full_corpus"
+   },
+   {
+    "ci": [
+     -1.3,
+     -0.5
+    ],
+    "dimension": "groundedness",
+    "first": "full_live",
+    "mean_diff": -0.9,
+    "n": 10,
+    "p": 0.0156,
+    "p_holm": 0.0469,
+    "second": "full_corpus"
+   },
+   {
+    "ci": [
+     -2.7,
+     -1.1
+    ],
+    "dimension": "freshness",
+    "first": "full_live",
+    "mean_diff": -1.9,
+    "n": 10,
+    "p": 0.0078,
+    "p_holm": 0.0312,
+    "second": "full_corpus"
+   },
+   {
+    "ci": [
+     -0.5,
+     0.0
+    ],
+    "dimension": "personalization",
+    "first": "full_live",
+    "mean_diff": -0.2,
+    "n": 10,
+    "p": 0.5,
+    "p_holm": 0.5,
+    "second": "full_corpus"
+   }
+  ],
+  "means": [
+   {
+    "feasibility": 2.4,
+    "freshness": 4.0,
+    "groundedness": 3.8,
+    "n": 10,
+    "personalization": 2.7,
+    "system": "full_corpus"
+   },
+   {
+    "feasibility": 1.9,
+    "freshness": 2.1,
+    "groundedness": 2.9,
+    "n": 10,
+    "personalization": 2.5,
+    "system": "full_live"
+   }
+  ],
+  "n_requests": 10,
+  "per_request": {
+   "P01|full_corpus": {
+    "feasibility": 3,
+    "freshness": 5,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P01|full_live": {
+    "feasibility": 2,
+    "freshness": 2,
+    "groundedness": 3,
+    "personalization": 2
+   },
+   "P02|full_corpus": {
+    "feasibility": 4,
+    "freshness": 3,
+    "groundedness": 4,
+    "personalization": 4
+   },
+   "P02|full_live": {
+    "feasibility": 2,
+    "freshness": 2,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P03|full_corpus": {
+    "feasibility": 3,
+    "freshness": 3,
+    "groundedness": 4,
+    "personalization": 3
+   },
+   "P03|full_live": {
+    "feasibility": 2,
+    "freshness": 2,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P04|full_corpus": {
+    "feasibility": 2,
+    "freshness": 5,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P04|full_live": {
+    "feasibility": 2,
+    "freshness": 2,
+    "groundedness": 2,
+    "personalization": 2
+   },
+   "P05|full_corpus": {
+    "feasibility": 2,
+    "freshness": 4,
+    "groundedness": 4,
+    "personalization": 3
+   },
+   "P05|full_live": {
+    "feasibility": 2,
+    "freshness": 2,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P06|full_corpus": {
+    "feasibility": 2,
+    "freshness": 4,
+    "groundedness": 4,
+    "personalization": 3
+   },
+   "P06|full_live": {
+    "feasibility": 2,
+    "freshness": 4,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P07|full_corpus": {
+    "feasibility": 2,
+    "freshness": 4,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P07|full_live": {
+    "feasibility": 2,
+    "freshness": 2,
+    "groundedness": 3,
+    "personalization": 2
+   },
+   "P08|full_corpus": {
+    "feasibility": 2,
+    "freshness": 5,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P08|full_live": {
+    "feasibility": 1,
+    "freshness": 1,
+    "groundedness": 2,
+    "personalization": 2
+   },
+   "P09|full_corpus": {
+    "feasibility": 2,
+    "freshness": 4,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P09|full_live": {
+    "feasibility": 2,
+    "freshness": 1,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P10|full_corpus": {
+    "feasibility": 2,
+    "freshness": 3,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P10|full_live": {
+    "feasibility": 2,
+    "freshness": 3,
+    "groundedness": 4,
+    "personalization": 2
+   }
+  },
+  "scorer": "owner (human)",
+  "set": "live"
+ },
+ "main_scores": {
+  "comparisons": [
+   {
+    "ci": [
+     -0.9,
+     0.2
+    ],
+    "dimension": "feasibility",
+    "first": "full",
+    "mean_diff": -0.3,
+    "n": 10,
+    "p": 0.5312,
+    "p_holm": 1.0,
+    "second": "plain_rag"
+   },
+   {
+    "ci": [
+     -0.5,
+     1.0
+    ],
+    "dimension": "groundedness",
+    "first": "full",
+    "mean_diff": 0.3,
+    "n": 10,
+    "p": 0.6172,
+    "p_holm": 1.0,
+    "second": "plain_rag"
+   },
+   {
+    "ci": [
+     1.9,
+     2.8
+    ],
+    "dimension": "freshness",
+    "first": "full",
+    "mean_diff": 2.3,
+    "n": 10,
+    "p": 0.002,
+    "p_holm": 0.0234,
+    "second": "plain_rag"
+   },
+   {
+    "ci": [
+     -0.9,
+     0.4
+    ],
+    "dimension": "personalization",
+    "first": "full",
+    "mean_diff": -0.2,
+    "n": 10,
+    "p": 0.7812,
+    "p_holm": 1.0,
+    "second": "plain_rag"
+   },
+   {
+    "ci": [
+     -1.0,
+     0.2
+    ],
+    "dimension": "feasibility",
+    "first": "full",
+    "mean_diff": -0.4,
+    "n": 10,
+    "p": 0.3594,
+    "p_holm": 1.0,
+    "second": "llm_only"
+   },
+   {
+    "ci": [
+     2.0,
+     3.5
+    ],
+    "dimension": "groundedness",
+    "first": "full",
+    "mean_diff": 2.8,
+    "n": 10,
+    "p": 0.0039,
+    "p_holm": 0.0391,
+    "second": "llm_only"
+   },
+   {
+    "ci": [
+     1.4,
+     3.1
+    ],
+    "dimension": "freshness",
+    "first": "full",
+    "mean_diff": 2.3,
+    "n": 10,
+    "p": 0.0078,
+    "p_holm": 0.0703,
+    "second": "llm_only"
+   },
+   {
+    "ci": [
+     -1.8,
+     -0.7
+    ],
+    "dimension": "personalization",
+    "first": "full",
+    "mean_diff": -1.2,
+    "n": 10,
+    "p": 0.0078,
+    "p_holm": 0.0703,
+    "second": "llm_only"
+   },
+   {
+    "ci": [
+     -0.9,
+     0.7
+    ],
+    "dimension": "feasibility",
+    "first": "plain_rag",
+    "mean_diff": -0.1,
+    "n": 10,
+    "p": 1.0,
+    "p_holm": 1.0,
+    "second": "llm_only"
+   },
+   {
+    "ci": [
+     1.9,
+     3.0
+    ],
+    "dimension": "groundedness",
+    "first": "plain_rag",
+    "mean_diff": 2.5,
+    "n": 10,
+    "p": 0.002,
+    "p_holm": 0.0234,
+    "second": "llm_only"
+   },
+   {
+    "ci": [
+     -0.7,
+     0.7
+    ],
+    "dimension": "freshness",
+    "first": "plain_rag",
+    "mean_diff": 0.0,
+    "n": 10,
+    "p": 1.0,
+    "p_holm": 1.0,
+    "second": "llm_only"
+   },
+   {
+    "ci": [
+     -1.8,
+     -0.2
+    ],
+    "dimension": "personalization",
+    "first": "plain_rag",
+    "mean_diff": -1.0,
+    "n": 10,
+    "p": 0.0898,
+    "p_holm": 0.6289,
+    "second": "llm_only"
+   }
+  ],
+  "means": [
+   {
+    "feasibility": 2.3,
+    "freshness": 4.5,
+    "groundedness": 3.8,
+    "n": 10,
+    "personalization": 2.6,
+    "system": "full"
+   },
+   {
+    "feasibility": 2.7,
+    "freshness": 2.2,
+    "groundedness": 1.0,
+    "n": 10,
+    "personalization": 3.8,
+    "system": "llm_only"
+   },
+   {
+    "feasibility": 2.6,
+    "freshness": 2.2,
+    "groundedness": 3.5,
+    "n": 10,
+    "personalization": 2.8,
+    "system": "plain_rag"
+   }
+  ],
+  "n_requests": 10,
+  "per_request": {
+   "P01|full": {
+    "feasibility": 2,
+    "freshness": 5,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P01|llm_only": {
+    "feasibility": 4,
+    "freshness": 3,
+    "groundedness": 1,
+    "personalization": 4
+   },
+   "P01|plain_rag": {
+    "feasibility": 3,
+    "freshness": 3,
+    "groundedness": 4,
+    "personalization": 3
+   },
+   "P02|full": {
+    "feasibility": 3,
+    "freshness": 4,
+    "groundedness": 4,
+    "personalization": 4
+   },
+   "P02|llm_only": {
+    "feasibility": 3,
+    "freshness": 1,
+    "groundedness": 1,
+    "personalization": 4
+   },
+   "P02|plain_rag": {
+    "feasibility": 3,
+    "freshness": 2,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P03|full": {
+    "feasibility": 3,
+    "freshness": 4,
+    "groundedness": 5,
+    "personalization": 3
+   },
+   "P03|llm_only": {
+    "feasibility": 4,
+    "freshness": 3,
+    "groundedness": 1,
+    "personalization": 5
+   },
+   "P03|plain_rag": {
+    "feasibility": 2,
+    "freshness": 2,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P04|full": {
+    "feasibility": 2,
+    "freshness": 5,
+    "groundedness": 1,
+    "personalization": 2
+   },
+   "P04|llm_only": {
+    "feasibility": 2,
+    "freshness": 1,
+    "groundedness": 1,
+    "personalization": 3
+   },
+   "P04|plain_rag": {
+    "feasibility": 4,
+    "freshness": 2,
+    "groundedness": 3,
+    "personalization": 4
+   },
+   "P05|full": {
+    "feasibility": 2,
+    "freshness": 5,
+    "groundedness": 4,
+    "personalization": 3
+   },
+   "P05|llm_only": {
+    "feasibility": 2,
+    "freshness": 1,
+    "groundedness": 1,
+    "personalization": 4
+   },
+   "P05|plain_rag": {
+    "feasibility": 3,
+    "freshness": 3,
+    "groundedness": 2,
+    "personalization": 3
+   },
+   "P06|full": {
+    "feasibility": 2,
+    "freshness": 4,
+    "groundedness": 5,
+    "personalization": 2
+   },
+   "P06|llm_only": {
+    "feasibility": 3,
+    "freshness": 4,
+    "groundedness": 1,
+    "personalization": 5
+   },
+   "P06|plain_rag": {
+    "feasibility": 2,
+    "freshness": 3,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P07|full": {
+    "feasibility": 2,
+    "freshness": 5,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P07|llm_only": {
+    "feasibility": 3,
+    "freshness": 2,
+    "groundedness": 1,
+    "personalization": 3
+   },
+   "P07|plain_rag": {
+    "feasibility": 2,
+    "freshness": 1,
+    "groundedness": 4,
+    "personalization": 3
+   },
+   "P08|full": {
+    "feasibility": 2,
+    "freshness": 5,
+    "groundedness": 4,
+    "personalization": 2
+   },
+   "P08|llm_only": {
+    "feasibility": 3,
+    "freshness": 2,
+    "groundedness": 1,
+    "personalization": 3
+   },
+   "P08|plain_rag": {
+    "feasibility": 2,
+    "freshness": 3,
+    "groundedness": 5,
+    "personalization": 2
+   },
+   "P09|full": {
+    "feasibility": 3,
+    "freshness": 4,
+    "groundedness": 3,
+    "personalization": 3
+   },
+   "P09|llm_only": {
+    "feasibility": 2,
+    "freshness": 1,
+    "groundedness": 1,
+    "personalization": 4
+   },
+   "P09|plain_rag": {
+    "feasibility": 2,
+    "freshness": 1,
+    "groundedness": 2,
+    "personalization": 2
+   },
+   "P10|full": {
+    "feasibility": 2,
+    "freshness": 4,
+    "groundedness": 5,
+    "personalization": 2
+   },
+   "P10|llm_only": {
+    "feasibility": 1,
+    "freshness": 4,
+    "groundedness": 1,
+    "personalization": 3
+   },
+   "P10|plain_rag": {
+    "feasibility": 3,
+    "freshness": 2,
+    "groundedness": 4,
+    "personalization": 4
+   }
+  },
+  "scorer": "owner (human)",
+  "set": "main"
+ },
+ "n_requests": 10
+}

@@ -1,6 +1,6 @@
 # Phase status
 Tick only after verification commands were run (see LOG.md).
-Phases 1 to 7 are CLOSED. Phase 8 is BUILT and awaits the owner's hand-run and /phase-review 8 (not tagged). Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes. Next: Phase 9 (Valincia).
+Phases 1 to 7 are CLOSED. Phase 8 is built and hand-run by the owner (2026-10-24, twice); Phase 9 is run and saved (D130). `/phase-review 8`, `/phase-review 9` and the tags phase-8-done and phase-9-done are the owner's to run and decide. Phase 5 is PROVISIONAL until the owner spot-checks about 8 calibration routes.
 
 ## Phase 0: Scaffold and shared infrastructure
 - [x] pyproject.toml, src/common/{config,cache,llm,schemas}.py (verified: `python -m pytest -q` 128 passed, `python -m ruff check .` clean)
@@ -87,24 +87,26 @@ Phases 1 to 7 are CLOSED. Phase 8 is BUILT and awaits the owner's hand-run and /
 - [x] /phase-review 7 done (D107); tag phase-7-done created on the owner's instruction
 - [ ] Done when: a query returns a cited itinerary end to end with tips, warnings, a rough budget and backups: met with live OFF; "using live evidence when the live step succeeds" is NOT yet shown.
 
-## Phase 8: App (BUILT 2026-10-23, D110 and D111; awaiting the owner's hand-run and /phase-review 8; NOT tagged)
+## Phase 8: App (BUILT 2026-10-23, D110 and D111; hand-run by the owner 2026-10-24; /phase-review 8 NOT run; NOT tagged)
 - [x] One Streamlit page (app/streamlit_app.py): form, streamed itinerary, sources panel with links (live rows "live, fetched <date>"), warnings, live-status notice, collapsible timing table, query cache (corpus-only JSON on disk, live-on in session memory only), one-run-at-a-time lock, redaction, localhost config
 - [x] Verified (commands in LOG.md): pytest 1404 passed / 11 skipped (126 new), ruff clean, mutations M146-M207 all caught (full suite 206 of 207; M32 only skips without data/raw) (full suite: 154 of 155 caught, M32 survives only because data/raw is absent here)
 - [x] Corpus path needs no internet beyond the hosted model; live search is optional, off by default, and the page works from the corpus without it (headless tests with a fake pipeline)
 - [x] D122 (critic strips bullets naming an out-of-plan place; R5 carries the day): tests/test_critic.py 20 passed, M208-M212 caught; full suite, ruff and full mutation run to be repeated on the .venv machine
-- [ ] Not verified: no real browser session, no real pipeline run, LLM call or live search through the page (the owner's hand-run)
-- [ ] Hand-run findings: D113 app fixes done; D115 applied D114 items 1, 2, 4, 5 (stream decoding, state restriction, live prompts uncached, not-requested note); D117 interests rank the evidence, D116 rule 10 and uncited live rows, D119 live results kept only for the plan; whether the model now cites live items is unmeasured until the owner's hand-run
+- [x] Verified by the owner's two live-on hand-runs through the page (2026-10-24): runs end to end with a real browser, LLM and search; linked [S#]/[L#] markers, status line, sources table and timing panel confirmed from screenshots
+- [x] Hand-run findings (all fixed or recorded): D113 app fixes done; D115 applied D114 items 1, 2, 4, 5 (stream decoding, state restriction, live prompts uncached, not-requested note); D117 interests rank the evidence, D116 rule 10 and uncited live rows, D119 live results kept only for the plan; whether the model now cites live items is unmeasured until the owner's hand-run; D129 evidence per stop; remaining weakness: empty days (D130)
 - [ ] Known gaps: live search covers the request's named places or states, not the planner's stops (D107 a); 25 to 40 s model load on the first request; card items 58% useful (labelled)
-- [ ] Done when: the demo runs locally (headless-tested; the owner's hand-run confirms); corpus retrieval and generation need no internet beyond the hosted model, and the live step degrades to the corpus without it.
+- [x] Done when (met by the hand-runs; empty days remain a known limit): the demo runs locally (headless-tested; the owner's hand-run confirms); corpus retrieval and generation need no internet beyond the hosted model, and the live step degrades to the corpus without it.
 
-## Phase 9: Evaluation and analysis (HARNESS BUILT 2026-10-24, D123 to D128; NOTHING MEASURED YET)
-- [x] Plan approved; decisions D123 to D128 (systems, scoring protocol, citation precision and lean judge, live day, latency, deviations from plan.md)
-- [x] 10 requests written before any run and approved by the owner as written (eval/phase9/requests.json, eval/phase9/rubric.md)
-- [x] Harness: eval/phase9/*.py and scripts/phase9.py; 68 tests (fakes), mutations M213 to M240 all caught; pytest 1477 passed / 12 skipped; ruff clean (LOG.md 2026-10-24)
-- [x] One request (P01) run through all three systems to measure tokens: 756, 1,764 and 1,993 (git e7f4886, before D129: rerun with --force)
-- [ ] Corpus runs of LLM-only, plain RAG and the full system (30 outputs); blocked on Phase 8 close and the D129 hand-run
-- [ ] Blind scores by the owner (30 outputs x 4 dimensions) and the second scorer's agreement sample
-- [ ] Citation precision on 50 claims (owner marks) and the lean judge (hosted judge model; RAGAS replaced, D125)
-- [ ] Live day: 10 requests with live on, within one UTC day; with and without comparison and live citation counts
-- [ ] Latency table (caches bypassed, limiter wait separate), 3 to 4 failure cases, 2 to 3 live or thin-evidence cases
-- [ ] Done when: all tables and cases are ready for the report. Blocked on: Phase 8 close (hand-run, review, tag) so the measured sha is final.
+## Phase 9: Evaluation and analysis (RUN 2026-10-24, D130; results saved and the live comparison scored; judge remainder and with-live latency still open)
+- [x] Plan approved; decisions D123 to D130; 10 requests approved and run (3 systems x 10 corpus + 10 live, git 4e6f4f4 / e34d2f7)
+- [x] Harness, 72 tests, mutations M213 to M251 caught; bugs found on the real run fixed (per-request live client, judge floats)
+- [x] Blind scores by the owner (30 outputs x 4 dimensions) and an independent second scorer (10 rows): kappa 0.60 pooled; paired tests with Holm (3 significant, all partly by construction)
+- [x] Citation precision on 50 claims: 43 of 50 (0.86)
+- [x] Live day: 10 requests, 20 searches, one UTC day; counts in results/summary.md
+- [x] Latency (corpus only): 56.5 s median, 52.0 s of it rate-limiter wait
+- [x] Case studies (docs/phase9_cases.md) and the handover guide (docs/HANDOVER.md)
+- [x] Live sheet scored by the owner: the live arm is significantly WORSE than corpus-only on groundedness (-0.9) and freshness (-1.9), D130 amended
+- [ ] Lean judge: 13 of 20 answers done (plain_rag n = 3 not comparable); resume on a day with token room
+- [ ] With-live latency run (20 more searches)
+- [ ] /phase-review 9 and the tags
+- [ ] Done when: all tables and cases are ready for the report. Met except the judge remainder (7 answers) and the with-live latency run, both optional extras.
