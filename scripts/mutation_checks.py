@@ -759,6 +759,14 @@ PHASE9_MUTATIONS = [
      "            waited[0] += float(seconds)\n", "            waited[0] = float(seconds)\n"),
     ("M240 unknown request ids are not refused", "scripts/phase9.py",
      "    if unknown:\n", "    if False:\n"),
+    ("M249 the judge cosine returns a numpy float", P9 + "judge.py",
+     "    return float(sum(float(x) * float(y) for x, y in zip(a, b, strict=False)) / (na * nb))\n",
+     "    return sum(x * y for x, y in zip(a, b, strict=False)) / (na * nb)\n"),
+    ("M250 a live request does not get a fresh live retriever", "scripts/phase9.py",
+     "    if live:\n        fresh_live(deps)\n", "    if False:\n        fresh_live(deps)\n"),
+    ("M251 the fresh live retriever is the old one", "scripts/phase9.py",
+     "    deps.live = build_live(load_core_registry(), enabled=True)\n",
+     "    deps.live = deps.live\n"),
 ]
 
 

@@ -105,6 +105,22 @@ def cmd_check_requests(args) -> int:
 
 # ---- run --------------------------------------------------------------------------------------
 
+def fresh_live(deps) -> None:
+    """Give `deps` a new live retriever. The Tavily client allows 3 requests per run (D100); one
+    process runs 10 requests, so each live request gets its own retriever and with it its own cap.
+    The LLM client and its rate limiter are kept, so the per-minute window carries over."""
+    from src.agents.deps import build_live
+    from src.retrieval.query_understanding import load_core_registry
+
+    deps.live = build_live(load_core_registry(), enabled=True)
+
+
+def prepare_request(deps, live: bool) -> None:
+    """Called before every request of a run: a live request starts with a fresh live retriever."""
+    if live:
+        fresh_live(deps)
+
+
 def cmd_run(args) -> int:
     from app.state import default_runner, safe_error
     from src.agents.deps import build_default_deps
@@ -129,6 +145,7 @@ def cmd_run(args) -> int:
         if path.exists() and not args.force:
             out(f"{req['id']} {arm}: record exists, skipped")
             continue
+        prepare_request(deps, live)
         try:
             if arm == "llm_only":
                 rec = systems.run_llm_only(req, deps.client, deps.model, deps.pipeline_cfg,
@@ -358,6 +375,7 @@ def cmd_latency(args) -> int:
         deps.retrieve("warm up the embedding model", k=1)  # the model load is not latency
         for req in reqs:
             waits[0] = 0.0
+            prepare_request(deps, live)
             try:
                 rec = systems.run_full(req, deps, runner, live=live, git=git)
             except Exception as exc:

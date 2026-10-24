@@ -49,6 +49,37 @@ def test_the_limiter_wrapper_adds_up_the_sleeps():
     assert P.wrap_limiter(type("N", (), {})()) == [0.0]
 
 
+def test_every_live_request_gets_a_fresh_live_retriever_and_keeps_the_llm_client(monkeypatch):
+    from types import SimpleNamespace
+
+    import src.agents.deps as D
+
+    made = []
+    monkeypatch.setattr(D, "build_live", lambda registry, enabled=True: made.append(object())
+                        or made[-1])
+    import src.retrieval.query_understanding as QU
+
+    monkeypatch.setattr(QU, "load_core_registry", lambda: SimpleNamespace(entries=[]))
+    client = object()
+    deps = SimpleNamespace(live=None, client=client)
+    P.prepare_request(deps, True)
+    first = deps.live
+    P.prepare_request(deps, True)
+    assert deps.live is not first and len(made) == 2 and deps.live is made[1]
+    assert deps.client is client  # the rate limiter window must carry over
+
+
+def test_a_corpus_request_never_builds_a_live_retriever(monkeypatch):
+    from types import SimpleNamespace
+
+    import src.agents.deps as D
+
+    monkeypatch.setattr(D, "build_live", lambda *a, **k: (_ for _ in ()).throw(AssertionError))
+    deps = SimpleNamespace(live=None)
+    P.prepare_request(deps, False)
+    assert deps.live is None
+
+
 def test_latency_refuses_without_the_cost_acknowledgement(capsys):
     assert P.main(["latency"]) == 2
     assert "--yes" in capsys.readouterr().out

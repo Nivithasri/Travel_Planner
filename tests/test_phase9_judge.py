@@ -54,6 +54,23 @@ def test_relevancy_is_the_mean_cosine_with_the_request_vector():
     assert J.cosine([0, 0], [1, 1]) == 0.0
 
 
+def test_scores_are_plain_floats_so_a_result_can_be_written_as_json_even_from_numpy_vectors():
+    import json
+
+    import numpy as np
+
+    def numpy_encode(texts):  # what the real local encoder returns: float32 arrays
+        table = {"A request": [1, 0], "What to see?": [1, 0], "When to go?": [0, 1],
+                 "Where to stay?": [1, 1]}
+        return np.array([table[t] for t in texts], dtype=np.float32)
+
+    res = J.judge_record(rec(), "A request", FakeJudge(), "m", numpy_encode)
+    assert type(res["answer_relevancy"]) is float
+    assert type(J.cosine(np.float32([1, 0]), np.float32([1, 1]))) is float
+    assert json.loads(json.dumps(res))["answer_relevancy"] == pytest.approx(
+        (1.0 + 0.0 + 1 / 2 ** 0.5) / 3)
+
+
 def test_judge_record_uses_the_judge_model_three_times_and_skips_live_claims():
     client = FakeJudge()
     res = J.judge_record(rec(), "A request", client, "judge-model", encode)

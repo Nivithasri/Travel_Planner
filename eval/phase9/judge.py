@@ -87,9 +87,12 @@ def average_precision(flags: Sequence[bool]) -> float | None:
 
 
 def cosine(a: Sequence[float], b: Sequence[float]) -> float:
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(x * x for x in b))
-    return sum(x * y for x, y in zip(a, b, strict=False)) / (na * nb) if na and nb else 0.0
+    na = math.sqrt(sum(float(x) * float(x) for x in a))
+    nb = math.sqrt(sum(float(x) * float(x) for x in b))
+    if not na or not nb:
+        return 0.0
+    # plain Python floats: the encoder returns numpy float32, which json cannot write
+    return float(sum(float(x) * float(y) for x, y in zip(a, b, strict=False)) / (na * nb))
 
 
 def relevancy_score(request: str, questions: Sequence[str],
@@ -97,7 +100,7 @@ def relevancy_score(request: str, questions: Sequence[str],
     """Mean cosine between the request vector and the vectors of the questions the judge wrote
     from the answer (the RAGAS answer-relevancy definition)."""
     vecs = encode([request, *questions])
-    return sum(cosine(vecs[0], v) for v in vecs[1:]) / max(len(vecs) - 1, 1)
+    return float(sum(cosine(vecs[0], v) for v in vecs[1:]) / max(len(vecs) - 1, 1))
 
 
 OPTIONS = {"max_tokens": 1000, "reasoning_effort": "low"}
