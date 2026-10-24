@@ -311,7 +311,13 @@ def test_a_temple_interest_brings_a_model_written_temple_chunk_into_the_prompt(m
     temple = {**row("tmpl1", "Hampi", "The Virupaksha temple has carved gateways and shrines.",
                     aspect="history"), "place_type": "temple"}
     monkeypatch.setitem(PROV, "tmpl1", "llm")
-    rows = corpus([temple])
+    # D129 gives a stop up to 6 items, so more than 6 better-ranked Hampi rows keep the slots
+    # scarce: only the interest can bring the temple chunk in
+    filler = [row(f"Ham{j}", "Hampi", f"Hampi fact number {j}: quiet morning light and carvings.",
+                  score=0.95) for j in range(3, 10)]
+    for f in filler:
+        monkeypatch.setitem(PROV, f["chunk_id"], "llm")
+    rows = corpus([temple, *filler])
     with_interest = run_local(make_deps(rows=rows), TEXT, {**OVER, "interests": ["temples"]})
     without = run_local(make_deps(rows=rows), TEXT, {**OVER, "interests": ["jazz"]})
     cited_with = {s["chunk_id"] for s in with_interest.final["sources"]}

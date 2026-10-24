@@ -762,6 +762,34 @@ PHASE9_MUTATIONS = [
 ]
 
 
+# D129: evidence per stop scales with the nights; at most one model-written warning ranks first.
+EVIDENCE_TESTS = ["tests/test_writer.py", "tests/test_graph.py", "tests/test_critic.py"]
+EV = "src/agents/evidence.py"
+EVIDENCE_MUTATIONS = [
+    ("M241 evidence per stop ignores the nights", EV,
+     "        limit = min(w[\"items_per_night\"] * max(stop.nights, 1), w[\"items_per_stop_max\"])\n",
+     "        limit = w[\"items_per_night\"]\n"),
+    ("M242 evidence per stop has no maximum", EV,
+     "        limit = min(w[\"items_per_night\"] * max(stop.nights, 1), w[\"items_per_stop_max\"])\n",
+     "        limit = w[\"items_per_night\"] * max(stop.nights, 1)\n"),
+    ("M243 every model-written warning still ranks first", EV,
+     "    return {i.chunk_id for i in warns[cap:]}\n", "    return set()\n"),
+    ("M244 the warning cap keeps the worst warning", EV,
+     "    warns = sorted(usable, key=lambda i: _rank(i, interests))\n",
+     "    warns = sorted(usable, key=lambda i: _rank(i, interests), reverse=True)\n"),
+    ("M245 the warning cap is not read from the config", EV,
+     "demoted = _demoted(items, w, interests, w[\"warnings_per_stop\"])",
+     "demoted = _demoted(items, w, interests, 99)"),
+    ("M246 an instruction-like warning uses up the cap", EV,
+     "              and not injection_flags(i.text)]\n", "              ]\n"),
+    ("M247 a blog warning uses up the cap", EV,
+     "              and not (i.source_type == \"blog\" and not w[\"allow_blog\"])\n", ""),
+    ("M248 rule-based warning flags count as model-written", EV,
+     "    return bool(item.is_warning and item.provenance == \"llm\")\n",
+     "    return bool(item.is_warning)\n"),
+]
+
+
 def restore(path, original, tries=8):
     """Write the original bytes back, retrying a transient OS error (seen once on Windows)."""
     import time
@@ -788,7 +816,10 @@ def main() -> int:
     phase8 += [(m, PHASE8B_TESTS) for m in PHASE8B_MUTATIONS]
     phase8 += [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]
     phase9 = [(m, PHASE9_TESTS) for m in PHASE9_MUTATIONS]
-    if "--phase9" in sys.argv[1:]:  # --phase9 runs only M213 to M240 (D123 to D128)
+    phase9 += [(m, EVIDENCE_TESTS) for m in EVIDENCE_MUTATIONS]
+    if "--evidence" in sys.argv[1:]:  # --evidence runs only M241 to M248 (D129)
+        plan = [(m, EVIDENCE_TESTS) for m in EVIDENCE_MUTATIONS]
+    elif "--phase9" in sys.argv[1:]:  # --phase9 runs M213 to M248 (D123 to D129)
         plan = phase9
     elif "--critic" in sys.argv[1:]:  # --critic runs only M208 to M212 (D122)
         plan = [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]

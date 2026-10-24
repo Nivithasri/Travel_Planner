@@ -107,27 +107,48 @@ def interest_match(item: EvidenceItem, interests) -> bool:
     return False
 
 
-def _rank(item: EvidenceItem, interests=()) -> tuple:
-    """Model-written warnings first, then chunks that match an interest, then the aspect
-    priority; with no interest the order is the old one."""
-    is_warn = item.is_warning and item.provenance == "llm"
+def _is_warning(item: EvidenceItem) -> bool:
+    return bool(item.is_warning and item.provenance == "llm")
+
+
+def _rank(item: EvidenceItem, interests=(), demoted=frozenset()) -> tuple:
+    """Model-written warnings first (except the ones beyond the per-stop cap, D129), then chunks
+    that match an interest, then the aspect priority; with no interest and no cap the order is the
+    old one."""
+    is_warn = _is_warning(item) and item.chunk_id not in demoted
     key = "warning" if is_warn else (item.aspect or "other")
     matched = 0 if interest_match(item, interests) else 1
     return (0 if is_warn else 1, matched, PRIORITY.get(key, 5), -item.score, item.chunk_id)
 
 
+def _demoted(items: list[EvidenceItem], w: dict, interests, cap: int) -> set[str]:
+    """The model-written warnings of one stop beyond the best `cap`, among the items that can be
+    packed at all (no live, no blog, no instruction-like text). They are not dropped: they rank
+    like any other chunk (D129; the warning flag is only about 61% right, D106)."""
+    usable = [i for i in items if _is_warning(i) and not i.is_live
+              and not (i.source_type == "blog" and not w["allow_blog"])
+              and not injection_flags(i.text)]
+    warns = sorted(usable, key=lambda i: _rank(i, interests))
+    return {i.chunk_id for i in warns[cap:]}
+
+
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
          cfg: dict | None = None, interests=(), named_places=(), scope_check=None) -> Packed:
-    """At most `items_per_stop` corpus items per planned stop (warnings first) and `live_items`
-    live items. Order is the plan's stop order, then live; aliases follow that order."""
+    """Per planned stop at most `items_per_night` corpus items for each night, never more than
+    `items_per_stop_max`, with at most `warnings_per_stop` model-written warnings ranked first
+    (D129), and `live_items` live items. Order is the plan's stop order, then live; aliases follow
+    that order."""
     w = (cfg or load_pipeline_config())["writer"]
     out = Packed()
     n_s = n_l = 0
     seen: set[str] = set()
     for stop in plan.stops:
         taken = 0
-        for item in sorted(corpus.get(stop.place, []), key=lambda i: _rank(i, interests)):
-            if taken >= w["items_per_stop"]:
+        limit = min(w["items_per_night"] * max(stop.nights, 1), w["items_per_stop_max"])
+        items = corpus.get(stop.place, [])
+        demoted = _demoted(items, w, interests, w["warnings_per_stop"])
+        for item in sorted(items, key=lambda i: _rank(i, interests, demoted)):
+            if taken >= limit:
                 break
             if item.chunk_id in seen or item.is_live:
                 continue

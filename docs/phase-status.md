@@ -101,7 +101,8 @@ Phases 1 to 7 are CLOSED. Phase 8 is BUILT and awaits the owner's hand-run and /
 - [x] Plan approved; decisions D123 to D128 (systems, scoring protocol, citation precision and lean judge, live day, latency, deviations from plan.md)
 - [x] 10 requests written before any run and approved by the owner as written (eval/phase9/requests.json, eval/phase9/rubric.md)
 - [x] Harness: eval/phase9/*.py and scripts/phase9.py; 68 tests (fakes), mutations M213 to M240 all caught; pytest 1477 passed / 12 skipped; ruff clean (LOG.md 2026-10-24)
-- [ ] Corpus runs of LLM-only, plain RAG and the full system (30 outputs)
+- [x] One request (P01) run through all three systems to measure tokens: 756, 1,764 and 1,993 (git e7f4886, before D129: rerun with --force)
+- [ ] Corpus runs of LLM-only, plain RAG and the full system (30 outputs); blocked on Phase 8 close and the D129 hand-run
 - [ ] Blind scores by the owner (30 outputs x 4 dimensions) and the second scorer's agreement sample
 - [ ] Citation precision on 50 claims (owner marks) and the lean judge (hosted judge model; RAGAS replaced, D125)
 - [ ] Live day: 10 requests with live on, within one UTC day; with and without comparison and live citation counts
