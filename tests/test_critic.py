@@ -189,6 +189,59 @@ def test_a_bullet_repeated_on_another_day_is_flagged_and_removed():
     assert C.NO_DETAILS in text and any("repeated bullet" in a for a in actions)
 
 
+# ---- D122: a bullet naming a place outside the plan is removed by code, and R5 carries the day ---
+
+def test_r5_mention_finding_carries_the_day_of_the_section_that_names_the_place():
+    ctx = ctx_for(make_plan(("Hampi", "Badami")))
+    draft = ("## Day 1: Hampi\n- Ferries cross the river every morning. [S1]\n"
+             "## Day 2: Badami\n- Drive to Munnar for tea. [S2]\n")
+    r5 = [x for x in C.check(draft, ctx) if x.rule == "R5"]
+    assert [x.day for x in r5] == [2] and "Munnar" in r5[0].message
+    backup_only = GOOD.replace("- Gokarna", "- Gokarna\n- Munnar")
+    assert [x.day for x in C.check(backup_only, ctx) if x.rule == "R5"] == [None]
+
+
+def test_a_cited_bullet_naming_an_excluded_place_is_removed_without_an_llm_call():
+    ctx = ctx_for(make_plan())
+    draft = ("## Day 1: Hampi\n- Ferries cross the river every morning. [S1]\n"
+             "- Drive to Munnar for the tea estates. [S1]\n## Backup options\n- Gokarna\n")
+    calls = []
+    text, report, actions = C.run_cycle(draft, ctx, lambda t, f: calls.append(1) or "")
+    assert not calls and report.status == "repaired" and report.ok
+    assert "Munnar" not in text and "Ferries cross" in text
+    assert any("names a place outside the plan" in a for a in actions)
+
+
+def test_a_day_emptied_by_the_scope_strip_gets_the_no_details_line_and_a_hold_out_goes_too():
+    ctx = ctx_for(make_plan())
+    draft = "## Day 1: Hampi\n- Visit Thekkady lake. [S1]\n## Backup options\n- Gokarna\n"
+    text, report, _ = C.run_cycle(draft, ctx)
+    assert report.ok and "Thekkady" not in text and C.NO_DETAILS in text
+
+
+def test_a_named_or_planned_place_is_never_stripped_and_a_backup_naming_one_is_removed():
+    named = ctx_for(make_plan(), req=ParsedRequest(text="x", named_places=["Munnar"]))
+    keep = GOOD.replace("morning. [S1]", "morning. [S1]\n- Munnar is a long way off. [S1]")
+    assert "Munnar" in C.run_cycle(keep, named)[0]
+    ctx = ctx_for(make_plan())
+    text, report, actions = C.run_cycle(GOOD.replace("- Gokarna", "- Gokarna\n- Munnar"), ctx)
+    assert report.ok and "Munnar" not in text and "Gokarna" in text
+    assert any("backup option" in a for a in actions)
+
+
+def test_a_mention_the_code_cannot_strip_goes_to_the_one_repair_pass():
+    ctx = ctx_for(make_plan())
+    draft = "## Day 1: Hampi, then Munnar\n- Ferries cross the river every morning. [S1]\n"
+    seen = []
+
+    def repair(text, findings):
+        seen.append([x.day for x in findings])
+        return GOOD
+
+    text, report, _ = C.run_cycle(draft, ctx, repair)
+    assert seen == [[1]] and report.ok and "Munnar" not in text
+
+
 # ---- D115: the repair call is not cached when its prompt holds live text -----------------------
 
 class RepairClient:

@@ -663,6 +663,27 @@ PHASE8B_MUTATIONS = [
      "scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed))",
      "scope_check=None)"),
 ]
+# D122: the critic strips bullets that name a place outside the plan and R5 carries the day.
+PHASE8_TESTS_CRITIC = ["tests/test_critic.py"]
+CRITIC_MUTATIONS = [
+    ("M208 the R5 mention finding carries no day", "src/agents/critic.py",
+     "            f.append(CriticFinding(rule=\"R5\", day=day, message=(\n"
+     "                f\"{name} is outside",
+     "            f.append(CriticFinding(rule=\"R5\", message=(\n"
+     "                f\"{name} is outside"),
+    ("M209 the deterministic fix keeps a bullet that names a blocked place", "src/agents/critic.py",
+     "            if b and any(_mentions(line, n) for n in blocked):\n",
+     "            if False:\n"),
+    ("M210 the deterministic fix keeps a backup that names a blocked place", "src/agents/critic.py",
+     "    kept = [b for b in d.backups if not any(_mentions(b, n) for n in blocked)]\n",
+     "    kept = list(d.backups)\n"),
+    ("M211 a named or planned place counts as blocked", "src/agents/critic.py",
+     "if n.casefold() not in allowed]\n",
+     "]\n"),
+    ("M212 the cycle does not pass the blocked names to the deterministic fix",
+     "src/agents/critic.py",
+     "ctx.packed, tuple(blocked_names(ctx)))", "ctx.packed)"),
+]
 
 
 def restore(path, original, tries=8):
@@ -689,7 +710,10 @@ def main() -> int:
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
     phase8 += [(m, PHASE8B_TESTS) for m in PHASE8B_MUTATIONS]
-    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M207
+    phase8 += [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]
+    if "--critic" in sys.argv[1:]:  # --critic runs only M208 to M212 (D122)
+        plan = [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]
+    elif "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M212
         plan = phase8
     elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7

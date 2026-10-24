@@ -102,6 +102,16 @@ def _is_exempt(bullet: str) -> bool:
     return f"- {bullet}".strip() == NO_DETAILS or bullet.startswith("Current status")
 
 
+def blocked_names(ctx: CriticContext) -> list[str]:
+    """Hold-out and excluded place names the answer must not mention: not a stop, not named in the
+    request, not a backup of the plan (the R5 rule)."""
+    allowed = {s.place.casefold() for s in ctx.plan.stops}
+    allowed |= {n.casefold() for n in ctx.request.named_places}
+    allowed |= {b["place"].casefold() for b in ctx.plan.backups}
+    names = sorted(ctx.holdout_names | ctx.excluded_names)
+    return [n for n in names if n.casefold() not in allowed]
+
+
 def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
     d = parse_draft(draft_text)
     f: list[CriticFinding] = []
@@ -170,12 +180,15 @@ def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
                     f.append(CriticFinding(rule="R4", day=x.number, message=(
                         f"day {x.number}: unknown source tag [{t}]")))
     # R5 ---------------------------------------------------------------------------------------
-    allowed = {s.place.casefold() for s in plan.stops} | {n.casefold() for n in req.named_places}
-    allowed |= {b["place"].casefold() for b in plan.backups}
     full = "\n".join(render(d).splitlines())
-    for name in sorted(ctx.holdout_names | ctx.excluded_names):
-        if name.casefold() not in allowed and _mentions(full, name):
-            f.append(CriticFinding(rule="R5", message=(
+    for name in blocked_names(ctx):
+        if not _mentions(full, name):
+            continue
+        # D122: a finding carries the day whose section names the place, so the one repair pass can
+        # run for it; a mention only in the backups or the preamble has no day.
+        days = [x.number for x in d.days if _mentions("\n".join(x.lines), name)] or [None]
+        for day in days:
+            f.append(CriticFinding(rule="R5", day=day, message=(
                 f"{name} is outside the plan (hold-out or excluded place) but is mentioned")))
     for s in plan.stops:
         if s.evidence_class == "limited":
@@ -218,10 +231,10 @@ def ensure_status_line(draft_text: str, request: ParsedRequest, live_status: str
     return render(d)
 
 
-def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Packed
-                      ) -> tuple[str, list[str]]:
-    """Strip uncited or wrongly tagged bullets and URLs; give an emptied day the no-details bullet.
-    Returns (new text, actions)."""
+def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Packed,
+                      blocked: tuple[str, ...] = ()) -> tuple[str, list[str]]:
+    """Strip uncited or wrongly tagged bullets, URLs and bullets that name a blocked place (D122);
+    give an emptied day the no-details bullet. Returns (new text, actions)."""
     d = parse_draft(draft_text)
     amap = packed.alias_map
     actions: list[str] = []
@@ -230,6 +243,10 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
         keep_lines, keep_bullets = [], []
         for line in x.lines:
             b = BULLET.match(line)
+            if b and any(_mentions(line, n) for n in blocked):
+                actions.append(f"day {x.number}: removed a bullet that names a place outside the "
+                               "plan")
+                continue
             if b and not _is_exempt(b.group(1).strip()):
                 key = " ".join(ALIAS.sub("", b.group(1)).split()).casefold()
                 if key in seen_text:
@@ -252,6 +269,10 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
             x.lines.append(NO_DETAILS)
             x.bullets.append(NO_DETAILS[2:])
             actions.append(f"day {x.number}: wrote the no-details bullet")
+    kept = [b for b in d.backups if not any(_mentions(b, n) for n in blocked)]
+    if len(kept) != len(d.backups):
+        actions.append("removed a backup option that names a place outside the plan")
+        d.backups = kept
     return render(d), actions
 
 
@@ -277,7 +298,7 @@ def run_cycle(draft_text: str, ctx: CriticContext,
     first = check(text, ctx)
     if not first:
         return text, CriticReport(ok=True, status="passed"), []
-    text, actions = deterministic_fix(text, first, ctx.packed)
+    text, actions = deterministic_fix(text, first, ctx.packed, tuple(blocked_names(ctx)))
     findings = check(text, ctx)
     days = repair_days(findings)
     if findings and days and repair is not None:
