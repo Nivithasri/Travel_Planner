@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "status": "APPROVED",
+    "approved_by": "owner, in chat, 2026-10-24, as written (the mutation run had to finish first)",
+    "note": "Phase 9 itinerary requests (D123). Written 2026-10-24 BEFORE any run; approved by the owner as written. These are full trip requests, not the 40 retrieval queries of eval/queries.json; nothing is tuned on them. Place names are registry names so the live search and the planner resolve them.",
+    "time_sensitive_min": 4
+  },
+  "requests": [
+    {
+      "id": "P01", "type": "family", "time_sensitive": false,
+      "text": "A relaxed family trip with two young children to Mysuru and Kodagu: gentle sightseeing, nature and a bit of culture, nothing tiring.",
+      "named_places": ["Mysuru", "Kodagu"],
+      "overrides": {"duration_days": 4, "budget_tier": "mid", "party": "family", "month": 12,
+                    "start_city": "Bengaluru", "interests": ["nature", "culture"],
+                    "constraints": ["no night travel"]}
+    },
+    {
+      "id": "P02", "type": "backpacker", "time_sensitive": false,
+      "text": "Backpacking on a tight budget through Hampi, Badami and Gokarna: ruins first, then a few beach days.",
+      "named_places": ["Hampi", "Badami", "Gokarna"],
+      "overrides": {"duration_days": 6, "budget_tier": "budget", "party": "solo", "month": 11,
+                    "start_city": "Bengaluru", "interests": ["history", "beaches"]}
+    },
+    {
+      "id": "P03", "type": "honeymoon", "time_sensitive": false,
+      "text": "A romantic honeymoon on the Tamil Nadu and Puducherry coast: beaches, good food and heritage, comfortable stays.",
+      "named_places": ["Pondicherry", "Mahabalipuram", "Chennai"],
+      "overrides": {"duration_days": 5, "budget_tier": "luxury", "party": "couple", "month": 2,
+                    "start_city": "Chennai", "interests": ["beaches", "food", "heritage"]}
+    },
+    {
+      "id": "P04", "type": "pilgrimage", "time_sensitive": true,
+      "text": "A pilgrimage to Tirupati and Madurai. Are the darshan arrangements and temple timings still the same, and how should we plan the days around them?",
+      "named_places": ["Tirupati", "Madurai"],
+      "overrides": {"duration_days": 5, "budget_tier": "mid", "party": "family", "month": 12,
+                    "start_city": "Chennai", "interests": ["temples", "culture"],
+                    "time_sensitive": true}
+    },
+    {
+      "id": "P05", "type": "monsoon", "time_sensitive": false,
+      "text": "We can only travel in July. Is Kodagu and Mysuru a sensible monsoon trip, and what should we expect from the rain and the roads?",
+      "named_places": ["Kodagu", "Mysuru"],
+      "overrides": {"duration_days": 4, "budget_tier": "mid", "party": "couple", "month": 7,
+                    "start_city": "Bengaluru", "interests": ["nature", "waterfalls"],
+                    "constraints": ["avoid hill roads at night"]}
+    },
+    {
+      "id": "P06", "type": "budget", "time_sensitive": false,
+      "text": "A cheap four day trip around Hyderabad and Warangal: forts, temples and local food, public transport friendly.",
+      "named_places": ["Hyderabad", "Warangal"],
+      "overrides": {"duration_days": 4, "budget_tier": "budget", "party": "solo", "month": 1,
+                    "start_city": "Hyderabad", "interests": ["history", "temples", "food"]}
+    },
+    {
+      "id": "P07", "type": "freshness", "time_sensitive": true,
+      "text": "Three days in Kanniyakumari and Madurai. Is the Vivekananda Rock ferry running at the moment and what are the latest timings and ticket prices?",
+      "named_places": ["Kanniyakumari", "Madurai"],
+      "overrides": {"duration_days": 3, "budget_tier": "mid", "party": "couple", "month": 12,
+                    "start_city": "Madurai", "interests": ["temples", "beaches"],
+                    "time_sensitive": true}
+    },
+    {
+      "id": "P08", "type": "freshness", "time_sensitive": true,
+      "text": "Ooty for a long weekend. Is the Nilgiri mountain railway running and are any roads or attractions closed right now?",
+      "named_places": ["Ooty"],
+      "overrides": {"duration_days": 3, "budget_tier": "mid", "party": "group", "month": 12,
+                    "start_city": "Bengaluru", "interests": ["hill stations", "nature"],
+                    "time_sensitive": true}
+    },
+    {
+      "id": "P09", "type": "freshness", "time_sensitive": true,
+      "text": "Hampi and Badami over four days. What are the current monument opening hours and entry ticket prices?",
+      "named_places": ["Hampi", "Badami"],
+      "overrides": {"duration_days": 4, "budget_tier": "mid", "party": "couple", "month": 1,
+                    "start_city": "Bengaluru", "interests": ["history", "heritage"],
+                    "time_sensitive": true}
+    },
+    {
+      "id": "P10", "type": "vague", "time_sensitive": false,
+      "text": "Nature and culture, mid-budget, about five days from Chennai in February. We have not decided where to go.",
+      "named_places": [],
+      "overrides": {"duration_days": 5, "budget_tier": "mid", "party": "couple", "month": 2,
+                    "start_city": "Chennai", "interests": ["nature", "culture"]}
+    }
+  ]
+}

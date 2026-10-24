@@ -78,3 +78,17 @@ fusion, query understanding, filters, freshness, rerank, MMR, corrective pass, `
 corpus rules are in [CLAUDE.md](CLAUDE.md). Results and the commands that reproduce them are in [LOG.md](LOG.md);
 decisions in [docs/decisions.md](docs/decisions.md); contracts in [docs/contracts.md](docs/contracts.md);
 the session handoff in [docs/HANDOFF.md](docs/HANDOFF.md).
+
+
+## Phase 9 (evaluation harness, D123 to D128)
+Use the `.venv` interpreter. `scripts/phase9.py` has one subcommand per step; the order and the limits are in
+[docs/HANDOFF.md](docs/HANDOFF.md) and the protocol in D123 to D128 of [docs/decisions.md](docs/decisions.md).
+
+```sh
+.venv/Scripts/python.exe scripts/phase9.py check-requests
+.venv/Scripts/python.exe scripts/phase9.py run --arm full_corpus --ids P01
+.venv/Scripts/python.exe scripts/phase9.py sheet --set main
+.venv/Scripts/python.exe scripts/phase9.py report
+```
+Runs spend LLM tokens (and, for `full_live`, search credits); records and sheets stay under `.cache/phase9` and
+`eval/sheets/phase9` (gitignored), only scores and counts are committed.

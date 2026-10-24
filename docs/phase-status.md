@@ -97,6 +97,13 @@ Phases 1 to 7 are CLOSED. Phase 8 is BUILT and awaits the owner's hand-run and /
 - [ ] Known gaps: live search covers the request's named places or states, not the planner's stops (D107 a); 25 to 40 s model load on the first request; card items 58% useful (labelled)
 - [ ] Done when: the demo runs locally (headless-tested; the owner's hand-run confirms); corpus retrieval and generation need no internet beyond the hosted model, and the live step degrades to the corpus without it.
 
-## Phase 9: Evaluation and analysis
-- [ ] Tasks (see docs/plan.md)
-- [ ] Done when: all tables and cases are ready for the report.
+## Phase 9: Evaluation and analysis (HARNESS BUILT 2026-10-24, D123 to D128; NOTHING MEASURED YET)
+- [x] Plan approved; decisions D123 to D128 (systems, scoring protocol, citation precision and lean judge, live day, latency, deviations from plan.md)
+- [x] 10 requests written before any run and approved by the owner as written (eval/phase9/requests.json, eval/phase9/rubric.md)
+- [x] Harness: eval/phase9/*.py and scripts/phase9.py; 68 tests (fakes), mutations M213 to M240 all caught; pytest 1477 passed / 12 skipped; ruff clean (LOG.md 2026-10-24)
+- [ ] Corpus runs of LLM-only, plain RAG and the full system (30 outputs)
+- [ ] Blind scores by the owner (30 outputs x 4 dimensions) and the second scorer's agreement sample
+- [ ] Citation precision on 50 claims (owner marks) and the lean judge (hosted judge model; RAGAS replaced, D125)
+- [ ] Live day: 10 requests with live on, within one UTC day; with and without comparison and live citation counts
+- [ ] Latency table (caches bypassed, limiter wait separate), 3 to 4 failure cases, 2 to 3 live or thin-evidence cases
+- [ ] Done when: all tables and cases are ready for the report. Blocked on: Phase 8 close (hand-run, review, tag) so the measured sha is final.

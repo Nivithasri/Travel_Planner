@@ -128,7 +128,8 @@ def sha(path: Path) -> str:
 
 def run_tests(tests: list[str] = TESTS) -> tuple[str, list[str]]:
     r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-rf",
-                        *tests], cwd=ROOT, capture_output=True, text=True)
+                        *tests], cwd=ROOT, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
     lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
     failed = [ln.split(" ", 1)[1].split(" - ")[0] for ln in lines if ln.startswith("FAILED ")]
     return (lines[-1] if lines else "no output"), failed
@@ -408,8 +409,8 @@ PHASE7_MUTATIONS = [
      "            if RECENCY.search(b) and not any(t.startswith(\"L\") for t in tags):\n",
      "            if False:\n"),
     ("M122 hold-out and excluded mentions are allowed", "src/agents/critic.py",
-     "        if name.casefold() not in allowed and _mentions(full, name):\n",
-     "        if False:\n"),
+     "        if not _mentions(full, name):\n            continue\n",
+     "        continue\n"),
     ("M123 the LLM repair pass never runs", "src/agents/critic.py",
      "    if findings and days and repair is not None:\n", "    if False:\n"),
     ("M124 the cannot-confirm line is not added", "src/agents/critic.py",
@@ -686,6 +687,81 @@ CRITIC_MUTATIONS = [
 ]
 
 
+# Phase 9 (D123 to D128): mutations M213+ run against the Phase 9 tests only (--phase9).
+PHASE9_TESTS = ["tests/test_phase9_requests.py", "tests/test_phase9_systems.py",
+                "tests/test_phase9_agreement.py", "tests/test_phase9_sheets.py",
+                "tests/test_phase9_claims.py", "tests/test_phase9_judge.py",
+                "tests/test_phase9_report.py", "tests/test_phase9_cli.py"]
+P9 = "eval/phase9/"
+PHASE9_MUTATIONS = [
+    ("M213 a D33-excluded named place is accepted", P9 + "request_set.py",
+     "            elif canonical in excluded:\n", "            elif False:\n"),
+    ("M214 the approval gate never raises", P9 + "request_set.py",
+     "    if require_approved and doc.get(\"meta\", {}).get(\"status\") != APPROVED:\n",
+     "    if False:\n"),
+    ("M215 plain RAG keeps blog chunks", P9 + "systems.py",
+     "        if r.get(\"source_type\") == \"blog\" and not w[\"allow_blog\"]:\n",
+     "        if False:\n"),
+    ("M216 plain RAG keeps instruction-like text", P9 + "systems.py",
+     "        flags = injection_flags(r.get(\"text\", \"\"))\n        if flags:\n",
+     "        flags = injection_flags(r.get(\"text\", \"\"))\n        if False:\n"),
+    ("M217 the request line drops the named places", P9 + "systems.py",
+     "    if req.get(\"named_places\"):\n        bits.append(",
+     "    if False:\n        bits.append("),
+    ("M218 the live record forgets uncited live items", P9 + "systems.py",
+     "for u in final.get(\"uncited_live\", []) if", "for u in [] if"),
+    ("M219 live items enter the stored contexts", P9 + "systems.py",
+     "getattr(packed, \"items\", []) if not p.item.is_live]",
+     "getattr(packed, \"items\", [])]"),
+    ("M220 quadratic kappa weights become linear", P9 + "agreement.py",
+     "        return 1 - d if weights == \"linear\" else 1 - d * d\n",
+     "        return 1 - d\n"),
+    ("M221 within-one agreement allows two steps", P9 + "agreement.py",
+     "abs(x - y) <= 1", "abs(x - y) <= 2"),
+    ("M222 the sheet key ignores the output column", P9 + "sheets.py",
+     "    for col in FIXED[1:]:\n", "    for col in (\"request\", \"sources\"):\n"),
+    ("M223 the scoring sheet is not shuffled", P9 + "sheets.py",
+     "    random.Random(seed).shuffle(recs)\n", "    pass\n"),
+    ("M224 live rows can enter the cross-check sample", P9 + "sheets.py",
+     "                      if not m[\"has_live\"] and m[\"arm\"] != \"full_live\")",
+     "                      if True)"),
+    ("M225 a score of 9 is accepted", P9 + "sheets.py",
+     "    if f != int(f) or not 1 <= int(f) <= 5:\n", "    if f != int(f):\n"),
+    ("M226 live items are shown with an excerpt", P9 + "sheets.py",
+     "        if kind == \"live\":\n", "        if False:\n"),
+    ("M227 live claims enter the corpus sample", P9 + "claims.py",
+     "        claims = [c for c in extract_claims(rec) if not is_live(c)]\n",
+     "        claims = extract_claims(rec)\n"),
+    ("M228 the Sources section is read as claims", P9 + "claims.py",
+     "        if STOP.match(line.strip()):\n            break\n",
+     "        if False:\n            break\n"),
+    ("M229 a mark of 2 is accepted", P9 + "claims.py",
+     "        if f not in (0.0, 1.0):\n", "        if False:\n"),
+    ("M230 context precision ignores the rank", P9 + "judge.py",
+     "            total += hits / k\n", "            total += 1\n"),
+    ("M231 a claim without a verdict counts as supported", P9 + "judge.py",
+     "    return len(ok) / n_claims\n", "    return max(len(ok), n_claims) / n_claims\n"),
+    ("M232 live-citing claims are sent to the faithfulness judge", P9 + "judge.py",
+     " if all(x[\"kind\"] == \"chunk\" for x in c[\"cited\"])]", "]"),
+    ("M233 the Holm adjustment is not applied", P9 + "report.py",
+     "\"p_holm\": round(adj, 4)", "\"p_holm\": round(c.p, 4)"),
+    ("M234 the paired difference is reversed", P9 + "report.py",
+     "diffs = paired_differences(sb, sa)  # a minus b", "diffs = paired_differences(sa, sb)"),
+    ("M235 the percentile index is off by one", P9 + "report.py",
+     "* len(s)) - 1)]", "* len(s)))]"),
+    ("M236 a record is overwritten without force", P9 + "store.py",
+     "    if path.exists() and not force:\n", "    if False:\n"),
+    ("M237 live records of another day do not stop the live day", P9 + "store.py",
+     "    if other:\n", "    if False:\n"),
+    ("M238 the monthly credit stop is not checked", P9 + "store.py",
+     "    if used + need > monthly_stop_at:\n", "    if False:\n"),
+    ("M239 the limiter wait is not accumulated", "scripts/phase9.py",
+     "            waited[0] += float(seconds)\n", "            waited[0] = float(seconds)\n"),
+    ("M240 unknown request ids are not refused", "scripts/phase9.py",
+     "    if unknown:\n", "    if False:\n"),
+]
+
+
 def restore(path, original, tries=8):
     """Write the original bytes back, retrying a transient OS error (seen once on Windows)."""
     import time
@@ -711,7 +787,10 @@ def main() -> int:
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
     phase8 += [(m, PHASE8B_TESTS) for m in PHASE8B_MUTATIONS]
     phase8 += [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]
-    if "--critic" in sys.argv[1:]:  # --critic runs only M208 to M212 (D122)
+    phase9 = [(m, PHASE9_TESTS) for m in PHASE9_MUTATIONS]
+    if "--phase9" in sys.argv[1:]:  # --phase9 runs only M213 to M240 (D123 to D128)
+        plan = phase9
+    elif "--critic" in sys.argv[1:]:  # --critic runs only M208 to M212 (D122)
         plan = [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]
     elif "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M212
         plan = phase8
@@ -724,12 +803,13 @@ def main() -> int:
     elif "--retrieval" in sys.argv[1:]:  # --retrieval runs only M42+
         plan = retrieval
     else:
-        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7 + phase8
+        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7 + phase8 + phase9
     for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()
         before = hashlib.sha256(original).hexdigest()
-        text = original.decode("utf-8")
+        # a Windows checkout with core.autocrlf has CRLF files; patterns are written with LF
+        text = original.decode("utf-8").replace("\r\n", "\n")
         if text.count(old) != 1:
             print(f"{name}: PATTERN NOT FOUND ({text.count(old)} matches); nothing run")
             survived += 1
