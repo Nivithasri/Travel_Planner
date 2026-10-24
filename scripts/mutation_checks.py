@@ -626,6 +626,42 @@ PHASE8B_MUTATIONS = [
     ("M195 the answer does not say that live results were left out", "src/agents/nodes.py",
      "    if n_live_out:\n",
      "    if False:\n"),
+    ("M196 citation markers are not numbered by first appearance", "app/state.py",
+     "    for m in CITATION.finditer(str(final.get(\"text\", \"\"))):\n",
+     "    for m in ():\n"),
+    ("M197 an unknown citation id is removed from the shown text", "app/state.py",
+     "        if s is None:\n            return m.group(0)\n",
+     "        if s is None:\n            return \"\"\n"),
+    ("M198 showing the itinerary rewrites the stored text", "app/state.py",
+     "    return CITATION.sub(replace, text), aliases\n",
+     "    final[\"text\"] = CITATION.sub(replace, text)\n    return final[\"text\"], aliases\n"),
+    ("M199 the table alias differs from the marker in the text", "app/state.py",
+     "\"Alias\": aliases.get(key, s.get(\"alias\", \"\")),",
+     "\"Alias\": s.get(\"alias\", \"\"),"),
+    ("M200 the short marker is not linked to the source", "app/state.py",
+     "        return f\"[{marker}]({link})\" if link else marker\n",
+     "        return marker\n"),
+    ("M201 the out-of-scope check is not applied to live items", "src/agents/evidence.py",
+     "        if scope_check is not None and scope_check(item.text):  # D120\n",
+     "        if False:  # D120\n"),
+    ("M202 the dropped-for-excluded count reads the wrong reason", "app/state.py",
+     "if d.get(\"reason\") == \"live_names_excluded\")",
+     "if d.get(\"reason\") == \"live_unresolved\")"),
+    ("M203 the answer does not say that results naming an out-of-scope place were left out", "src/agents/nodes.py",
+     "    if n_live_scope:\n",
+     "    if False:\n"),
+    ("M204 hold-out names do not block a live item", "src/agents/scope.py",
+     "        return leak_scan(text, holdout) is not None\n",
+     "        return False\n"),
+    ("M205 an excluded place name matches inside a longer word", "src/agents/scope.py",
+     "(?<!\\w)(?:",
+     "(?:"),
+    ("M206 a named or planned excluded place is still blocked", "src/agents/scope.py",
+     "        elif e.name in excluded and e.name not in allowed:\n",
+     "        elif e.name in excluded:\n"),
+    ("M207 the write node does not pass the out-of-scope check to the packer", "src/agents/nodes.py",
+     "scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed))",
+     "scope_check=None)"),
 ]
 
 
@@ -653,7 +689,7 @@ def main() -> int:
     phase7 = [(m, PHASE7_TESTS) for m in PHASE7_MUTATIONS]
     phase8 = [(m, PHASE8_TESTS) for m in PHASE8_MUTATIONS]
     phase8 += [(m, PHASE8B_TESTS) for m in PHASE8B_MUTATIONS]
-    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M195
+    if "--phase8" in sys.argv[1:]:  # --phase8 runs only M146 to M207
         plan = phase8
     elif "--phase7" in sys.argv[1:]:  # --phase7 runs only M103+
         plan = phase7

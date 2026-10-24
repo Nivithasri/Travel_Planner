@@ -17,6 +17,7 @@ from src.agents import critic as C
 from src.agents import evidence as E
 from src.agents import writer as W
 from src.agents.planner import Candidate, plan_trip
+from src.agents.scope import out_of_scope_matcher
 from src.agents.state import (
     CriticFinding,
     CriticReport,
@@ -261,8 +262,10 @@ def write_node(state: RunState, deps: Deps) -> dict:
     if not plan.feasible:
         return {"draft": "", "packed": {}, "packed_obj": E.Packed()}
     stop_ev = {s.place: state.corpus_evidence.get(s.place, []) for s in plan.stops}
+    allowed = {s.place for s in plan.stops} | set(req.named_places)
     packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg,
-                    interests=req.interests, named_places=req.named_places)
+                    interests=req.interests, named_places=req.named_places,
+                    scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed))
     messages = W.build_messages(req, plan, packed, deps.pipeline_cfg)
     before = deps.tokens_used()
     draft = W.write(deps.client, deps.model, messages, deps.pipeline_cfg, deps.on_piece)
@@ -338,6 +341,10 @@ def finalize_node(state: RunState, deps: Deps) -> dict:
     if any(d["reason"] == "blog_excluded" for d in dropped):
         notes.append("blog sources were left out of the writer's context (no terms)")
     n_live_out = sum(1 for d in dropped if d["reason"] in ("live_out_of_plan", "live_unresolved"))
+    n_live_scope = sum(1 for d in dropped if d["reason"] == "live_names_excluded")
+    if n_live_scope:
+        notes.append(f"{n_live_scope} live search result(s) were left out because they name a "
+                     "place outside the project scope")
     if n_live_out:
         notes.append(f"{n_live_out} live search result(s) were left out because they are not about "
                      "a place in your plan")

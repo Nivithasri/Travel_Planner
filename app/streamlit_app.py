@@ -211,7 +211,9 @@ if view:
             f"- {f.get('rule')}: {f.get('message')}" for f in critic.get("findings", [])))
 
     st.header("Itinerary")
-    st.markdown(final.get("text", ""))
+    shown_text, _ = S.cited_text(final)
+    st.markdown(shown_text)
+    st.caption(S.MARKER_NOTE)
     st.caption(f"Travel times are {S.TRAVEL_LABEL}. Budget figures are a {S.BUDGET_LABEL}. "
                f"Place-card items are {S.CARD_LABEL}.")
 

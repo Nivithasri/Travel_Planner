@@ -294,3 +294,68 @@ def test_dropped_live_items_do_not_use_up_the_live_item_cap():
     live += [live_at(f"live:i{i}", "Hampi", 0.5 - i / 100) for i in range(6)]
     p = pack(plan_for(["Hampi"]), {}, live, CFG)
     assert [x.item.chunk_id for x in p.items] == ["live:i0", "live:i1", "live:i2", "live:i3"]
+
+
+# ---- D120: live items that name an excluded place or a hold-out are dropped ----------------------
+
+def real_matcher(allowed=()):
+    import json
+
+    from src.agents.scope import out_of_scope_matcher
+    from src.common.schemas import REPO_ROOT
+    from src.retrieval.query_understanding import load_core_registry
+
+    excluded = json.loads((REPO_ROOT / "data" / "manifests" / "d33_excluded.json"
+                           ).read_text(encoding="utf-8"))["excluded"]
+    return out_of_scope_matcher(load_core_registry().entries, excluded, allowed)
+
+
+def live_text(cid, place, text):
+    return item(cid, place=place, st="live", text=text, fetch_date="2026-10-24", score=0.9)
+
+
+def live_ids(p):
+    return [x.item.chunk_id for x in p.items if x.item.is_live]
+
+
+def reasons(p):
+    return {d["chunk_id"]: d["reason"] for d in p.dropped}
+
+
+def test_a_live_snippet_naming_auroville_is_dropped_and_a_pondicherry_one_is_kept():
+    live = [live_text("live:auro", "Pondicherry", "Day tour: promenade, then drive to Auroville."),
+            live_text("live:pond", "Pondicherry", "The Pondicherry promenade is closed to cars "
+                                                  "after six in the evening.")]
+    p = pack(plan_for(["Pondicherry"]), {}, live, CFG, scope_check=real_matcher())
+    assert live_ids(p) == ["live:pond"] and reasons(p) == {"live:auro": "live_names_excluded"}
+
+
+def test_aliases_and_hold_out_names_are_dropped_too():
+    texts = {"live:a": "Boat ride from Aleppey at dawn.",  # alias of the excluded Alappuzha
+             "live:b": "Wynnad hill drive and tea estates.",
+             "live:c": "Thekkady spice walk and boat rides.",  # hold-out
+             "live:d": "Day trip to Tanjore palace.",  # hold-out alias
+             "live:e": "Thekkadee boat landing opens early.",  # caught by the independent scan
+             "live:ok": "Pondicherry beaches open at dawn."}
+    live = [live_text(cid, "Pondicherry", text) for cid, text in texts.items()]
+    p = pack(plan_for(["Pondicherry"]), {}, live, CFG, scope_check=real_matcher())
+    assert live_ids(p) == ["live:ok"]
+    assert set(reasons(p)) == {"live:a", "live:b", "live:c", "live:d", "live:e"}
+    assert set(reasons(p).values()) == {"live_names_excluded"}
+
+
+def test_an_excluded_place_the_request_named_is_not_blocked_but_a_hold_out_always_is():
+    live = [live_text("live:m", "Pondicherry", "Munnar is cool in December."),
+            live_text("live:h", "Pondicherry", "Thekkady is far from Pondicherry.")]
+    p = pack(plan_for(["Pondicherry"]), {}, live, CFG, named_places=["Munnar"],
+             scope_check=real_matcher(allowed={"Pondicherry", "Munnar"}))
+    assert live_ids(p) == ["live:m"] and reasons(p) == {"live:h": "live_names_excluded"}
+
+
+def test_the_scope_check_is_word_bounded_and_only_runs_on_items_that_passed_the_plan_filter():
+    live = [live_text("live:w", "Pondicherry", "Aurovillefest is a made-up word, not a place."),
+            live_text("live:out", "Badami", "Drive to Auroville."),
+            live_text("live:none", "", "Auroville at dawn.")]
+    p = pack(plan_for(["Pondicherry"]), {}, live, CFG, scope_check=real_matcher())
+    assert live_ids(p) == ["live:w"]
+    assert reasons(p) == {"live:out": "live_out_of_plan", "live:none": "live_unresolved"}

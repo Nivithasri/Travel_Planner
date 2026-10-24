@@ -117,7 +117,7 @@ def _rank(item: EvidenceItem, interests=()) -> tuple:
 
 
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
-         cfg: dict | None = None, interests=(), named_places=()) -> Packed:
+         cfg: dict | None = None, interests=(), named_places=(), scope_check=None) -> Packed:
     """At most `items_per_stop` corpus items per planned stop (warnings first) and `live_items`
     live items. Order is the plan's stop order, then live; aliases follow that order."""
     w = (cfg or load_pipeline_config())["writer"]
@@ -156,6 +156,9 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
             continue
         if item.place not in in_plan:
             out.dropped.append({"chunk_id": item.chunk_id, "reason": "live_out_of_plan"})
+            continue
+        if scope_check is not None and scope_check(item.text):  # D120
+            out.dropped.append({"chunk_id": item.chunk_id, "reason": "live_names_excluded"})
             continue
         if taken >= w["live_items"]:
             break

@@ -413,3 +413,28 @@ def test_a_place_the_request_named_keeps_its_live_item_even_when_it_is_not_a_sto
     item = live_item_at("live:cc0000000005", left[0], "https://n.test/named")
     st = run_local(make_deps(live=FakeLive([item])), TEXT, over)
     assert {p.item.chunk_id for p in st.packed_obj.items if p.item.is_live} == {item.chunk_id}
+
+
+# ---- D120: a live snippet that names an excluded place is dropped before the writer ----
+
+def test_a_live_snippet_naming_an_excluded_place_is_dropped_before_the_writer():
+    ok = live_item_at("live:ok0000000001", "Hampi", "https://n.test/ok")
+    bad = live_item_at("live:ex0000000002", "Hampi", "https://n.test/bad")
+    bad.text = "Hampi day tour: see the ruins, then drive to Munnar for tea."  # Munnar: excluded
+    client = FakeClient()
+    st = run_local(make_deps(client=client, live=FakeLive([ok, bad])), TEXT,
+                   {**OVER, "named_places": ["Hampi"]})
+    prompt = " ".join(m["content"] for msgs in client.messages for m in msgs)
+    assert "then drive to Munnar" not in prompt
+    assert {p.item.chunk_id for p in st.packed_obj.items if p.item.is_live} == {ok.chunk_id}
+    reasons = {d["chunk_id"]: d["reason"] for d in st.final["dropped"]}
+    assert reasons == {bad.chunk_id: "live_names_excluded"}
+    assert "name a place outside the project scope" in st.final["text"]
+    assert not [f for f in (st.critic.findings if st.critic else []) if "Munnar" in f.message]
+
+
+def test_a_named_excluded_place_may_appear_in_live_text():
+    item = live_item_at("live:mu0000000003", "Munnar", "https://n.test/m")
+    st = run_local(make_deps(live=FakeLive([item])), "Munnar please",
+                   {**OVER, "duration_days": 3, "named_places": ["Munnar"]})
+    assert {p.item.chunk_id for p in st.packed_obj.items if p.item.is_live} == {item.chunk_id}

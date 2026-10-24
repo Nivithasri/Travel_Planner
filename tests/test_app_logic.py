@@ -482,10 +482,12 @@ def run_live(tmp_path, *, client=None, key="k", **kw):
 def test_the_live_status_line_gives_counts_for_a_successful_search(tmp_path):
     _, h, view = run_live(tmp_path)
     line = S.live_status_line(view)
-    assert line == ("live search: ok, 2 searches, 8 results, 2 in scope, 2 in plan, 2 merged, "
+    assert line == ("live search: ok, 2 searches, 8 results, 2 in scope, 2 in plan, 0 dropped, "
+        "names an excluded place, 2 merged, "
                     "1 cited, 1 not cited")
     assert view["live_counts"] == {"searches": 2, "results": 8, "in_scope": 2, "in_plan": 2,
-                                   "merged": 2, "cited": 1, "not_cited": 1}
+                                   "dropped_excluded": 0, "merged": 2, "cited": 1,
+                                   "not_cited": 1}
     assert not any(w in line for w in ("ruins", "Hampi", "Badami", "Paris", "http"))
     sources = h.state.final["sources"]
     assert [s["live"] for s in sources].count(True) == 1  # the cited live item reaches Sources
@@ -494,7 +496,8 @@ def test_the_live_status_line_gives_counts_for_a_successful_search(tmp_path):
 def test_the_live_status_line_for_empty_error_no_key_and_not_used(tmp_path):
     _, _, empty = run_live(tmp_path, client=SearchClient(results=[]))
     assert S.live_status_line(empty) == (
-        "live search: empty, 2 searches, 0 results, 0 in scope, 0 in plan, 0 merged, 0 cited, "
+        "live search: empty, 2 searches, 0 results, 0 in scope, 0 in plan, 0 dropped, "
+        "names an excluded place, 0 merged, 0 cited, "
         "0 not cited")
     _, _, err = run_live(tmp_path, client=SearchClient(boom=True))
     line = S.live_status_line(err)
@@ -632,7 +635,120 @@ def test_the_plan_filter_and_citation_counts_come_out_exact_through_the_pipeline
     c = view["live_counts"]
     assert (c["in_scope"], c["in_plan"], c["merged"], c["cited"], c["not_cited"]) == (4, 3, 3, 1, 2)
     assert S.live_status_line(view) == (
-        "live search: ok, 1 searches, 0 results, 4 in scope, 3 in plan, 3 merged, 1 cited, "
+        "live search: ok, 1 searches, 0 results, 4 in scope, 3 in plan, 0 dropped, "
+        "names an excluded place, 3 merged, 1 cited, "
         "2 not cited")
     uncited = view["final"]["uncited_live"]
     assert len(uncited) == 2 and all(u["chunk_id"].startswith("live:aa") for u in uncited)
+
+
+def test_the_status_line_counts_the_live_items_dropped_for_naming_an_excluded_place():
+    from tests.test_graph import FakeLive, live_item_at
+
+    good = live_item_at("live:aa0000000001", "Hampi", "https://n.test/1")
+    bad = live_item_at("live:bb0000000002", "Hampi", "https://n.test/2")
+    bad.text = "Hampi tour with a drive to Munnar."
+    deps = make_deps(live=FakeLive([good, bad]))
+    h = S.start_run(deps, TEXT, {**OVER, "named_places": ["Hampi"]})
+    assert h.done.wait(30) and h.error is None
+    view = S.view_from_state(h.state, 0.0, trace=h.trace, use_live=True)
+    c = view["live_counts"]
+    assert (c["in_scope"], c["in_plan"], c["dropped_excluded"], c["merged"]) == (2, 2, 1, 1)
+    assert "2 in plan, 1 dropped, names an excluded place, 1 merged" in S.live_status_line(view)
+    assert "Munnar" not in S.live_status_line(view)  # counts only
+
+
+# ---- D121: short citation markers in the displayed itinerary -------------------------------------
+
+def src(cid, url, live=False, **kw):
+    return {"alias": "X9", "chunk_id": cid, "place": "Hampi",
+            "source_type": "live" if live else "wikivoyage", "url": url, "live": live,
+            "fetch_date": "2026-10-24" if live else None, "date": None,
+            "provenance": "live" if live else "llm", "limited": False, **kw}
+
+
+def cite_final():
+    text = ("## Day 1" + chr(10) + "- A fact. [chunk:bbb] [live:L2]" + chr(10)
+            + "- Another. [chunk:aaa]" + chr(10) + "- Again. [chunk:bbb] [live:L1]" + chr(10)
+            + "- Unknown. [chunk:zzz]" + chr(10))
+    return {"text": text, "sources": [src("aaa", "https://w.test/a"), src("bbb", "https://w.test/b"),
+                                      src("live:L1", "https://n.test/1", live=True),
+                                      src("live:L2", "https://n.test/2", live=True)],
+            "uncited_live": [src("live:L3", "https://n.test/3", live=True)]}
+
+
+def test_markers_are_numbered_by_first_appearance_with_no_gaps_and_linked():
+    final = cite_final()
+    text, aliases = S.cited_text(final)
+    # first appearance in the text: bbb, live:L2, aaa, live:L1, then the table-only live:L3
+    assert aliases == {"chunk:bbb": "S1", "live:L2": "L1", "chunk:aaa": "S2", "live:L1": "L2",
+                       "live:L3": "L3"}
+    assert "- A fact. [[S1]](https://w.test/b) [[L1]](https://n.test/2)" in text
+    assert "- Another. [[S2]](https://w.test/a)" in text
+    assert "- Again. [[S1]](https://w.test/b) [[L2]](https://n.test/1)" in text  # same alias again
+    nums = sorted(int(a[1:]) for a in aliases.values() if a.startswith("S"))
+    assert nums == list(range(1, len(nums) + 1))
+    nums = sorted(int(a[1:]) for a in aliases.values() if a.startswith("L"))
+    assert nums == list(range(1, len(nums) + 1))
+
+
+def test_an_unknown_id_stays_as_the_raw_id_and_nothing_crashes():
+    text, _ = S.cited_text(cite_final())
+    assert "- Unknown. [chunk:zzz]" in text
+    only, aliases = S.cited_text({"text": "x [chunk:q] y [live:q]", "sources": []})
+    assert only == "x [chunk:q] y [live:q]" and aliases == {}
+    assert S.cited_text({}) == ("", {})
+
+
+def test_a_text_without_citations_is_unchanged_and_the_table_still_gets_aliases():
+    final = {"text": "No citations here.", "sources": [src("aaa", "https://w.test/a"),
+                                                       src("live:L1", "https://n.test/1", True)]}
+    assert S.cited_text(final)[0] == "No citations here."
+    rows = S.source_rows(final, {}, set())
+    assert [r["Alias"] for r in rows] == ["S1", "L1"]
+
+
+def test_the_table_uses_the_same_aliases_as_the_text_and_keeps_the_chunk_id_column():
+    final = cite_final()
+    text, aliases = S.cited_text(final)
+    rows = S.source_rows(final, {}, set())
+    by_chunk = {r["Chunk id"]: r["Alias"] for r in rows}
+    assert by_chunk == aliases  # one alias per source, identical in the text and in the table
+    assert [r["Chunk id"] for r in rows] == ["chunk:aaa", "chunk:bbb", "live:L1", "live:L2",
+                                              "live:L3"]
+    flags = {r["Chunk id"]: r["Flags"] for r in rows}
+    assert flags["live:L3"] == "retrieved, not cited" and flags["live:L1"] == ""
+    for alias in aliases.values():
+        assert f"[{alias}]" in text or alias == "L3"  # every cited alias shows in the text
+
+
+def test_the_stored_answer_keeps_the_raw_ids():
+    import copy
+
+    final = cite_final()
+    before = copy.deepcopy(final)
+    text, _ = S.cited_text(final)
+    assert final == before and "[chunk:bbb]" in final["text"] and "[chunk:bbb]" not in text
+    view = {"final": final}
+    S.cited_text(view["final"])
+    assert "[live:L1]" in view["final"]["text"]
+
+
+def test_a_url_with_parentheses_or_a_non_http_scheme_cannot_break_the_markdown():
+    final = {"text": "a [chunk:p] b [chunk:j]", "sources": [
+        src("p", "https://w.test/a_(b)"), src("j", "javascript:alert(1)")]}
+    text, _ = S.cited_text(final)
+    assert "[[S1]](https://w.test/a_%28b%29)" in text
+    assert "javascript" not in text and " [S2]" in text  # no link, just the marker
+
+
+def test_a_real_pipeline_answer_has_no_raw_cited_ids_left_and_every_marker_has_a_row():
+    h = S.start_run(make_deps(), TEXT, OVER)
+    assert h.done.wait(30) and h.error is None
+    final = h.state.final
+    raw_ids = __import__("re").findall(r"\[chunk:[0-9a-zA-Z]+\]", final["text"])
+    text, aliases = S.cited_text(final)
+    assert raw_ids and "[chunk:" not in text
+    markers = set(__import__("re").findall(r"\[\[([SL][0-9]+)\]\]\(", text))
+    assert markers and markers <= {r["Alias"] for r in S.source_rows(final, {}, set())}
+    assert final["text"].count("[chunk:") >= len(raw_ids)  # the stored text is untouched

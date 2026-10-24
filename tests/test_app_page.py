@@ -360,10 +360,12 @@ def test_the_page_drains_the_streamed_pieces_of_the_real_pipeline(
 
 
 LIVE_OUTCOMES = [
-    ("ok", {}, "live search: ok, 2 searches, 8 results, 2 in scope, 2 in plan, 2 merged, "
+    ("ok", {}, "live search: ok, 2 searches, 8 results, 2 in scope, 2 in plan, 0 dropped, "
+        "names an excluded place, 2 merged, "
                "1 cited, 1 not cited"),
     ("empty", {"client": "empty"},
-     "live search: empty, 2 searches, 0 results, 0 in scope, 0 in plan, 0 merged, 0 cited, "
+     "live search: empty, 2 searches, 0 results, 0 in scope, 0 in plan, 0 dropped, "
+        "names an excluded place, 0 merged, 0 cited, "
      "0 not cited"),
     ("error", {"client": "boom"},
      "live search: error: live search failed; answers use the corpus only"),
@@ -411,3 +413,20 @@ def test_missing_cards_or_attribution_are_said_on_the_page(fake, monkeypatch):
     monkeypatch.setattr(S, "load_attribution", lambda: {})
     page = blob(submit(app()))
     assert "place cards are not available" in page and "source titles are not available" in page
+
+
+def test_the_itinerary_shows_short_linked_markers_while_the_table_keeps_the_chunk_ids(fake):
+    text = ("# South India itinerary" + chr(10) + chr(10) + "- Hampi has ruins. [chunk:abc]"
+            + chr(10) + "- Another. [chunk:blog1] [chunk:abc] [chunk:unknown1]" + chr(10))
+    fake.next = lambda use_live: make_state(text=text)
+    at = submit(app())
+    page = blob(at)
+    assert "- Hampi has ruins. [[S1]](" + WIKI + ")" in page
+    assert "[[S2]](https://inditales.test/hampi)" in page and "[chunk:unknown1]" in page
+    assert "[chunk:abc]" not in page.split("Itinerary")[1].split("Plan")[0]
+    assert S.MARKER_NOTE in page
+    sources = next(d for d in at.dataframe if "Chunk id" in d.value.columns).value
+    assert list(sources["Alias"]) == ["S1", "S2"]
+    assert list(sources["Chunk id"]) == ["chunk:abc", "chunk:blog1"]
+    stored = " ".join(p.read_text(encoding="utf-8") for p in files(fake))
+    assert "[chunk:abc]" in stored and "[[S1]]" not in stored  # the cache keeps the raw ids

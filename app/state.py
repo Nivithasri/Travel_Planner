@@ -485,9 +485,11 @@ def live_counts(state, trace: LiveTrace | None) -> dict:
     t = trace or LiveTrace()
     left_out = sum(1 for d in (state.final or {}).get("dropped", [])
                    if d.get("reason") in ("live_out_of_plan", "live_unresolved"))
+    names_excluded = sum(1 for d in (state.final or {}).get("dropped", [])
+                         if d.get("reason") == "live_names_excluded")
     return {"searches": t.searches, "results": t.results, "in_scope": t.in_scope,
-            "in_plan": max(t.in_scope - left_out, 0), "merged": merged, "cited": cited,
-            "not_cited": max(merged - cited, 0)}
+            "in_plan": max(t.in_scope - left_out, 0), "dropped_excluded": names_excluded,
+            "merged": merged, "cited": cited, "not_cited": max(merged - cited, 0)}
 
 
 def view_from_state(state, wall_s: float = 0.0, trace: LiveTrace | None = None,
@@ -510,7 +512,8 @@ def live_status_line(view: dict) -> str | None:
     if status in ("ok", "empty"):
         return (f"live search: {status}, {c.get('searches', 0)} searches, "
                 f"{c.get('results', 0)} results, {c.get('in_scope', 0)} in scope, "
-                f"{c.get('in_plan', 0)} in plan, {c.get('merged', 0)} merged, "
+                f"{c.get('in_plan', 0)} in plan, {c.get('dropped_excluded', 0)} dropped, names "
+                f"an excluded place, {c.get('merged', 0)} merged, "
                 f"{c.get('cited', 0)} cited, {c.get('not_cited', 0)} not cited")
     if status == "error":
         reason = (view.get("live_note") or "").replace(TERMS_NOTICE, "").strip(" ;")
@@ -548,6 +551,69 @@ def terms_notice_visible(view: dict) -> bool:
     return live_ran(view)
 
 
+CITATION = re.compile(r"\[((?:chunk|live):[0-9A-Za-z]+)\]")
+MARKER_NOTE = ("Markers [S#] / [L#] stand for the cited passages; the Chunk id column of the "
+               "sources table shows the exact passage")
+
+
+def source_index(final: dict) -> dict[str, dict]:
+    """Every source of an answer by the id the itinerary text prints: 'chunk:<id>' for corpus
+    pages, 'live:<hash>' for live items (cited sources first, then retrieved-not-cited ones)."""
+    idx: dict[str, dict] = {}
+    for s in [*final.get("sources", []), *final.get("uncited_live", [])]:
+        cid = str(s.get("chunk_id", ""))
+        idx.setdefault(cid if s.get("live") else f"chunk:{cid}", s)
+    return idx
+
+
+def assign_aliases(final: dict) -> dict[str, str]:
+    """Short aliases S1, S2, ... (corpus) and L1, L2, ... (live) for the sources of an answer:
+    numbered in order of first appearance in the text, no gaps; sources that the text does not
+    cite follow in listing order. The stored answer is not touched."""
+    idx = source_index(final)
+    aliases: dict[str, str] = {}
+    counts = {"S": 0, "L": 0}
+
+    def give(key: str) -> None:
+        letter = "L" if key.startswith("live:") else "S"
+        counts[letter] += 1
+        aliases[key] = f"{letter}{counts[letter]}"
+
+    for m in CITATION.finditer(str(final.get("text", ""))):
+        if m.group(1) in idx and m.group(1) not in aliases:
+            give(m.group(1))
+    for key in idx:
+        if key not in aliases:
+            give(key)
+    return aliases
+
+
+def _link(url: str) -> str | None:
+    url = str(url or "")
+    if not url.startswith(("http://", "https://")):
+        return None
+    return url.replace(" ", "%20").replace("(", "%28").replace(")", "%29")
+
+
+def cited_text(final: dict) -> tuple[str, dict[str, str]]:
+    """The itinerary as shown: each [chunk:<id>] / [live:<id>] marker becomes a short marker
+    [S1] / [L1] linked to the source page. A marker whose id is not among the sources stays as it
+    is. Returns (text, aliases); `final` is not modified."""
+    text = str(final.get("text", ""))
+    idx = source_index(final)
+    aliases = assign_aliases(final)
+
+    def replace(m: re.Match) -> str:
+        s = idx.get(m.group(1))
+        if s is None:
+            return m.group(0)
+        marker = f"[{aliases[m.group(1)]}]"
+        link = _link(s.get("url"))
+        return f"[{marker}]({link})" if link else marker
+
+    return CITATION.sub(replace, text), aliases
+
+
 SOURCE_FIELDS = ("Alias", "Chunk id", "Title", "Place", "Source", "Date", "Fetch date", "Link",
                  "Licence", "Flags")
 SOURCE_FLAGS = ("card warning", "limited evidence", "retrieved, not cited")
@@ -558,6 +624,7 @@ def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> l
     labels, links and dates. No chunk text or excerpt can reach a row, whatever the source dict
     carries."""
     rows = []
+    aliases = assign_aliases(final)
     entries = [(s, False) for s in final.get("sources", [])]
     entries += [(s, True) for s in final.get("uncited_live", [])]
     for s, uncited in entries:
@@ -586,8 +653,9 @@ def source_rows(final: dict, attribution: dict, card_warning_ids: set[str]) -> l
         if uncited:
             flags.append(SOURCE_FLAGS[2])
         cid = str(s.get("chunk_id", ""))
-        rows.append({"Alias": s.get("alias", ""),
-                     "Chunk id": cid if s.get("live") else f"chunk:{cid}",
+        key = cid if s.get("live") else f"chunk:{cid}"
+        rows.append({"Alias": aliases.get(key, s.get("alias", "")),
+                     "Chunk id": key,
                      "Title": title, "Place": s.get("place") or "",
                      "Source": source, "Date": date_label, "Fetch date": fetched,
                      "Link": s.get("url", ""), "Licence": licence, "Flags": ", ".join(flags)})
