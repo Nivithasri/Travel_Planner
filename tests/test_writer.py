@@ -354,8 +354,9 @@ def test_an_excluded_place_the_request_named_is_not_blocked_but_a_hold_out_alway
 
 def test_the_scope_check_is_word_bounded_and_only_runs_on_items_that_passed_the_plan_filter():
     live = [live_text("live:w", "Pondicherry", "Aurovillefest is a made-up word, not a place."),
+            live_text("live:left", "Pondicherry", "Preauroville is not a place name either."),
             live_text("live:out", "Badami", "Drive to Auroville."),
             live_text("live:none", "", "Auroville at dawn.")]
     p = pack(plan_for(["Pondicherry"]), {}, live, CFG, scope_check=real_matcher())
-    assert live_ids(p) == ["live:w"]
+    assert live_ids(p) == ["live:w", "live:left"] or live_ids(p) == ["live:left", "live:w"]
     assert reasons(p) == {"live:out": "live_out_of_plan", "live:none": "live_unresolved"}
