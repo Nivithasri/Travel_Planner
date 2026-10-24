@@ -74,7 +74,7 @@ stores, coverage, ensure_place, orchestrator), `src/places/places.py` (registry,
 `src/facts/facts.py` (facts layer), `src/process` (cleaning, chunking, enrichment), `src/retrieval` (indexes,
 fusion, query understanding, filters, freshness, rerank, MMR, corrective pass, `retrieve()`), `src/tools`
 (`travel_time`, `check_season`), `eval` (queries, qrels, metrics, ablation, significance); `src/agents` (planner, writer, critic, LangGraph pipeline), `src/live` (live search layer) and
-`scripts/run_pipeline.py` (CLI); `tests/` has 53 files (1,400 tests). `app` is the Phase 8 Streamlit demo ([app/README.md](app/README.md)). `data/raw` and `data/processed` are gitignored; the frozen
+`scripts/run_pipeline.py` (CLI); `tests/` has 53 files (1,415 tests). `app` is the Phase 8 Streamlit demo ([app/README.md](app/README.md)). `data/raw` and `data/processed` are gitignored; the frozen
 corpus rules are in [CLAUDE.md](CLAUDE.md). Results and the commands that reproduce them are in [LOG.md](LOG.md);
 decisions in [docs/decisions.md](docs/decisions.md); contracts in [docs/contracts.md](docs/contracts.md);
 the session handoff in [docs/HANDOFF.md](docs/HANDOFF.md).

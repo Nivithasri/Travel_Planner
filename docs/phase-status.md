@@ -89,7 +89,7 @@ Phases 1 to 7 are CLOSED. Phase 8 is BUILT and awaits the owner's hand-run and /
 
 ## Phase 8: App (BUILT 2026-10-23, D110 and D111; awaiting the owner's hand-run and /phase-review 8; NOT tagged)
 - [x] One Streamlit page (app/streamlit_app.py): form, streamed itinerary, sources panel with links (live rows "live, fetched <date>"), warnings, live-status notice, collapsible timing table, query cache (corpus-only JSON on disk, live-on in session memory only), one-run-at-a-time lock, redaction, localhost config
-- [x] Verified (commands in LOG.md): pytest 1389 passed / 11 skipped (111 new), ruff clean, mutations M146-M195 all caught (full suite 194 of 195; M32 only skips without data/raw) (full suite: 154 of 155 caught, M32 survives only because data/raw is absent here)
+- [x] Verified (commands in LOG.md): pytest 1404 passed / 11 skipped (126 new), ruff clean, mutations M146-M207 all caught (full suite 206 of 207; M32 only skips without data/raw) (full suite: 154 of 155 caught, M32 survives only because data/raw is absent here)
 - [x] Corpus path needs no internet beyond the hosted model; live search is optional, off by default, and the page works from the corpus without it (headless tests with a fake pipeline)
 - [ ] Not verified: no real browser session, no real pipeline run, LLM call or live search through the page (the owner's hand-run)
 - [ ] Hand-run findings: D113 app fixes done; D115 applied D114 items 1, 2, 4, 5 (stream decoding, state restriction, live prompts uncached, not-requested note); D117 interests rank the evidence, D116 rule 10 and uncited live rows, D119 live results kept only for the plan; whether the model now cites live items is unmeasured until the owner's hand-run
