@@ -280,17 +280,17 @@ def many(place, n=10, **kw):
 
 
 def test_the_config_holds_the_d129_numbers():
-    assert (W["items_per_night"], W["items_per_stop_max"], W["warnings_per_stop"]) == (3, 6, 1)
+    assert (W["items_per_night"], W["items_per_stop_max"], W["warnings_per_stop"]) == (3, 8, 1)
     assert "items_per_stop" not in W  # replaced, so nothing can read the old cap by mistake
 
 
-def test_evidence_per_stop_is_three_per_night_capped_at_six():
+def test_evidence_per_stop_is_three_per_night_capped_at_eight():
     spec = [("Hampi", 1), ("Badami", 2), ("Gokarna", 5)]
     ev = {p: many(p) for p, _ in spec}
     packed = pack(plan_nights(spec), ev, [], CFG)
     per_place = {p: sum(1 for x in packed.items if x.item.place == p) for p, _ in spec}
-    assert per_place == {"Hampi": 3, "Badami": 6, "Gokarna": 6}
-    assert [x.alias for x in packed.items] == [f"S{i}" for i in range(1, 16)]
+    assert per_place == {"Hampi": 3, "Badami": 6, "Gokarna": 8}
+    assert [x.alias for x in packed.items] == [f"S{i}" for i in range(1, 18)]
 
 
 def test_a_stop_with_less_evidence_than_its_limit_takes_what_exists():
@@ -482,3 +482,81 @@ def test_write_returns_normalised_text():
     c = FakeClient(["## Day 1: Hampi\n", "- No source\u2011backed details for this day."])
     out = writer.write(c, "m", [{"role": "user", "content": "u"}], CFG)
     assert out == "## Day 1: Hampi\n" + writer.NO_DETAILS
+
+
+# ---- demo-quality: evidence is dealt over the days of a stop (D131) ---------------------------
+
+def distinct(place, n, **kw):
+    return [item(f"{place}{i}", place=place, aspect="scenery", score=1 - i / 100,
+                 text=f"Fact number {i} about {place} for travellers.", **kw) for i in range(n)]
+
+
+def test_items_are_dealt_over_the_days_of_a_stop_best_first():
+    packed = pack(plan_nights([("Hampi", 3)]), {"Hampi": distinct("Hampi", 8)}, [], CFG)
+    assert packed.day_items == {1: ["S1", "S4", "S7"], 2: ["S2", "S5", "S8"], 3: ["S3", "S6"]}
+    assert packed.place_days == {"Hampi": 3}
+
+
+def test_a_stop_with_fewer_items_than_days_leaves_the_last_days_without_tags():
+    plan = plan_nights([("Hampi", 3)])
+    packed = pack(plan, {"Hampi": distinct("Hampi", 2)}, [], CFG)
+    assert packed.day_items == {1: ["S1"], 2: ["S2"]}
+    block = writer.plan_block(plan, W["plan_chars_max"], packed.day_items)
+    assert block.splitlines()[2].endswith("[no sources]")
+
+
+def test_the_plan_block_lists_each_days_tags_and_never_cuts_a_day_off():
+    spec = [("Mahabalipuram", 5), ("Pondicherry", 5)]
+    plan = plan_nights(spec)
+    plan.days[5].travel_from = "Mahabalipuram"
+    plan.days[5].note = "travel day 1 of 2"
+    packed = pack(plan, {p: distinct(p, 8) for p, _ in spec}, [], CFG)
+    block = writer.plan_block(plan, W["plan_chars_max"], packed.day_items)
+    lines = block.splitlines()
+    assert len(lines) == 10 and len(block) <= W["plan_chars_max"]
+    assert lines[0].startswith("Day 1: Mahabalipuram [use S1, S6]") and "[use S" in lines[9]
+    assert "[use" not in writer.plan_block(plan, W["plan_chars_max"])  # no day_items: as before
+
+
+def test_the_plan_block_drops_optional_parts_before_it_drops_a_day():
+    plan = plan_nights([("Hampi", 4)])
+    for d in plan.days:
+        d.travel_from, d.note = "Bengaluru", "travel day 1 of 2"
+    day_items = {i: [f"S{i}"] for i in range(1, 5)}
+    full = writer.plan_block(plan, 10000, day_items)
+    tight = writer.plan_block(plan, len(full) - 20, day_items)
+    assert len(tight.splitlines()) == 4 and "travel day" not in tight and "[use S4]" in tight
+
+
+def test_the_budget_guard_takes_from_the_place_with_most_items_per_day_not_the_last_stop():
+    spec = [("Hampi", 3), ("Badami", 1)]
+    packed = pack(plan_nights(spec), {p: distinct(p, 8) for p, _ in spec}, [], CFG)
+    counts = lambda: {p: sum(1 for x in packed.items if x.item.place == p)  # noqa: E731
+                      for p, _ in spec}
+    assert counts() == {"Hampi": 8, "Badami": 3}
+    for _ in range(5):
+        gone = writer.drop_one(packed)
+        assert all(gone.alias not in tags for tags in packed.day_items.values())
+    assert counts() == {"Hampi": 5, "Badami": 1}  # the last stop keeps its evidence
+
+
+def test_the_system_prompt_gives_each_day_its_own_tags_and_asks_for_paraphrase():
+    assert "lists its own tags" in writer.SYSTEM
+    assert "never use a tag listed for another day" in writer.SYSTEM
+    assert "in your own words" in writer.SYSTEM
+    assert "Only for a day that lists no tags" in writer.SYSTEM
+    assert len(writer.SYSTEM) <= W["system_chars_max"]
+
+
+def test_a_stop_with_travel_days_gets_evidence_for_every_plan_day():
+    plan = plan_nights([("Hampi", 1)])
+    plan.days = [PlanDay(day=i, place="Hampi") for i in (1, 2, 3)]  # nights 1, but 3 plan days
+    packed = pack(plan, {"Hampi": distinct("Hampi", 8)}, [], CFG)
+    assert len(packed.items) == 8 and sorted(packed.day_items) == [1, 2, 3]
+
+
+def test_build_messages_puts_the_day_tags_into_the_plan_block():
+    plan = plan_nights([("Hampi", 2)])
+    packed = pack(plan, {"Hampi": distinct("Hampi", 4)}, [], CFG)
+    user = writer.build_messages(ParsedRequest(text="trip"), plan, packed, CFG)[1]["content"]
+    assert "Day 1: Hampi [use S1, S3]" in user and "Day 2: Hampi [use S2, S4]" in user

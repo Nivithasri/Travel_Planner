@@ -119,7 +119,7 @@ def test_r7_status_line_is_added_by_code_when_live_is_missing():
 
 
 def test_deterministic_fix_strips_bad_bullets_and_empty_days_get_the_no_details_line():
-    ctx = ctx_for(make_plan())
+    ctx = ctx_for(make_plan(), ev={"Hampi": []})  # nothing to fill the emptied day with
     messy = ("## Day 1: Hampi\n- Uncited claim.\n- See https://evil.test [S1]\n"
              "- Tagged wrongly. [S9]\n## Backup options\n- Gokarna\n")
     text, report, actions = C.run_cycle(messy, ctx)
@@ -213,7 +213,7 @@ def test_a_cited_bullet_naming_an_excluded_place_is_removed_without_an_llm_call(
 
 
 def test_a_day_emptied_by_the_scope_strip_gets_the_no_details_line_and_a_hold_out_goes_too():
-    ctx = ctx_for(make_plan())
+    ctx = ctx_for(make_plan(), ev={"Hampi": []})  # no evidence left to fill the day with
     draft = "## Day 1: Hampi\n- Visit Thekkady lake. [S1]\n## Backup options\n- Gokarna\n"
     text, report, _ = C.run_cycle(draft, ctx)
     assert report.ok and "Thekkady" not in text and C.NO_DETAILS in text
@@ -279,3 +279,62 @@ def test_repair_output_is_normalised_before_it_is_merged():
     fixed = "## Day 1: Hampi\n- Heavy rain\u2011season access is limited. [S1]\n"
     text, report, _ = C.run_cycle(draft, ctx, lambda t, f: fixed)
     assert report.status == "repaired" and "rain-season" in text and "\u2011" not in text
+
+
+# ---- demo-quality: an empty day is filled while the place has unused sources (D131) --------------
+
+def two_day_ctx(n_items=4):
+    stops = [PlanStop(place="Hampi", state="KA", nights=2, evidence_class="full")]
+    days = [PlanDay(day=1, place="Hampi", travel_hours=2.0), PlanDay(day=2, place="Hampi")]
+    plan = Plan(feasible=True, stops=stops, days=days, limit_hours=5.0,
+                backups=[{"place": "Gokarna"}])
+    ev = {"Hampi": [item(f"h{i}", text=f"Fact number {i} about Hampi for travellers. More text.",
+                         aspect="scenery", score=1 - i / 10) for i in range(n_items)]}
+    return plan, ctx_for(plan, ev=ev)
+
+
+def test_an_empty_day_is_filled_from_its_own_unused_sources_without_an_llm():
+    plan, ctx = two_day_ctx()
+    assert ctx.packed.day_items == {1: ["S1", "S3"], 2: ["S2", "S4"]}
+    draft = ("## Day 1: Hampi\n- Fact one told differently. [S1]\n- Fact three told. [S3]\n"
+             f"## Day 2: Hampi\n{C.NO_DETAILS}\n## Backup options\n- Gokarna\n")
+    text, report, actions = C.run_cycle(draft, ctx)
+    day2 = text.split("## Day 2: Hampi")[1].split("## Backup")[0]
+    assert report.status == "passed" and C.NO_DETAILS not in text
+    assert "[S2]" in day2 and "[S4]" in day2 and "Fact number 1 about Hampi" in day2
+    assert any(a.startswith("day 2: filled") for a in actions)
+
+
+def test_an_empty_day_takes_a_bullet_from_a_day_with_three_when_no_source_is_left():
+    plan, ctx = two_day_ctx()
+    draft = ("## Day 1: Hampi\n- A. [S1]\n- B. [S2]\n- C. [S3]\n- D. [S4]\n"
+             f"## Day 2: Hampi\n{C.NO_DETAILS}\n## Backup options\n- Gokarna\n")
+    text, report, actions = C.run_cycle(draft, ctx)
+    day1, day2 = (text.split("## Day 1: Hampi")[1].split("## Day 2")[0],
+                  text.split("## Day 2: Hampi")[1].split("## Backup")[0])
+    assert "- D. [S4]" in day2 and "[S4]" not in day1 and C.NO_DETAILS not in text
+    assert any("moving a bullet from day 1" in a for a in actions)
+
+
+def test_no_details_stays_when_the_place_has_nothing_to_give():
+    plan, _ = two_day_ctx()
+    ctx = ctx_for(plan, ev={"Hampi": []})
+    draft = f"## Day 1: Hampi\n{C.NO_DETAILS}\n## Day 2: Hampi\n{C.NO_DETAILS}\n"
+    text, report, actions = C.run_cycle(draft, ctx)
+    assert report.status == "passed" and text.count(C.NO_DETAILS) == 2 and actions == []
+
+
+def test_the_repair_prompt_lists_the_tags_of_the_days_to_fix():
+    plan, ctx = two_day_ctx()
+    f = [C.CriticFinding(rule="R4", day=2, message="x")]
+    user = C.repair_messages(ctx, "## Day 2: Hampi\n- A. [S2]\n", f)[1]["content"]
+    assert "TAGS PER DAY:\nDay 2: S2, S4" in user
+
+
+def test_a_day_with_only_two_bullets_is_not_robbed_to_fill_another():
+    plan, ctx = two_day_ctx()
+    draft = ("## Day 1: Hampi\n- A. [S1]\n- B. [S2]\n"
+             f"## Day 2: Hampi\n{C.NO_DETAILS}\n## Backup options\n- Gokarna\n")
+    ctx.packed.items = [p for p in ctx.packed.items if p.alias in ("S1", "S2")]
+    text, report, actions = C.run_cycle(draft, ctx)
+    assert C.NO_DETAILS in text and "- B. [S2]" in text and actions == []

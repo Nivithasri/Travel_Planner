@@ -75,6 +75,42 @@ def clean_text(text: str, max_chars: int) -> str:
     return t[:max_chars].rsplit(" ", 1)[0].rstrip(",;:- ") + "..."
 
 
+SENTENCE_END = re.compile(r"(?<=[.!?])[\"')]?\s+(?=[\"'(]?[A-Z0-9])")
+ABBREV = re.compile(r"(?:\b(?:St|Dr|Mr|Mrs|Ms|No|Rs|approx|vs|etc|Sr|Jr|Mt|Fr)|\b[A-Z])\.$")
+
+
+def sentences(text: str) -> list[str]:
+    """Split on sentence ends, not after an abbreviation or a single capital letter."""
+    out: list[str] = []
+    start = 0
+    for m in SENTENCE_END.finditer(text):
+        piece = text[start:m.start()]
+        if ABBREV.search(piece.rstrip("\"') ")):
+            continue
+        out.append(text[start:m.end()].strip())
+        start = m.end()
+    tail = text[start:].strip()
+    if tail:
+        out.append(tail)
+    return out
+
+
+def lead(text: str, max_chars: int) -> str:
+    """The first sentence(s) of a cleaned text, up to max_chars, never cut mid-sentence unless the
+    first sentence alone is longer (then cut at a word and marked with '...')."""
+    parts = sentences(text)
+    if not parts:
+        return ""
+    out = parts[0]
+    if len(out) > max_chars:
+        return out[:max_chars].rsplit(" ", 1)[0].rstrip(",;:- ") + "..."
+    for nxt in parts[1:]:
+        if len(out) + 1 + len(nxt) > max_chars or len(out) >= max_chars * 0.6:
+            break
+        out += " " + nxt
+    return out
+
+
 @dataclass
 class PackedItem:
     alias: str
@@ -87,6 +123,9 @@ class PackedItem:
 class Packed:
     items: list[PackedItem] = field(default_factory=list)
     dropped: list[dict] = field(default_factory=list)
+    # plan day -> the S aliases that day may use (D131); place -> its number of plan days
+    day_items: dict[int, list[str]] = field(default_factory=dict)
+    place_days: dict[str, int] = field(default_factory=dict)
 
     @property
     def alias_map(self) -> dict[str, str]:
@@ -132,6 +171,25 @@ def _demoted(items: list[EvidenceItem], w: dict, interests, cap: int) -> set[str
     return {i.chunk_id for i in warns[cap:]}
 
 
+def drop_one(packed: Packed) -> PackedItem:
+    """Remove and return the corpus item that costs a day the least: the lowest-ranked item of the
+    place with the most items per day (the later place on a tie), so the last stop does not lose
+    all its evidence first. Falls back to the last item when only live items are left."""
+    s_idx = [i for i, p in enumerate(packed.items) if p.alias.startswith("S")]
+    if not s_idx:
+        return packed.items.pop()
+    by_place: dict[str, list[int]] = {}
+    for i in s_idx:
+        by_place.setdefault(packed.items[i].item.place, []).append(i)
+    place = max(by_place, key=lambda pl: (len(by_place[pl]) / packed.place_days.get(pl, 1),
+                                          max(by_place[pl])))
+    gone = packed.items.pop(max(by_place[place]))
+    for aliases in packed.day_items.values():
+        if gone.alias in aliases:
+            aliases.remove(gone.alias)
+    return gone
+
+
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
          cfg: dict | None = None, interests=(), named_places=(), scope_check=None) -> Packed:
     """Per planned stop at most `items_per_night` corpus items for each night, never more than
@@ -144,7 +202,11 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
     seen: set[str] = set()
     for stop in plan.stops:
         taken = 0
-        limit = min(w["items_per_night"] * max(stop.nights, 1), w["items_per_stop_max"])
+        days = [d.day for d in plan.days if d.place == stop.place]
+        span = max(stop.nights, len(days), 1)
+        limit = min(w["items_per_night"] * span, w["items_per_stop_max"])
+        first = len(out.items)
+        out.place_days[stop.place] = max(len(days), 1)
         items = corpus.get(stop.place, [])
         demoted = _demoted(items, w, interests, w["warnings_per_stop"])
         for item in sorted(items, key=lambda i: _rank(i, interests, demoted)):
@@ -167,6 +229,10 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
             seen.add(item.chunk_id)
             out.items.append(PackedItem(f"S{n_s}", item, text, stop.evidence_class == "limited"))
             taken += 1
+        # the stop's items, best first, are dealt over its days: every day gets its own share
+        for i, packed_item in enumerate(out.items[first:]):
+            if days:
+                out.day_items.setdefault(days[i % len(days)], []).append(packed_item.alias)
     taken = 0
     # D119: a live item reaches the writer only if its resolved place is a stop of the plan or a
     # place the request named; items about other places, or about no resolved place, are dropped.

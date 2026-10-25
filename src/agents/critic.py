@@ -13,7 +13,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from src.agents.evidence import INJECTION, Packed
+from src.agents.evidence import INJECTION, Packed, lead
 from src.agents.state import CriticFinding, CriticReport, ParsedRequest, Plan
 from src.agents.writer import ALIAS, NO_DETAILS, normalize_output
 
@@ -276,6 +276,51 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
     return render(d), actions
 
 
+def _real(day: DaySection) -> list[str]:
+    return [b for b in day.bullets if not _is_exempt(b)]
+
+
+def fill_empty_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]]:
+    """No LLM: a day with no real bullet (nothing, or only the no-details line) is filled while its
+    place still has packed sources the draft did not use. Order: the sources assigned to that day,
+    then any unused source of the place (the opening sentences of the source, with its tag); if the
+    place has none left, the last bullet of a day of the same place that has three or more moves
+    here. The no-details line stays only when nothing at all can be given to the day."""
+    d = parse_draft(draft_text)
+    by_alias = {p.alias: p for p in ctx.packed.items if p.alias.startswith("S")}
+    place_of = {row.day: row.place for row in ctx.plan.days}
+    used = {t for x in d.days for b in x.bullets for t in ALIAS.findall(b)}
+    actions: list[str] = []
+    for x in d.days:
+        if _real(x):
+            continue
+        place = place_of.get(x.number)
+        cand = [a for a in ctx.packed.day_items.get(x.number, [])
+                if a in by_alias and a not in used]
+        cand += [a for a, p in by_alias.items() if place and p.item.place == place
+                 and a not in used and a not in cand]
+        new = [f"- {lead(by_alias[a].text, 220)} [{a}]" for a in cand[:2]]
+        how = "from unused sources of the place"
+        if not new and place:
+            donors = sorted((y for y in d.days if y is not x and place_of.get(y.number) == place
+                             and len(_real(y)) >= 3), key=lambda y: -len(_real(y)))
+            if donors:
+                moved = _real(donors[0])[-1]
+                donors[0].bullets.remove(moved)
+                idx = max(i for i, ln in enumerate(donors[0].lines)
+                          if (m := BULLET.match(ln)) and m.group(1).strip() == moved)
+                del donors[0].lines[idx]
+                new, how = [f"- {moved}"], f"by moving a bullet from day {donors[0].number}"
+        if not new:
+            continue
+        used.update(t for line in new for t in ALIAS.findall(line))
+        keep = [ln for ln in x.lines[1:] if ln.strip() != NO_DETAILS]
+        x.lines = [x.lines[0], *new, *keep]
+        x.bullets = [n[2:] for n in new] + [b for b in x.bullets if f"- {b}" != NO_DETAILS]
+        actions.append(f"day {x.number}: filled {how}")
+    return render(d), actions
+
+
 def repair_days(findings: list[CriticFinding]) -> list[int]:
     return sorted({f.day for f in findings if f.fixable and f.day is not None})
 
@@ -295,10 +340,13 @@ def run_cycle(draft_text: str, ctx: CriticContext,
     Returns (final draft, report, actions). `repair(draft, findings)` returns replacement day
     sections (or '' to give up); it is called at most once."""
     text = ensure_status_line(normalize_output(draft_text), ctx.request, ctx.live_status)
+    text, filled = fill_empty_days(text, ctx)
     first = check(text, ctx)
     if not first:
-        return text, CriticReport(ok=True, status="passed"), []
+        return text, CriticReport(ok=True, status="passed"), filled
     text, actions = deterministic_fix(text, first, ctx.packed, tuple(blocked_names(ctx)))
+    text, filled_again = fill_empty_days(text, ctx)
+    actions = [*filled, *actions, *filled_again]
     findings = check(text, ctx)
     days = repair_days(findings)
     if findings and days and repair is not None:
@@ -325,10 +373,12 @@ def repair_messages(ctx: CriticContext, draft_text: str, findings: list[CriticFi
     body = "\n".join("\n".join(x.lines) for x in sections)
     issues = "\n".join(f"- {f.rule}: {f.message}" for f in findings)
     packed = Packed(list(ctx.packed.items), list(ctx.packed.dropped))
+    tags = "\n".join(f"Day {n}: " + (", ".join(ctx.packed.day_items.get(n, [])) or "no sources")
+                     for n in sorted(days))
     while True:
         user = (f"FIX ONLY these day sections and return them in the same format "
                 f"('## Day N: Place' then bullets). Findings:\n{issues}\n\nDAYS TO FIX:\n{body}\n"
-                f"\nSOURCES:\n{evidence_block(packed)}")
+                f"\nTAGS PER DAY:\n{tags}\n\nSOURCES:\n{evidence_block(packed)}")
         if len(SYSTEM) + len(user) <= limit or not packed.items:
             break
         packed.items.pop()
