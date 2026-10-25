@@ -863,6 +863,14 @@ DEMO_MUTATIONS = [
      "elsewhere=foreign_place_matcher(deps.registry_entries))", "elsewhere=None)"),
     ("M277 the write node does not pass the constraints", "src/agents/nodes.py",
      "                    constraints=req.constraints,\n", "                    constraints=(),\n"),
+    ("M278 mismatched interests do not fall back to the sights", EV,
+     "            eff = SIGHT_INTERESTS\n", "            eff = interests\n"),
+    ("M279 the retrieve node does not ask for the main sights", "src/agents/nodes.py",
+     "        if req.interests and not any(E.interest_match(i, req.interests) for i in seen.values()):\n",
+     "        if False:\n"),
+    ("M280 the sights query is asked even when the interests match", "src/agents/nodes.py",
+     "        if req.interests and not any(E.interest_match(i, req.interests) for i in seen.values()):\n",
+     "        if req.interests:\n"),
 ]
 
 

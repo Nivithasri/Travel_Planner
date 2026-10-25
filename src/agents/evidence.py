@@ -52,6 +52,9 @@ INTEREST_MAP = {
                "aspects": ("scenery",)},
     "food": {"place_types": (), "aspects": ("food",)},
 }
+# What a stop falls back to when the chosen interests match none of its sources: every sight
+# category of the list above (food is a meal, not a sight, and keeps its own aspect priority).
+SIGHT_INTERESTS = tuple(k for k in INTEREST_MAP if k != "food")
 PRIORITY = {"warning": 0, "timing": 1, "closure": 1, "price": 2, "safety": 2, "food": 3,
             "scenery": 4, "history": 4, "other": 5}
 
@@ -302,8 +305,12 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
         out.place_days[stop.place] = max(len(days), 1)
         items = corpus.get(stop.place, [])
         low = low_value_ids(items, constraints, elsewhere)
-        demoted = _demoted(items, w, interests, w["warnings_per_stop"], low)
-        for item in sorted(items, key=lambda i: _rank(i, interests, demoted, low)):
+        # interests that match nothing at this stop: rank its best sights instead (no message)
+        eff = interests
+        if interests and not any(interest_match(i, interests) for i in items):
+            eff = SIGHT_INTERESTS
+        demoted = _demoted(items, w, eff, w["warnings_per_stop"], low)
+        for item in sorted(items, key=lambda i: _rank(i, eff, demoted, low)):
             if taken >= limit:
                 break
             if item.chunk_id in seen or item.is_live:

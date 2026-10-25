@@ -484,3 +484,30 @@ def test_a_bus_listing_is_kept_back_unless_a_constraint_is_about_roads(monkeypat
     plain = run_local(make_deps(rows=rows), TEXT, NEUTRAL)
     roads = run_local(make_deps(rows=rows), TEXT, {**NEUTRAL, "constraints": ["avoid hill roads"]})
     assert "bus1" not in _packed_ids(plain) and "bus1" in _packed_ids(roads)
+
+
+# ---- demo-quality: interests that match nothing retrieved add the place's main sights ----------
+
+def _spy_deps(rows):
+    queries = []
+    base = fake_retrieve(rows)
+
+    def retrieve(query, filters=None, k=10):
+        queries.append(query)
+        return base(query, filters, k)
+
+    deps = make_deps(rows=rows)
+    deps.retrieve = retrieve
+    return deps, queries
+
+
+def test_a_mismatched_interest_asks_once_more_for_each_places_main_sights():
+    deps, queries = _spy_deps(corpus())
+    run_local(deps, TEXT, {**OVER, "interests": ["hill stations"]})
+    assert any(q.endswith("main sights and attractions") for q in queries)
+
+
+def test_a_matching_interest_makes_no_extra_sights_query():
+    deps, queries = _spy_deps(corpus())
+    run_local(deps, TEXT, {**OVER, "interests": ["heritage"]})  # the fake rows are heritage
+    assert not any("main sights" in q for q in queries)

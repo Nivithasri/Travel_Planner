@@ -687,3 +687,30 @@ def test_a_day_trip_list_filed_under_a_city_ranks_below_that_citys_own_sights():
     smart = [x.item.chunk_id for x in pack(plan, ev, [], CFG,
                                            elsewhere=foreign_place_matcher(reg_entries())).items]
     assert plain[0] == "t1" and smart == ["s1", "t1"]
+
+
+# ---- demo-quality: interests that match nothing fall back to the stop's sights (D131) ----------
+
+def sights_ev():
+    return {"Hampi": [
+        item("t1", text="Entry is free before nine.", aspect="timing", score=0.9,
+             place_type="other"),
+        item("h1", text="The Vijayanagara ruins cover many square kilometres.", aspect="history",
+             score=0.1, place_type="heritage"),
+        item("b1", text="A quiet beach lies beyond the river bend.", aspect="other", score=0.05,
+             place_type="beach")]}
+
+
+def packed_order(interests):
+    return [x.item.chunk_id for x in pack(plan_for(["Hampi"]), sights_ev(), [], CFG,
+                                          interests=interests).items]
+
+
+def test_interests_that_match_nothing_fall_back_to_the_stops_sights():
+    assert packed_order([]) == ["t1", "h1", "b1"]            # no interest: the old aspect order
+    assert packed_order(["hill stations"]) == ["h1", "b1", "t1"]   # sights first, then the rest
+    assert packed_order(["jazz"]) == ["h1", "b1", "t1"]      # an interest outside the list too
+
+
+def test_interests_that_match_something_keep_the_normal_order():
+    assert packed_order(["beaches"]) == ["b1", "t1", "h1"]

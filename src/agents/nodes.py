@@ -184,6 +184,11 @@ def retrieve_node(state: RunState, deps: Deps) -> dict:
         for t in card.get("tips", []):
             seen.setdefault(t["chunk_id"], item_from_row({**t, "place": p, "score": 0.3},
                                                          deps.provenance))
+        if req.interests and not any(E.interest_match(i, req.interests) for i in seen.values()):
+            # the interests match nothing retrieved for this place: add its main sights (D131)
+            for r in deps.retrieve(f"{p} main sights and attractions", None, rcfg["k_place"]):
+                if r["place"] == p:
+                    seen.setdefault(r["chunk_id"], item_from_row(r, deps.provenance))
         evidence[p] = list(seen.values())
     return {"candidates": cands, "corpus_evidence": evidence}
 
