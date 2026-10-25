@@ -577,8 +577,8 @@ PHASE8B_MUTATIONS = [
      "    if item.provenance != \"llm\":\n        return False\n",
      "    if False:\n        return False\n"),
     ("M179 the interest match ranks below the aspect priority", "src/agents/evidence.py",
-     "(0 if is_warn else 1, matched, PRIORITY.get(key, 5), -item.score, item.chunk_id)",
-     "(0 if is_warn else 1, PRIORITY.get(key, 5), matched, -item.score, item.chunk_id)"),
+     "(0 if is_warn else 1, 1 if is_low else 0, matched, PRIORITY.get(key, 5), -item.score,",
+     "(0 if is_warn else 1, 1 if is_low else 0, PRIORITY.get(key, 5), matched, -item.score,"),
     ("M180 the temples interest maps to the wrong place type", "src/agents/evidence.py",
      "\"temples\": {\"place_types\": (\"temple\",)",
      "\"temples\": {\"place_types\": (\"beach\",)"),
@@ -661,8 +661,8 @@ PHASE8B_MUTATIONS = [
      "        elif e.name in excluded and e.name not in allowed:\n",
      "        elif e.name in excluded:\n"),
     ("M207 the write node does not pass the out-of-scope check to the packer", "src/agents/nodes.py",
-     "scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed))",
-     "scope_check=None)"),
+     "scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed),",
+     "scope_check=None,"),
 ]
 # D122: the critic strips bullets that name a place outside the plan and R5 carries the day.
 PHASE8_TESTS_CRITIC = ["tests/test_critic.py"]
@@ -683,7 +683,7 @@ CRITIC_MUTATIONS = [
      "]\n"),
     ("M212 the cycle does not pass the blocked names to the deterministic fix",
      "src/agents/critic.py",
-     "ctx.packed, tuple(blocked_names(ctx)))", "ctx.packed)"),
+     "ctx.packed, tuple(blocked_names(ctx)), extra)", "ctx.packed, (), extra)"),
 ]
 
 
@@ -775,19 +775,19 @@ EVIDENCE_TESTS = ["tests/test_writer.py", "tests/test_graph.py", "tests/test_cri
 EV = "src/agents/evidence.py"
 EVIDENCE_MUTATIONS = [
     ("M241 evidence per stop ignores the nights", EV,
-     "        limit = min(w[\"items_per_night\"] * max(stop.nights, 1), w[\"items_per_stop_max\"])\n",
-     "        limit = w[\"items_per_night\"]\n"),
+     "        limit = cap or min(w[\"items_per_night\"] * span, w[\"items_per_stop_max\"])\n",
+     "        limit = cap or w[\"items_per_night\"]\n"),
     ("M242 evidence per stop has no maximum", EV,
-     "        limit = min(w[\"items_per_night\"] * max(stop.nights, 1), w[\"items_per_stop_max\"])\n",
-     "        limit = w[\"items_per_night\"] * max(stop.nights, 1)\n"),
+     "        limit = cap or min(w[\"items_per_night\"] * span, w[\"items_per_stop_max\"])\n",
+     "        limit = cap or w[\"items_per_night\"] * span\n"),
     ("M243 every model-written warning still ranks first", EV,
      "    return {i.chunk_id for i in warns[cap:]}\n", "    return set()\n"),
     ("M244 the warning cap keeps the worst warning", EV,
-     "    warns = sorted(usable, key=lambda i: _rank(i, interests))\n",
-     "    warns = sorted(usable, key=lambda i: _rank(i, interests), reverse=True)\n"),
+     "    warns = sorted(usable, key=lambda i: _rank(i, interests, low=low))\n",
+     "    warns = sorted(usable, key=lambda i: _rank(i, interests, low=low), reverse=True)\n"),
     ("M245 the warning cap is not read from the config", EV,
-     "demoted = _demoted(items, w, interests, w[\"warnings_per_stop\"])",
-     "demoted = _demoted(items, w, interests, 99)"),
+     "demoted = _demoted(items, w, eff, w[\"warnings_per_stop\"], low)",
+     "demoted = _demoted(items, w, eff, 99, low)"),
     ("M246 an instruction-like warning uses up the cap", EV,
      "              and not injection_flags(i.text)]\n", "              ]\n"),
     ("M247 a blog warning uses up the cap", EV,
