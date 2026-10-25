@@ -831,6 +831,13 @@ DEMO_MUTATIONS = [
      "                 and a not in used and a not in cand]\n", "                 and a not in cand]\n"),
     ("M262 the repair prompt leaves out the day tags", CR,
      "f\"\\nTAGS PER DAY:\\n{tags}\\n\\nSOURCES:", "f\"\\nSOURCES:"),
+    ("M263 a bracketed no-details line is an uncited bullet again", CR,
+     "            or is_no_details(bullet))", "            )"),
+    ("M264 other days' tags are not returned to their day", CR,
+     "    text, moved = rebalance_days(text, ctx)\n", "    moved: list[str] = []\n"),
+    ("M265 a bullet may move to a day of another place", CR,
+     "            if home is not None and place_of.get(home.number) == place_of.get(x.number):",
+     "            if home is not None:"),
 ]
 
 

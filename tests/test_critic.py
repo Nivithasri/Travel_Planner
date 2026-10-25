@@ -307,12 +307,13 @@ def test_an_empty_day_is_filled_from_its_own_unused_sources_without_an_llm():
 
 def test_an_empty_day_takes_a_bullet_from_a_day_with_three_when_no_source_is_left():
     plan, ctx = two_day_ctx()
-    draft = ("## Day 1: Hampi\n- A. [S1]\n- B. [S2]\n- C. [S3]\n- D. [S4]\n"
+    ctx.packed.items = [p for p in ctx.packed.items if p.alias in ("S1", "S3")]  # nothing unused
+    draft = ("## Day 1: Hampi\n- A. [S1]\n- B. [S3]\n- C. [S1]\n- D. [S3]\n"
              f"## Day 2: Hampi\n{C.NO_DETAILS}\n## Backup options\n- Gokarna\n")
     text, report, actions = C.run_cycle(draft, ctx)
     day1, day2 = (text.split("## Day 1: Hampi")[1].split("## Day 2")[0],
                   text.split("## Day 2: Hampi")[1].split("## Backup")[0])
-    assert "- D. [S4]" in day2 and "[S4]" not in day1 and C.NO_DETAILS not in text
+    assert "- D. [S3]" in day2 and "D. [S3]" not in day1 and C.NO_DETAILS not in text
     assert any("moving a bullet from day 1" in a for a in actions)
 
 
@@ -333,8 +334,56 @@ def test_the_repair_prompt_lists_the_tags_of_the_days_to_fix():
 
 def test_a_day_with_only_two_bullets_is_not_robbed_to_fill_another():
     plan, ctx = two_day_ctx()
-    draft = ("## Day 1: Hampi\n- A. [S1]\n- B. [S2]\n"
+    draft = ("## Day 1: Hampi\n- A. [S1]\n- B. [S3]\n"
              f"## Day 2: Hampi\n{C.NO_DETAILS}\n## Backup options\n- Gokarna\n")
-    ctx.packed.items = [p for p in ctx.packed.items if p.alias in ("S1", "S2")]
+    ctx.packed.items = [p for p in ctx.packed.items if p.alias in ("S1", "S3")]
     text, report, actions = C.run_cycle(draft, ctx)
-    assert C.NO_DETAILS in text and "- B. [S2]" in text and actions == []
+    assert C.NO_DETAILS in text and "- B. [S3]" in text and actions == []
+
+
+def test_a_bracketed_no_details_line_is_the_no_details_line_and_does_not_count_as_repair():
+    plan, _ = two_day_ctx()
+    ctx = ctx_for(plan, ev={"Hampi": []})
+    draft = ("## Day 1: Hampi\n- (No source-backed details for this day.)\n"
+             "## Day 2: Hampi\n- No source-backed details for this day\n")
+    assert C.check(draft, ctx) == []
+    text, report, actions = C.run_cycle(draft, ctx)
+    assert report.status == "passed" and actions == []
+    assert not C.is_no_details("A cited sentence about the source-backed details. [S1]")
+    assert not C.is_no_details("x" * 90 + " no source-backed details")
+
+
+def test_a_bracketed_no_details_line_is_replaced_when_the_day_has_sources_to_give():
+    plan, ctx = two_day_ctx()
+    draft = ("## Day 1: Hampi\n- A. [S1]\n- B. [S3]\n"
+             "## Day 2: Hampi\n- (No source-backed details for this day.)\n")
+    text, report, actions = C.run_cycle(draft, ctx)
+    day2 = text.split("## Day 2: Hampi")[1]
+    assert report.status == "passed" and "source-backed" not in day2 and "[S2]" in day2
+
+
+def test_a_bullet_that_cites_only_another_days_tags_goes_back_to_that_day():
+    plan, ctx = two_day_ctx()
+    assert ctx.packed.day_items == {1: ["S1", "S3"], 2: ["S2", "S4"]}
+    draft = ("## Day 1: Hampi\n- Own one. [S1]\n- Belongs to day two. [S2]\n"
+             "- Also day two. [S4]\n- Own three. [S3]\n"
+             "## Day 2: Hampi\n- Alone here. [S2][S3]\n## Backup options\n- Gokarna\n")
+    text, report, actions = C.run_cycle(draft, ctx)
+    day1 = text.split("## Day 1: Hampi")[1].split("## Day 2")[0]
+    day2 = text.split("## Day 2: Hampi")[1].split("## Backup")[0]
+    assert "Belongs to day two. [S2]" in day2 and "Also day two. [S4]" in day2
+    assert "Alone here" in day2 and "[S2]" not in day1 and "[S4]" not in day1
+    assert sum("moved a bullet to day 2" in a for a in actions) == 2 and report.status == "passed"
+
+
+def test_rebalancing_never_moves_a_bullet_to_a_day_of_another_place():
+    stops = [PlanStop(place="Hampi", state="KA", nights=1, evidence_class="full"),
+             PlanStop(place="Badami", state="KA", nights=1, evidence_class="full")]
+    plan = Plan(feasible=True, stops=stops, limit_hours=5.0, backups=[{"place": "Gokarna"}],
+                days=[PlanDay(day=1, place="Hampi"), PlanDay(day=2, place="Badami")])
+    ctx = ctx_for(plan, ev={"Hampi": [item("h1", text="Hampi fact one is here.")],
+                            "Badami": [item("b1", place="Badami", text="Badami fact is here.")]})
+    draft = ("## Day 1: Hampi\n- Hampi fact one. [S1]\n- Wrong tag. [S2]\n"
+             "## Day 2: Badami\n- Badami fact. [S2]\n## Backup options\n- Gokarna\n")
+    text, report, actions = C.run_cycle(draft, ctx)
+    assert not any("moved a bullet" in a for a in actions)

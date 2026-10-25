@@ -98,8 +98,17 @@ def _mentions(text: str, name: str) -> bool:
     return re.search(rf"\b{re.escape(name)}\b", text, re.I) is not None
 
 
+NO_DETAILS_WORDS = re.compile(r"no source[- ]backed details", re.I)
+
+
+def is_no_details(bullet: str) -> bool:
+    """The no-details line, also when the model wraps it in brackets or changes the full stop."""
+    return bool(NO_DETAILS_WORDS.search(bullet)) and len(bullet) <= 70 and not ALIAS.search(bullet)
+
+
 def _is_exempt(bullet: str) -> bool:
-    return f"- {bullet}".strip() == NO_DETAILS or bullet.startswith("Current status")
+    return (f"- {bullet}".strip() == NO_DETAILS or bullet.startswith("Current status")
+            or is_no_details(bullet))
 
 
 def blocked_names(ctx: CriticContext) -> list[str]:
@@ -314,10 +323,49 @@ def fill_empty_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]
         if not new:
             continue
         used.update(t for line in new for t in ALIAS.findall(line))
-        keep = [ln for ln in x.lines[1:] if ln.strip() != NO_DETAILS]
+        keep = [ln for ln in x.lines[1:]
+                if not ((m := BULLET.match(ln)) and is_no_details(m.group(1)))]
         x.lines = [x.lines[0], *new, *keep]
-        x.bullets = [n[2:] for n in new] + [b for b in x.bullets if f"- {b}" != NO_DETAILS]
+        x.bullets = [n[2:] for n in new] + [b for b in x.bullets if not is_no_details(b)]
         actions.append(f"day {x.number}: filled {how}")
+    return render(d), actions
+
+
+def rebalance_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]]:
+    """No LLM: a bullet whose tags are all listed for ANOTHER day of the same place goes back to
+    that day (the writer was told to use only a day's own tags). Text is moved, never changed."""
+    d = parse_draft(draft_text)
+    owner: dict[str, int] = {}
+    for day in sorted(ctx.packed.day_items):
+        for a in ctx.packed.day_items[day]:
+            owner.setdefault(a, day)
+    place_of = {row.day: row.place for row in ctx.plan.days}
+    by_num = {x.number: x for x in d.days}
+    actions: list[str] = []
+    moves = []
+    for x in d.days:
+        for b in _real(x):
+            tags = [t for t in ALIAS.findall(b) if t.startswith("S")]
+            homes = {owner.get(t) for t in tags}
+            if not tags or x.number in homes or None in homes or len(homes) != 1:
+                continue
+            home = by_num.get(homes.pop())
+            if home is not None and place_of.get(home.number) == place_of.get(x.number):
+                moves.append((x, home, b))
+    for x, home, b in moves:
+        idx = next(i for i, ln in enumerate(x.lines)
+                   if (m := BULLET.match(ln)) and m.group(1).strip() == b)
+        line = x.lines.pop(idx)
+        x.bullets.remove(b)
+        home.lines = [ln for ln in home.lines
+                      if not ((m := BULLET.match(ln)) and is_no_details(m.group(1)))]
+        home.bullets = [t for t in home.bullets if not is_no_details(t)]
+        last = max((i for i, ln in enumerate(home.lines)
+                    if (m := BULLET.match(ln)) and not _is_exempt(m.group(1).strip())),
+                   default=0)
+        home.lines.insert(last + 1, line)
+        home.bullets.append(b)
+        actions.append(f"day {x.number}: moved a bullet to day {home.number}, which lists its tag")
     return render(d), actions
 
 
@@ -340,7 +388,9 @@ def run_cycle(draft_text: str, ctx: CriticContext,
     Returns (final draft, report, actions). `repair(draft, findings)` returns replacement day
     sections (or '' to give up); it is called at most once."""
     text = ensure_status_line(normalize_output(draft_text), ctx.request, ctx.live_status)
+    text, moved = rebalance_days(text, ctx)
     text, filled = fill_empty_days(text, ctx)
+    filled = [*moved, *filled]
     first = check(text, ctx)
     if not first:
         return text, CriticReport(ok=True, status="passed"), filled
