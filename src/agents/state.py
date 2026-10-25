@@ -186,6 +186,10 @@ class PlanDay(BaseModel):
     travel_from: str | None = None
     travel_hours: float = 0.0
     note: str | None = None
+    # named places that did not get a stop of their own but fit into this day as a day trip (D131)
+    also_visit: list[str] = Field(default_factory=list)
+    also_limited: list[str] = Field(default_factory=list)  # the ones with limited evidence
+    trip_hours: float = 0.0  # round trip to the also_visit place(s), on top of travel_hours
 
 
 class Plan(BaseModel):

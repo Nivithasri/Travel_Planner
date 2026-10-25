@@ -511,3 +511,56 @@ def test_a_matching_interest_makes_no_extra_sights_query():
     deps, queries = _spy_deps(corpus())
     run_local(deps, TEXT, {**OVER, "interests": ["heritage"]})  # the fake rows are heritage
     assert not any("main sights" in q for q in queries)
+
+
+# ---- demo-quality: named places that do not get a stop are kept (D131) -------------------------
+
+def _near_hampi_badami(deps):
+    real = deps.hours
+
+    def hours(a, b):
+        return 1.0 if {a, b} == {"Hampi", "Badami"} else real(a, b)
+
+    deps.hours = hours
+    return deps
+
+
+NAMED3 = {**OVER, "duration_days": 2, "named_places": ["Hampi", "Badami", "Gokarna"]}
+
+
+def test_a_named_place_with_no_stop_is_listed_first_under_backup_options():
+    st = run_local(make_deps(), TEXT, NAMED3)  # real hours: Hampi is 2.7 h from Badami
+    assert [s.place for s in st.plan.stops] == ["Badami", "Gokarna"]
+    assert st.plan.backups[0]["place"] == "Hampi"
+    assert any("Hampi (named) could not be fitted" in n for n in st.final["text"].splitlines())
+    assert st.final["text"].count("## Backup options") == 1
+    assert "- Hampi" in st.final["text"].split("## Backup options")[1]
+
+
+def test_a_day_trip_place_gets_its_own_sources_on_that_day_and_the_plan_line_says_so():
+    deps = _near_hampi_badami(make_deps())
+    st = run_local(deps, TEXT, NAMED3)
+    day1 = st.plan.days[0]
+    assert day1.place == "Badami" and day1.also_visit == ["Hampi"] and day1.trip_hours == 2.0
+    assert all(b["place"] != "Hampi" for b in st.plan.backups)
+    hampi = [p.alias for p in st.packed_obj.items if p.item.place == "Hampi"]
+    assert hampi and set(hampi) <= set(st.packed_obj.day_items[1])
+    user = deps.client.messages[0][1]["content"]
+    assert "Day 1: Badami (+ also visit Hampi)" in user
+    assert any(line.startswith("Day trip on day 1: Badami to Hampi") for line in
+               st.plan.computed_lines)
+    assert st.critic.status == "passed"
+
+
+def test_the_critic_accepts_the_day_trip_places_sources_on_the_host_day():
+    deps = _near_hampi_badami(make_deps())
+    st = run_local(deps, TEXT, NAMED3)
+    tag = next(p.alias for p in st.packed_obj.items if p.item.place == "Hampi")
+    draft = (f"## Day 1: Badami\n- Visitors enjoy the old Hampi ruins. [{tag}]\n"
+             "## Day 2: Gokarna\n- No source-backed details for this day.\n"
+             "## Backup options\n- Mysuru\n")
+    from src.agents import critic as C
+
+    ctx = C.CriticContext(st.request, st.plan, st.packed_obj, st.live_status,
+                          deps.excluded_labels, deps.holdout_names)
+    assert not any("another place" in f.message for f in C.check(draft, ctx))

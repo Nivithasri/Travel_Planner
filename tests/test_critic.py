@@ -410,3 +410,14 @@ def test_a_bullet_citing_a_source_about_another_place_with_no_day_is_removed():
     text, report, actions = C.run_cycle(draft, ctx)
     assert "Off-plan" not in text and any("another place" in a for a in actions)
     assert report.status == "repaired"
+
+
+def test_r1_counts_the_day_trip_hours_with_the_days_own_travel():
+    plan, ctx = two_place_ctx()
+    plan.days[1].travel_hours, plan.days[1].trip_hours = 3.0, 3.0  # 6 h against a 5 h limit
+    draft = ("## Day 1: Hampi\n- Hampi fact one. [S1]\n"
+             "## Day 2: Badami\n- Badami museum. [S2]\n## Backup options\n- Gokarna\n")
+    found = [f for f in C.check(draft, ctx) if f.rule == "R1"]
+    assert found and "day 2 travel 6 h exceeds" in found[0].message
+    plan.days[1].trip_hours = 2.0
+    assert not [f for f in C.check(draft, ctx) if f.rule == "R1"]

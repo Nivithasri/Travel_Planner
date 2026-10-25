@@ -266,7 +266,9 @@ def write_node(state: RunState, deps: Deps) -> dict:
     plan, req = state.plan, state.request
     if not plan.feasible:
         return {"draft": "", "packed": {}, "packed_obj": E.Packed()}
-    stop_ev = {s.place: state.corpus_evidence.get(s.place, []) for s in plan.stops}
+    extra = {x for d in plan.days for x in d.also_visit}  # named places visited as day trips
+    places = [*(s.place for s in plan.stops), *sorted(extra)]
+    stop_ev = {p: state.corpus_evidence.get(p, []) for p in places}
     allowed = {s.place for s in plan.stops} | set(req.named_places)
     packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg,
                     interests=req.interests, named_places=req.named_places,

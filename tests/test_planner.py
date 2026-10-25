@@ -287,3 +287,94 @@ def test_without_a_state_restriction_other_states_supply_the_backups():
     assert {b["place"] for b in free.backups} <= {"C", "D"} and free.backups
     stuck = plan_trip(req(duration_days=4, states=["PY"]), [*named, *rest], hours=fake_hours)
     assert stuck.backups == []  # the old behaviour of an inferred restriction: nothing left
+
+
+# ---- demo-quality: a named place is never dropped silently (D131) --------------------------------
+
+POS2 = {"A": 0.0, "B": 2.0, "C": 3.0, "G": 3.0, "F": 9.0}
+
+
+def hours2(a, b):
+    return abs(POS2[a] - POS2[b])
+
+
+def named3(**kw):
+    return [cand("A", 0.9, named=True), cand("B", 0.8, named=True),
+            cand("C", 0.7, named=True, **kw)]
+
+
+def test_a_named_place_without_a_stop_becomes_a_day_trip_when_the_round_trip_fits():
+    p = plan_trip(req(duration_days=2), named3(), hours=hours2)
+    assert [s.place for s in p.stops] == ["A", "B"]
+    day2 = p.days[1]
+    assert day2.also_visit == ["C"] and day2.trip_hours == pytest.approx(2.0)
+    assert day2.travel_hours + day2.trip_hours <= p.limit_hours + 1e-9
+    assert all(b["place"] != "C" for b in p.backups)
+    assert any("C (named) is a day trip from B on day 2" in n for n in p.notes)
+    assert any(line.startswith("Day trip on day 2: B to C and back") for line in p.computed_lines)
+
+
+def test_a_named_place_that_is_too_far_is_listed_first_under_backups_with_the_reason():
+    named = [cand("A", 0.9, named=True), cand("B", 0.8, named=True),
+             cand("F", 0.1, named=True, limited=True)]
+    p = plan_trip(req(duration_days=2), named, hours=hours2)
+    assert [s.place for s in p.stops] == ["A", "B"] and not any(d.also_visit for d in p.days)
+    assert p.backups[0]["place"] == "F"  # even with limited evidence
+    note = next(n for n in p.notes if n.startswith("F (named) could not be fitted"))
+    assert "too far for a day trip" in note and "listed under Backup options" in note
+
+
+def test_only_one_extra_place_fits_a_day_and_the_other_goes_to_the_backups():
+    named = [*named3(), cand("G", 0.6, named=True)]
+    p = plan_trip(req(duration_days=2), named, hours=hours2)
+    assert [d.also_visit for d in p.days] == [[], ["C"]]
+    assert p.backups[0]["place"] == "G"
+    assert any("G (named) could not be fitted into 2 days" in n for n in p.notes)
+
+
+def test_with_no_missing_named_place_nothing_changes():
+    p = plan_trip(req(duration_days=4), [cand("A", 0.9, named=True), cand("B", 0.8)],
+                  hours=hours2)
+    assert not any(d.also_visit for d in p.days)
+    assert not any("(named)" in n for n in p.notes)
+
+
+REAL_CARD = {"evidence_class": "full", "hill": False, "visibility_tercile": 1}
+REAL_NAMES = ["Bengaluru", "Hampi", "Mysuru", "Chennai", "Mahabalipuram", "Pondicherry",
+              "Madurai", "Kochi", "Hyderabad", "Visakhapatnam", "Badami", "Gokarna"]
+
+
+@pytest.mark.parametrize("named, days, start, party", [
+    (("Bengaluru", "Hampi", "Mysuru"), 2, "Coimbatore", "group"),
+    (("Mysuru", "Hampi"), 4, None, "group"),
+    (("Madurai", "Chennai"), 4, None, "group"),
+    (("Hyderabad", "Visakhapatnam"), 5, None, "group"),
+    (("Chennai", "Mahabalipuram", "Pondicherry"), 2, None, "group"),
+    (("Chennai", "Mahabalipuram", "Pondicherry"), 3, "Chennai", "family"),
+    (("Hampi", "Badami", "Gokarna", "Mysuru"), 3, "Bengaluru", "solo"),
+])
+def test_on_the_real_routing_tables_every_named_place_is_a_stop_a_day_trip_or_a_backup(
+        named, days, start, party):
+    cands = [Candidate(n, "TN", 0.5 + 0.01 * i, 0.0, n in named, REAL_CARD)
+             for i, n in enumerate(REAL_NAMES)]
+    r = req(duration_days=days, start_city=start, party=party, named_places=list(named))
+    p = plan_trip(r, cands, hours=travel_time, season=check_season)
+    if not p.feasible:
+        pytest.skip("infeasible plans are reported, not stretched")
+    where = {s.place for s in p.stops} | {x for d in p.days for x in d.also_visit} | {
+        b["place"] for b in p.backups}
+    assert set(named) <= where
+    assert all(d.travel_hours + d.trip_hours <= p.limit_hours + 1e-9 for d in p.days)
+    assert len(p.days) == days
+
+
+def test_the_day_trip_must_fit_on_top_of_the_days_own_travel():
+    pos = {"A": 0.0, "B": 4.0, "C": 6.0}  # B is a 4 h leg from A; C is 2 h from B
+
+    def hours(a, b):
+        return abs(pos[a] - pos[b])
+
+    p = plan_trip(req(duration_days=2), named3(), hours=hours)
+    assert [s.place for s in p.stops] == ["A", "B"]
+    assert not any(d.also_visit for d in p.days)  # 2 x 2 h on top of the 4 h leg is 8 h
+    assert p.backups[0]["place"] == "C"

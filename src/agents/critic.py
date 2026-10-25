@@ -111,14 +111,19 @@ def _is_exempt(bullet: str) -> bool:
             or is_no_details(bullet))
 
 
-def _wrong_place(packed: Packed, alias: str, day_place: str) -> bool:
+def _wrong_place(packed: Packed, alias: str, day_place: str, also=()) -> bool:
     """True when the packed corpus source behind `alias` is about a different place than the
-    day's (live items are checked elsewhere)."""
+    day's or than a place the day also visits (live items are checked elsewhere)."""
     p = packed.by_alias(alias)
     if p is None or p.item.is_live or not p.item.place:
         return False
-    a, b = p.item.place.casefold(), day_place.casefold()
-    return a not in b and b not in a
+    a = p.item.place.casefold()
+    return all(a not in b.casefold() and b.casefold() not in a for b in (day_place, *also))
+
+
+def _also(plan: Plan, day: int) -> tuple[str, ...]:
+    """The extra places a plan day visits (named places that fit as a day trip)."""
+    return next((tuple(r.also_visit) for r in plan.days if r.day == day), ())
 
 
 def blocked_names(ctx: CriticContext) -> list[str]:
@@ -140,10 +145,10 @@ def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
         f.append(CriticFinding(rule="R1", message="the plan is infeasible: "
                                f"{plan.infeasible_reason}", fixable=False))
     for row in plan.days:
-        if row.travel_hours > plan.limit_hours + 1e-9:
+        if row.travel_hours + row.trip_hours > plan.limit_hours + 1e-9:
             f.append(CriticFinding(rule="R1", day=row.day, fixable=False, message=(
-                f"day {row.day} travel {row.travel_hours:g} h exceeds the {plan.limit_hours:g} h "
-                "daily limit")))
+                f"day {row.day} travel {row.travel_hours + row.trip_hours:g} h exceeds the "
+                f"{plan.limit_hours:g} h daily limit")))
     nums = [x.number for x in d.days]
     if nums != list(range(1, len(plan.days) + 1)):
         f.append(CriticFinding(rule="R1", fixable=False, message=(
@@ -195,7 +200,7 @@ def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
                 f.append(CriticFinding(rule="R4", day=x.number, message=(
                     f"day {x.number}: uncited bullet: {b[:80]!r}")))
             for t in tags:
-                if _wrong_place(ctx.packed, t, x.place):
+                if _wrong_place(ctx.packed, t, x.place, _also(ctx.plan, x.number)):
                     f.append(CriticFinding(rule="R4", day=x.number, message=(
                         f"day {x.number}: [{t}] is a source about another place")))
                 if t not in amap:
@@ -254,7 +259,8 @@ def ensure_status_line(draft_text: str, request: ParsedRequest, live_status: str
 
 
 def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Packed,
-                      blocked: tuple[str, ...] = ()) -> tuple[str, list[str]]:
+                      blocked: tuple[str, ...] = (), extra: dict[int, tuple[str, ...]] | None = None
+                      ) -> tuple[str, list[str]]:
     """Strip uncited or wrongly tagged bullets, URLs and bullets that name a blocked place (D122);
     give an emptied day the no-details bullet. Returns (new text, actions)."""
     d = parse_draft(draft_text)
@@ -277,7 +283,8 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
                 seen_text.add(key)
             if b and not _is_exempt(b.group(1).strip()):
                 tags = ALIAS.findall(b.group(1))
-                if any(_wrong_place(packed, t, x.place) for t in tags):
+                if any(_wrong_place(packed, t, x.place, (extra or {}).get(x.number, ()))
+                       for t in tags):
                     actions.append(f"day {x.number}: removed a bullet that cites a source about "
                                    "another place")
                     continue
@@ -411,7 +418,8 @@ def run_cycle(draft_text: str, ctx: CriticContext,
     first = check(text, ctx)
     if not first:
         return text, CriticReport(ok=True, status="passed"), filled
-    text, actions = deterministic_fix(text, first, ctx.packed, tuple(blocked_names(ctx)))
+    extra = {row.day: tuple(row.also_visit) for row in ctx.plan.days if row.also_visit}
+    text, actions = deterministic_fix(text, first, ctx.packed, tuple(blocked_names(ctx)), extra)
     text, filled_again = fill_empty_days(text, ctx)
     actions = [*filled, *actions, *filled_again]
     findings = check(text, ctx)

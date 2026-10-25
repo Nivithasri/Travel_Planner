@@ -804,6 +804,7 @@ DEMO_TESTS = ["tests/test_writer.py", "tests/test_critic.py", "tests/test_graph.
               "tests/test_app_page.py"]
 WR = "src/agents/writer.py"
 CR = "src/agents/critic.py"
+PL = "src/agents/planner.py"
 DEMO_MUTATIONS = [
     ("M252 hyphen look-alikes are not normalised", WR,
      "    return str(text).translate(_NORMALISE)\n", "    return str(text)\n"),
@@ -836,7 +837,8 @@ DEMO_MUTATIONS = [
     ("M264 other days' tags are not returned to their day", CR,
      "    text, moved = rebalance_days(text, ctx)\n", "    moved: list[str] = []\n"),
     ("M265 the critic does not flag a source about another place", CR,
-     "                if _wrong_place(ctx.packed, t, x.place):\n", "                if False:\n"),
+     "                if _wrong_place(ctx.packed, t, x.place, _also(ctx.plan, x.number)):\n",
+     "                if False:\n"),
     ("M266 logistics text is not ranked below sights", EV,
      "    return (0 if is_warn else 1, 1 if is_low else 0, matched,", "    return (0 if is_warn else 1, 0, matched,"),
     ("M267 a logistics warning keeps the warning-first slot", EV,
@@ -856,7 +858,9 @@ DEMO_MUTATIONS = [
      "    return bool(s) and len(s) <= 28 and bool(HEADER_LINE.fullmatch(s))\n",
      "    return False\n"),
     ("M274 a bullet citing another place's source is kept", CR,
-     "                if any(_wrong_place(packed, t, x.place) for t in tags):\n", "                if False:\n"),
+     "                if any(_wrong_place(packed, t, x.place, (extra or {}).get(x.number, ()))\n"
+     "                       for t in tags):\n",
+     "                if False:\n"),
     ("M275 one other place is enough to call a text about elsewhere", "src/agents/scope.py",
      "min_others: int = 2", "min_others: int = 1"),
     ("M276 the write node does not pass the foreign-place matcher", "src/agents/nodes.py",
@@ -871,6 +875,27 @@ DEMO_MUTATIONS = [
     ("M280 the sights query is asked even when the interests match", "src/agents/nodes.py",
      "        if req.interests and not any(E.interest_match(i, req.interests) for i in seen.values()):\n",
      "        if req.interests:\n"),
+    ("M281 no named place is ever fitted as a day trip", PL,
+     "            if 2 * hh + row.travel_hours <= limit + 1e-9:\n", "            if False:\n"),
+    ("M282 the day trip ignores the days own travel", PL,
+     "            if 2 * hh + row.travel_hours <= limit + 1e-9:\n", "            if 2 * hh <= limit + 1e-9:\n"),
+    ("M283 a day may get several extra places", PL,
+     "            if row.also_visit:\n                continue\n", "            if False:\n                continue\n"),
+    ("M284 a named place that did not fit is not listed first", PL,
+     "    for k in [*first, *rest]:\n", "    for k in rest:\n"),
+    ("M285 day-trip places get no sources of their own", EV,
+     "        for x in d.also_visit:\n            cls =", "        for x in []:\n            cls ="),
+    ("M286 the plan block does not say which place a day also visits", WR,
+     "            if d.also_visit:\n", "            if False:\n"),
+    ("M287 the critic flags the day-trip place's sources on the host day", CR,
+     "                if _wrong_place(ctx.packed, t, x.place, _also(ctx.plan, x.number)):\n",
+     "                if _wrong_place(ctx.packed, t, x.place):\n"),
+    ("M288 R1 ignores the day-trip hours", CR,
+     "        if row.travel_hours + row.trip_hours > plan.limit_hours + 1e-9:\n",
+     "        if row.travel_hours > plan.limit_hours + 1e-9:\n"),
+    ("M289 the write node gives no evidence to day-trip places", "src/agents/nodes.py",
+     "    places = [*(s.place for s in plan.stops), *sorted(extra)]\n",
+     "    places = [s.place for s in plan.stops]\n"),
 ]
 
 

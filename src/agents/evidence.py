@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from src.agents.state import EvidenceItem, Plan
+from src.agents.state import EvidenceItem, Plan, PlanStop
 from src.common.schemas import REPO_ROOT
 
 PIPELINE_CONFIG = REPO_ROOT / "config" / "pipeline.json"
@@ -296,11 +296,17 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
     out = Packed()
     n_s = n_l = 0
     seen: set[str] = set()
-    for stop in plan.stops:
+    units = [(stop, [d.day for d in plan.days if d.place == stop.place], None)
+             for stop in plan.stops]
+    for d in plan.days:  # a named place visited as a day trip: two sources, for that day only
+        for x in d.also_visit:
+            cls = "limited" if x in d.also_limited else "full"
+            units.append((PlanStop(place=x, state="", nights=1, evidence_class=cls), [d.day],
+                          w["items_per_extra_place"]))
+    for stop, days, cap in units:
         taken = 0
-        days = [d.day for d in plan.days if d.place == stop.place]
         span = max(stop.nights, len(days), 1)
-        limit = min(w["items_per_night"] * span, w["items_per_stop_max"])
+        limit = cap or min(w["items_per_night"] * span, w["items_per_stop_max"])
         first = len(out.items)
         out.place_days[stop.place] = max(len(days), 1)
         items = corpus.get(stop.place, [])
