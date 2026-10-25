@@ -925,6 +925,12 @@ DEMO_MUTATIONS = [
     ("M302 the write node does not pass the trip month", "src/agents/nodes.py",
      "foreign_place_matcher(deps.registry_entries), month=req.month)",
      "foreign_place_matcher(deps.registry_entries))"),
+    ("M303 the writer rule no longer forbids added qualifiers", WR,
+     "Add no qualifier the source does not state (only, best, renowned, \"\n"
+     "    \"famous, must-see), no long copied runs, and never merge",
+     "No long copied runs, and never merge"),
+    ("M304 the writer rule no longer forbids merging two sources", WR,
+     "and never merge the facts of two sources into one \"\n    \"sentence.", "\"\n    \"."),
 ]
 
 

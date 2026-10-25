@@ -817,3 +817,20 @@ def test_an_off_season_warning_loses_the_warning_first_slot():
                     item("t1", text="The fort opens at nine.", aspect="timing", score=0.9)]}
     first = lambda m: pack(plan_for(["Hampi"]), ev, [], CFG, month=m).items[0].item.chunk_id  # noqa: E731
     assert first(7) == "w1" and first(12) == "t1"
+
+
+# ---- demo-quality: no qualifiers the source does not state, no merged sources (D132) ------------
+
+def test_the_writer_rule_forbids_added_qualifiers_and_merging_two_sources():
+    for word in ("only", "best", "renowned", "famous", "must-see"):
+        assert word in writer.SYSTEM.split("4. ")[1].split("5. ")[0]
+    rule4 = writer.SYSTEM.split("4. ")[1].split("5. ")[0]
+    assert "Add no qualifier the source does not state" in rule4
+    assert "never merge the facts of two sources into one sentence" in rule4
+    assert "exactly one bullet per tag" in rule4 and "in your own words" in rule4
+    assert len(writer.SYSTEM) <= W["system_chars_max"]
+    # every earlier rule is still there
+    for phrase in ("lists its own tags", "never use a tag listed for another day",
+                   "Only for a day that lists no tags", "prefer an L source over an S source",
+                   "also visit", "LIMITED EVIDENCE", "Never repeat a bullet"):
+        assert phrase in writer.SYSTEM
