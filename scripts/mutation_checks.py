@@ -909,6 +909,12 @@ DEMO_MUTATIONS = [
      "    if critic.get(\"status\") == \"failed_rules\":\n", "    if False:\n"),
     ("M295 the live terms notice is hidden", "app/streamlit_app.py",
      "    if S.terms_notice_visible(view):\n        st.warning(TERMS_NOTICE)\n", "    if False:\n        st.warning(TERMS_NOTICE)\n"),
+    ("M296 a flagged chunk keeps the warning slot without a warning cue", EV,
+     "                and has_warning_cue(item))", "                )"),
+    ("M297 a history chunk may keep the warning slot", EV,
+     "item.provenance == \"llm\" and item.aspect != \"history\"", "item.provenance == \"llm\""),
+    ("M298 the warning cue is searched in the whole text, not what the writer sees", EV,
+     "    return bool(WARNING_CUE.search(item.text[:WARNING_CHARS]))\n", "    return bool(WARNING_CUE.search(item.text))\n"),
 ]
 
 

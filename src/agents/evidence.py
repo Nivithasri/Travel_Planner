@@ -201,8 +201,22 @@ def interest_match(item: EvidenceItem, interests) -> bool:
     return False
 
 
+# The model-written is_warning flag is only about 61% right (D106). A chunk keeps the warning-first
+# position only when the text the writer will see holds an explicit warning cue and is not
+# history (D132); every other flagged chunk ranks like any other chunk.
+WARNING_CUE = re.compile(
+    r"\b(?:avoid|beware|scams?|scammers?|closed|banned|unsafe|dangerous|not allowed|prohibited|"
+    r"risks?|risky|shut|extortion|touts?)\b", re.I)
+WARNING_CHARS = 300  # the writer.item_chars of config/pipeline.json (a test pins the two)
+
+
+def has_warning_cue(item: EvidenceItem) -> bool:
+    return bool(WARNING_CUE.search(item.text[:WARNING_CHARS]))
+
+
 def _is_warning(item: EvidenceItem) -> bool:
-    return bool(item.is_warning and item.provenance == "llm")
+    return bool(item.is_warning and item.provenance == "llm" and item.aspect != "history"
+                and has_warning_cue(item))
 
 
 # Text about getting there, where to sleep and road conditions (D131): useful sometimes, but a
