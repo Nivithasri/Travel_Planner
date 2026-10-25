@@ -560,3 +560,78 @@ def test_build_messages_puts_the_day_tags_into_the_plan_block():
     packed = pack(plan, {"Hampi": distinct("Hampi", 4)}, [], CFG)
     user = writer.build_messages(ParsedRequest(text="trip"), plan, packed, CFG)[1]["content"]
     assert "Day 1: Hampi [use S1, S3]" in user and "Day 2: Hampi [use S2, S4]" in user
+
+
+# ---- demo-quality: bullet quality (D131) -------------------------------------------------------
+
+GUEST = ("A comfortable guest house run by the Karnataka Tourism Board is available near the "
+         "bus stand.")
+BUS = "Pondicherry is 163 km from Chennai. Take a bus along the East Coast Road."
+SIGHT = "The Virupaksha temple is the oldest shrine at Hampi and still holds daily rituals."
+
+
+def test_logistics_text_is_recognised_and_sights_are_not():
+    from src.agents.evidence import is_logistics, logistics_wanted
+
+    assert is_logistics(GUEST) and is_logistics(BUS) and is_logistics("By train from Chennai.")
+    assert is_logistics("The hotel rooms are cheap.")  # two weak words
+    assert not is_logistics(SIGHT) and not is_logistics("Boat rides run with lifeguards.")
+    assert not is_logistics("The hotel serves a good thali.")  # one weak word alone
+    assert logistics_wanted(["avoid hill roads"]) and not logistics_wanted(["no spicy food"])
+
+
+def test_sights_rank_above_getting_there_and_where_to_sleep():
+    ev = {"Hampi": [item("g1", text=GUEST, aspect="price", score=0.9),
+                    item("b1", text=BUS, aspect="timing", score=0.8),
+                    item("s1", text=SIGHT, aspect="history", score=0.1)]}
+    ids = [x.item.chunk_id for x in pack(plan_for(["Hampi"]), ev, [], CFG).items]
+    assert ids[0] == "s1"  # the sight first, logistics only after
+    assert ids.index("s1") < ids.index("g1") and ids.index("s1") < ids.index("b1")
+
+
+def test_a_logistics_warning_does_not_take_the_warning_first_slot():
+    ev = {"Hampi": [item("w1", text=BUS, aspect="safety", warn=True, score=0.99),
+                    item("s1", text=SIGHT, aspect="history", score=0.1)]}
+    ids = [x.item.chunk_id for x in pack(plan_for(["Hampi"]), ev, [], CFG).items]
+    assert ids == ["s1", "w1"]
+
+
+def test_a_constraint_about_roads_or_transport_keeps_logistics_in_the_old_order():
+    ev = {"Hampi": [item("b1", text=BUS, aspect="timing", score=0.8),
+                    item("s1", text=SIGHT, aspect="history", score=0.1)]}
+    ids = lambda c: [x.item.chunk_id for x in pack(  # noqa: E731
+        plan_for(["Hampi"]), ev, [], CFG, constraints=c).items]
+    assert ids(["avoid hill roads"]) == ["b1", "s1"] and ids([]) == ["s1", "b1"]
+
+
+def test_wiki_editor_notes_and_list_numbers_are_stripped_but_dated_figures_stay():
+    from src.agents.evidence import strip_editor_notes
+
+    raw = ("(updated Jan 2022) 4 Archaeological Museum of Badami. Sat-Thu 9AM-5PM.\n"
+           "3 Hebbal Lake.\n1. Cave temples\n2 passenger trains run daily.\n"
+           "14 February is the festival day. The town had 5,000 people (as of 2011). [edit]\n"
+           "Updated Apr 2026\nIt was 1,600 monuments as of 2017.")
+    out = strip_editor_notes(raw)
+    assert out.startswith("Archaeological Museum of Badami.") and "updated" not in out.lower()
+    assert "Hebbal Lake." in out and "3 Hebbal" not in out and "1. Cave" not in out
+    assert "Cave temples" in out and "2 passenger trains" in out and "14 February" in out
+    assert "(as of 2011)" in out and "as of 2017" in out and "[edit]" not in out
+    assert "Apr 2026" not in out
+
+
+def test_an_item_is_cut_at_a_sentence_end_not_in_the_middle_of_a_sentence():
+    text = ("The Virupaksha temple is the oldest shrine at Hampi. Daily rituals still take place "
+            "there. A new feature of the evening ritual is the lamp procession around the tank.")
+    cut = clean_text(text, 120, sentences=True)
+    assert cut == ("The Virupaksha temple is the oldest shrine at Hampi. Daily rituals still take "
+                   "place there.") and not cut.endswith("...")
+    assert clean_text(text, 120).endswith("...")  # the default keeps the word cut
+    assert clean_text("Dr. Rao St. John built it. " + "word " * 50, 60, sentences=True)  # no crash
+
+
+def test_packed_items_have_no_editor_notes_and_end_on_a_full_sentence():
+    long = (" ".join(f"Sentence number {i} says something about the temple." for i in range(12)))
+    ev = {"Hampi": [item("s1", text="(updated Jan 2022) " + long)]}
+    p = pack(plan_for(["Hampi"]), ev, [], CFG)
+    t = p.items[0].text
+    assert "updated" not in t and t.endswith("temple.") and len(t) <= W["item_chars"]

@@ -838,6 +838,21 @@ DEMO_MUTATIONS = [
     ("M265 a bullet may move to a day of another place", CR,
      "            if home is not None and place_of.get(home.number) == place_of.get(x.number):",
      "            if home is not None:"),
+    ("M266 logistics text is not ranked below sights", EV,
+     "    return (0 if is_warn else 1, 1 if is_low else 0, matched,", "    return (0 if is_warn else 1, 0, matched,"),
+    ("M267 a logistics warning keeps the warning-first slot", EV,
+     "    is_warn = _is_warning(item) and item.chunk_id not in demoted and not is_low\n",
+     "    is_warn = _is_warning(item) and item.chunk_id not in demoted\n"),
+    ("M268 a constraint about roads does not lift the logistics rule", EV,
+     "    keep = logistics_wanted(constraints)\n", "    keep = False\n"),
+    ("M269 editor notes stay in the packed text", EV,
+     "clean_text(strip_editor_notes(item.text), w[", "clean_text(item.text, w["),
+    ("M270 list-number prefixes are not stripped", EV,
+     "    return LIST_PREFIX.sub(\"\", t)\n", "    return t\n"),
+    ("M271 every as-of date is stripped as an editor note", EV,
+     "(?:updated|revised|edited)", "(?:updated|revised|edited|as of)"),
+    ("M272 packed items are cut in the middle of a sentence again", EV,
+     "w[\"item_chars\"], sentences=True)", "w[\"item_chars\"])"),
 ]
 
 

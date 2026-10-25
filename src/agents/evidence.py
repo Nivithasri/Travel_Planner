@@ -64,22 +64,62 @@ def injection_flags(text: str) -> list[str]:
     return sorted({m.group(0).strip().lower() for m in INJECTION.finditer(text)})
 
 
-def clean_text(text: str, max_chars: int) -> str:
-    """Whitespace collapsed, URLs and tag/delimiter-like strings removed, cut at a word boundary."""
+MONTHS = ("jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec")
+# Wiki editor notes (D131). Only a parenthetical that is nothing but "updated <month> <year>" goes;
+# every "as of 2017" stays, so a dated figure never looks current.
+EDITOR_NOTE = re.compile(
+    r"\(\s*(?:last\s+)?(?:updated|revised|edited)\s+(?:in\s+)?"
+    rf"(?:(?:{MONTHS})[a-z]*\.?\s+)?(?:\d{{1,2}}\s+)?\d{{4}}\s*\)|"
+    r"\[\s*edit\s*\]|\(?\bcitation needed\b\)?", re.I)
+UPDATED_LINE = re.compile(
+    rf"(?m)^[ \t]*(?:last\s+)?updated:?\s+(?:in\s+)?(?:(?:{MONTHS})[a-z]*\.?\s+)?\d{{4}}\.?[ \t]*$",
+    re.I)
+# "3 Hebbal Lake." / "1. Cave temples": a list number at the start of a line before a capitalised
+# word (not a month, which would be a date).
+LIST_PREFIX = re.compile(
+    rf"(?m)^[ \t]*\d{{1,2}}[.)]?[ \t]+(?=(?!(?i:{MONTHS})[a-z]*\b)[A-Z][a-z])")
+
+
+def strip_editor_notes(text: str) -> str:
+    """Remove wiki editor notes and list-number prefixes from raw chunk text (before cleaning, so
+    line starts are still visible)."""
+    t = UPDATED_LINE.sub("", str(text))
+    t = EDITOR_NOTE.sub(" ", t)
+    return LIST_PREFIX.sub("", t)
+
+
+def clean_text(text: str, max_chars: int, sentences: bool = False) -> str:
+    """Whitespace collapsed, URLs and tag/delimiter-like strings removed, cut at a word boundary.
+    With sentences=True the cut is at the last full sentence that fits (when one of at least 40
+    characters does) and no ellipsis is added there."""
     t = MOJIBAKE.sub(_repair, str(text)).replace("\u202f", " ").replace("\u00a0", " ")
     t = URL.sub("[link removed]", t)
     t = TAGLIKE.sub(" ", t).replace("[", "(").replace("]", ")")
     t = " ".join(t.split())
     if len(t) <= max_chars:
         return t
+    if sentences:
+        cut = _sentence_cut(t, max_chars)
+        if cut:
+            return cut
     return t[:max_chars].rsplit(" ", 1)[0].rstrip(",;:- ") + "..."
+
+
+def _sentence_cut(t: str, max_chars: int, min_chars: int = 40) -> str | None:
+    out = ""
+    for s in split_sentences(t):
+        nxt = f"{out} {s}".strip()
+        if len(nxt) > max_chars:
+            break
+        out = nxt
+    return out if len(out) >= min_chars else None
 
 
 SENTENCE_END = re.compile(r"(?<=[.!?])[\"')]?\s+(?=[\"'(]?[A-Z0-9])")
 ABBREV = re.compile(r"(?:\b(?:St|Dr|Mr|Mrs|Ms|No|Rs|approx|vs|etc|Sr|Jr|Mt|Fr)|\b[A-Z])\.$")
 
 
-def sentences(text: str) -> list[str]:
+def split_sentences(text: str) -> list[str]:
     """Split on sentence ends, not after an abbreviation or a single capital letter."""
     out: list[str] = []
     start = 0
@@ -98,7 +138,7 @@ def sentences(text: str) -> list[str]:
 def lead(text: str, max_chars: int) -> str:
     """The first sentence(s) of a cleaned text, up to max_chars, never cut mid-sentence unless the
     first sentence alone is longer (then cut at a word and marked with '...')."""
-    parts = sentences(text)
+    parts = split_sentences(text)
     if not parts:
         return ""
     out = parts[0]
@@ -150,24 +190,64 @@ def _is_warning(item: EvidenceItem) -> bool:
     return bool(item.is_warning and item.provenance == "llm")
 
 
-def _rank(item: EvidenceItem, interests=(), demoted=frozenset()) -> tuple:
-    """Model-written warnings first (except the ones beyond the per-stop cap, D129), then chunks
-    that match an interest, then the aspect priority; with no interest and no cap the order is the
-    old one."""
-    is_warn = _is_warning(item) and item.chunk_id not in demoted
+# Text about getting there, where to sleep and road conditions (D131): useful sometimes, but a
+# sight, a dish or a timing is what a day should be built from. Ranked below them, not dropped.
+LOGISTICS_STRONG = re.compile(
+    r"\b(?:by (?:bus|train|road|air|car|taxi|flight|rail)|take an? (?:bus|train|taxi|cab|auto)|"
+    r"(?:bus|railway|train) (?:stand|station|stop|junction)|airports?|taxis?|cabs?|"
+    r"auto[- ]?rickshaws?|accommodation|guest ?houses?|lodges?|dormitor(?:y|ies)|check[- ]?in|"
+    r"public transport(?:ation)?|national highway|NH ?\d+|ghat road|"
+    r"\d+(?:\.\d+)? ?km (?:from|away|south|north|east|west))\b", re.I)
+LOGISTICS_WEAK = re.compile(
+    r"\b(?:hotels?|resorts?|rooms?|fares?|highway|roads?|buses|trains?)\b", re.I)
+LOGISTICS_WORDS = ("road", "train", "bus", "airport", "taxi", "hotel", "stay", "accommodation",
+                   "transport", "drive", "driving", "highway", "ghat", "rail", "flight")
+
+
+def is_logistics(text: str) -> bool:
+    return bool(LOGISTICS_STRONG.search(text) or len(LOGISTICS_WEAK.findall(text)) >= 2)
+
+
+def logistics_wanted(constraints) -> bool:
+    """True when a constraint of the request is about roads, transport or where to stay."""
+    joined = " ".join(str(c) for c in constraints or ()).casefold()
+    return any(word in joined for word in LOGISTICS_WORDS)
+
+
+def low_value_ids(items: list[EvidenceItem], constraints=(), elsewhere=None) -> set[str]:
+    """Chunk ids of a stop that rank below its sights: logistics text (unless a constraint asks
+    for it) and text about other places (`elsewhere(text, place)` -> bool)."""
+    keep = logistics_wanted(constraints)
+    return {i.chunk_id for i in items
+            if (not keep and is_logistics(i.text)) or (elsewhere and elsewhere(i.text, i.place))}
+
+
+def is_low_value(item: EvidenceItem, elsewhere=None) -> bool:
+    return bool(low_value_ids([item], (), elsewhere))
+
+
+def _rank(item: EvidenceItem, interests=(), demoted=frozenset(), low=frozenset()) -> tuple:
+    """Model-written warnings first (except the ones beyond the per-stop cap, D129, and logistics
+    or off-place text), then sights before logistics, then chunks that match an interest, then the
+    aspect priority; with no interest, no cap and no logistics the order is the old one."""
+    is_low = item.chunk_id in low
+    is_warn = _is_warning(item) and item.chunk_id not in demoted and not is_low
     key = "warning" if is_warn else (item.aspect or "other")
     matched = 0 if interest_match(item, interests) else 1
-    return (0 if is_warn else 1, matched, PRIORITY.get(key, 5), -item.score, item.chunk_id)
+    return (0 if is_warn else 1, 1 if is_low else 0, matched, PRIORITY.get(key, 5), -item.score,
+            item.chunk_id)
 
 
-def _demoted(items: list[EvidenceItem], w: dict, interests, cap: int) -> set[str]:
+def _demoted(items: list[EvidenceItem], w: dict, interests, cap: int,
+             low=frozenset()) -> set[str]:
     """The model-written warnings of one stop beyond the best `cap`, among the items that can be
-    packed at all (no live, no blog, no instruction-like text). They are not dropped: they rank
-    like any other chunk (D129; the warning flag is only about 61% right, D106)."""
-    usable = [i for i in items if _is_warning(i) and not i.is_live
+    packed at all (no live, no blog, no instruction-like text, no logistics). They are not
+    dropped: they rank like any other chunk (D129; the warning flag is only about 61% right,
+    D106)."""
+    usable = [i for i in items if _is_warning(i) and not i.is_live and i.chunk_id not in low
               and not (i.source_type == "blog" and not w["allow_blog"])
               and not injection_flags(i.text)]
-    warns = sorted(usable, key=lambda i: _rank(i, interests))
+    warns = sorted(usable, key=lambda i: _rank(i, interests, low=low))
     return {i.chunk_id for i in warns[cap:]}
 
 
@@ -191,7 +271,8 @@ def drop_one(packed: Packed) -> PackedItem:
 
 
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
-         cfg: dict | None = None, interests=(), named_places=(), scope_check=None) -> Packed:
+         cfg: dict | None = None, interests=(), named_places=(), scope_check=None,
+         constraints=(), elsewhere=None) -> Packed:
     """Per planned stop at most `items_per_night` corpus items for each night, never more than
     `items_per_stop_max`, with at most `warnings_per_stop` model-written warnings ranked first
     (D129), and `live_items` live items. Order is the plan's stop order, then live; aliases follow
@@ -208,8 +289,9 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
         first = len(out.items)
         out.place_days[stop.place] = max(len(days), 1)
         items = corpus.get(stop.place, [])
-        demoted = _demoted(items, w, interests, w["warnings_per_stop"])
-        for item in sorted(items, key=lambda i: _rank(i, interests, demoted)):
+        low = low_value_ids(items, constraints, elsewhere)
+        demoted = _demoted(items, w, interests, w["warnings_per_stop"], low)
+        for item in sorted(items, key=lambda i: _rank(i, interests, demoted, low)):
             if taken >= limit:
                 break
             if item.chunk_id in seen or item.is_live:
@@ -222,7 +304,7 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
                 out.dropped.append({"chunk_id": item.chunk_id, "reason": "injection_pattern",
                                     "flags": flags})
                 continue
-            text = clean_text(item.text, w["item_chars"])
+            text = clean_text(strip_editor_notes(item.text), w["item_chars"], sentences=True)
             if not text:
                 continue
             n_s += 1

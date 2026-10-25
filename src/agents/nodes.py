@@ -265,7 +265,8 @@ def write_node(state: RunState, deps: Deps) -> dict:
     allowed = {s.place for s in plan.stops} | set(req.named_places)
     packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg,
                     interests=req.interests, named_places=req.named_places,
-                    scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed))
+                    scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed),
+                    constraints=req.constraints)
     messages = W.build_messages(req, plan, packed, deps.pipeline_cfg)
     before = deps.tokens_used()
     draft = W.write(deps.client, deps.model, messages, deps.pipeline_cfg, deps.on_piece)
