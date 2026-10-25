@@ -111,6 +111,16 @@ def _is_exempt(bullet: str) -> bool:
             or is_no_details(bullet))
 
 
+def _wrong_place(packed: Packed, alias: str, day_place: str) -> bool:
+    """True when the packed corpus source behind `alias` is about a different place than the
+    day's (live items are checked elsewhere)."""
+    p = packed.by_alias(alias)
+    if p is None or p.item.is_live or not p.item.place:
+        return False
+    a, b = p.item.place.casefold(), day_place.casefold()
+    return a not in b and b not in a
+
+
 def blocked_names(ctx: CriticContext) -> list[str]:
     """Hold-out and excluded place names the answer must not mention: not a stop, not named in the
     request, not a backup of the plan (the R5 rule)."""
@@ -185,6 +195,9 @@ def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
                 f.append(CriticFinding(rule="R4", day=x.number, message=(
                     f"day {x.number}: uncited bullet: {b[:80]!r}")))
             for t in tags:
+                if _wrong_place(ctx.packed, t, x.place):
+                    f.append(CriticFinding(rule="R4", day=x.number, message=(
+                        f"day {x.number}: [{t}] is a source about another place")))
                 if t not in amap:
                     f.append(CriticFinding(rule="R4", day=x.number, message=(
                         f"day {x.number}: unknown source tag [{t}]")))
@@ -264,6 +277,10 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
                 seen_text.add(key)
             if b and not _is_exempt(b.group(1).strip()):
                 tags = ALIAS.findall(b.group(1))
+                if any(_wrong_place(packed, t, x.place) for t in tags):
+                    actions.append(f"day {x.number}: removed a bullet that cites a source about "
+                                   "another place")
+                    continue
                 if not tags or any(t not in amap for t in tags):
                     actions.append(f"day {x.number}: removed bullet {b.group(1)[:60]!r}")
                     continue
@@ -332,14 +349,14 @@ def fill_empty_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]
 
 
 def rebalance_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]]:
-    """No LLM: a bullet whose tags are all listed for ANOTHER day of the same place goes back to
-    that day (the writer was told to use only a day's own tags). Text is moved, never changed."""
+    """No LLM: a bullet whose tags are all listed for ANOTHER day goes to that day (the writer was
+    told to use only a day's own tags); when that day is of another place, the bullet is
+    about that place and belongs there. Text is moved, never changed."""
     d = parse_draft(draft_text)
     owner: dict[str, int] = {}
     for day in sorted(ctx.packed.day_items):
         for a in ctx.packed.day_items[day]:
             owner.setdefault(a, day)
-    place_of = {row.day: row.place for row in ctx.plan.days}
     by_num = {x.number: x for x in d.days}
     actions: list[str] = []
     moves = []
@@ -350,7 +367,7 @@ def rebalance_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]]
             if not tags or x.number in homes or None in homes or len(homes) != 1:
                 continue
             home = by_num.get(homes.pop())
-            if home is not None and place_of.get(home.number) == place_of.get(x.number):
+            if home is not None:  # a source serves the place it is about, wherever it was cited
                 moves.append((x, home, b))
     for x, home, b in moves:
         idx = next(i for i, ln in enumerate(x.lines)

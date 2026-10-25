@@ -649,3 +649,41 @@ def test_wiki_section_title_lines_are_stripped_but_sentences_and_lone_titles_sta
     p = pack(plan_for(["Hampi"]), {"Hampi": [item("s1", text="Description\nHampi is hilly.")]},
              [], CFG)
     assert p.items[0].text == "Hampi is hilly."
+
+
+# ---- demo-quality: text about other places ranks below the place's own sights (D131) ----------
+
+def reg_entries():
+    from types import SimpleNamespace as NS
+
+    names = {"Chennai": ["Madras"], "Pondicherry": ["Puducherry"], "Rameswaram": [],
+             "Tirupati": [], "Mahabalipuram": ["Mamallapuram"], "Thekkady": []}
+    return [NS(name=n, aliases=a, holdout=(n == "Thekkady")) for n, a in names.items()]
+
+
+DAY_TRIPS = ("One of the most famous temples here is the Shore Temple, next to the beach. "
+             "Pondicherry (163 km) is delightful. Rameswaram (569 km). Tirupati (158 km).")
+
+
+def test_the_foreign_place_matcher_needs_two_other_places_and_ignores_hold_outs():
+    from src.agents.scope import foreign_place_matcher
+
+    m = foreign_place_matcher(reg_entries())
+    assert m(DAY_TRIPS, "Chennai") and m("Puducherry and Madras and Tirupati.", "Mahabalipuram")
+    assert not m("Chennai is the capital. Pondicherry is two hours away.", "Chennai")
+    assert not m("Chennai, Chennai and Madras again.", "Chennai")
+    assert not m("Thekkady and Pondicherry are far.", "Chennai")  # hold-outs never count
+    assert not foreign_place_matcher([])("anything", "Chennai")
+
+
+def test_a_day_trip_list_filed_under_a_city_ranks_below_that_citys_own_sights():
+    from src.agents.scope import foreign_place_matcher
+
+    ev = {"Chennai": [item("t1", place="Chennai", text=DAY_TRIPS, aspect="closure", score=0.9),
+                      item("s1", place="Chennai", aspect="history", score=0.1,
+                           text="Kapaleeshwarar temple is a Dravidian shrine in Mylapore.")]}
+    plan = plan_for(["Chennai"])
+    plain = [x.item.chunk_id for x in pack(plan, ev, [], CFG).items]
+    smart = [x.item.chunk_id for x in pack(plan, ev, [], CFG,
+                                           elsewhere=foreign_place_matcher(reg_entries())).items]
+    assert plain[0] == "t1" and smart == ["s1", "t1"]

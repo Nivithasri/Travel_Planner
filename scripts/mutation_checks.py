@@ -835,9 +835,8 @@ DEMO_MUTATIONS = [
      "            or is_no_details(bullet))", "            )"),
     ("M264 other days' tags are not returned to their day", CR,
      "    text, moved = rebalance_days(text, ctx)\n", "    moved: list[str] = []\n"),
-    ("M265 a bullet may move to a day of another place", CR,
-     "            if home is not None and place_of.get(home.number) == place_of.get(x.number):",
-     "            if home is not None:"),
+    ("M265 the critic does not flag a source about another place", CR,
+     "                if _wrong_place(ctx.packed, t, x.place):\n", "                if False:\n"),
     ("M266 logistics text is not ranked below sights", EV,
      "    return (0 if is_warn else 1, 1 if is_low else 0, matched,", "    return (0 if is_warn else 1, 0, matched,"),
     ("M267 a logistics warning keeps the warning-first slot", EV,
@@ -856,6 +855,14 @@ DEMO_MUTATIONS = [
     ("M273 wiki section title lines stay in the text", EV,
      "    return bool(s) and len(s) <= 28 and bool(HEADER_LINE.fullmatch(s))\n",
      "    return False\n"),
+    ("M274 a bullet citing another place's source is kept", CR,
+     "                if any(_wrong_place(packed, t, x.place) for t in tags):\n", "                if False:\n"),
+    ("M275 one other place is enough to call a text about elsewhere", "src/agents/scope.py",
+     "min_others: int = 2", "min_others: int = 1"),
+    ("M276 the write node does not pass the foreign-place matcher", "src/agents/nodes.py",
+     "elsewhere=foreign_place_matcher(deps.registry_entries))", "elsewhere=None)"),
+    ("M277 the write node does not pass the constraints", "src/agents/nodes.py",
+     "                    constraints=req.constraints,\n", "                    constraints=(),\n"),
 ]
 
 

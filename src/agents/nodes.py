@@ -17,7 +17,7 @@ from src.agents import critic as C
 from src.agents import evidence as E
 from src.agents import writer as W
 from src.agents.planner import Candidate, plan_trip
-from src.agents.scope import out_of_scope_matcher
+from src.agents.scope import foreign_place_matcher, out_of_scope_matcher
 from src.agents.state import (
     CriticFinding,
     CriticReport,
@@ -266,7 +266,8 @@ def write_node(state: RunState, deps: Deps) -> dict:
     packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg,
                     interests=req.interests, named_places=req.named_places,
                     scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed),
-                    constraints=req.constraints)
+                    constraints=req.constraints,
+                    elsewhere=foreign_place_matcher(deps.registry_entries))
     messages = W.build_messages(req, plan, packed, deps.pipeline_cfg)
     before = deps.tokens_used()
     draft = W.write(deps.client, deps.model, messages, deps.pipeline_cfg, deps.on_piece)

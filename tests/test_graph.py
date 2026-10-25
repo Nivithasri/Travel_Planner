@@ -444,3 +444,43 @@ def test_a_named_excluded_place_may_appear_in_live_text():
     st = run_local(make_deps(live=FakeLive([item])), "Munnar please",
                    {**OVER, "duration_days": 3, "named_places": ["Munnar"]})
     assert {p.item.chunk_id for p in st.packed_obj.items if p.item.is_live} == {item.chunk_id}
+
+
+# ---- demo-quality: logistics and day-trip lists rank below a stop's own sights (D131) ----------
+
+NEUTRAL = {**OVER, "interests": ["jazz"]}  # no interest matches, so aspect order decides
+
+
+def _scarce_rows(extra):
+    """Hampi rows: the extra chunk scores highest; nine plain fillers fill the stop's slots."""
+    fillers = [row(f"Fil{j}", "Hampi", f"Hampi filler fact {j}: stone carvings in morning light.",
+                   score=0.80 - j / 100, aspect="scenery") for j in range(9)]
+    return [*extra, *fillers, *corpus()]  # the retrieval keeps the first rows
+
+
+def _packed_ids(state):
+    return {p.item.chunk_id for p in state.packed_obj.items}
+
+
+def _llm(monkeypatch, ids):
+    for cid in ids:
+        monkeypatch.setitem(PROV, cid, "llm")
+
+
+def test_a_day_trip_list_filed_under_a_stop_does_not_take_one_of_its_slots(monkeypatch):
+    trip = row("trip1", "Hampi", "Excursions: Badami (140 km), Gokarna (300 km), Mysuru (500 km).",
+               score=0.99, aspect="timing")
+    _llm(monkeypatch, ["trip1", *[f"Fil{j}" for j in range(9)]])
+    st = run_local(make_deps(rows=_scarce_rows([trip])), TEXT, NEUTRAL)
+    ids = _packed_ids(st)
+    assert "trip1" not in ids and any(i.startswith("Fil") for i in ids)
+
+
+def test_a_bus_listing_is_kept_back_unless_a_constraint_is_about_roads(monkeypatch):
+    bus = row("bus1", "Hampi", "From Hospet take a bus to Hampi; the stand is near the market.",
+              score=0.99, aspect="timing")
+    _llm(monkeypatch, ["bus1", *[f"Fil{j}" for j in range(9)]])
+    rows = _scarce_rows([bus])
+    plain = run_local(make_deps(rows=rows), TEXT, NEUTRAL)
+    roads = run_local(make_deps(rows=rows), TEXT, {**NEUTRAL, "constraints": ["avoid hill roads"]})
+    assert "bus1" not in _packed_ids(plain) and "bus1" in _packed_ids(roads)

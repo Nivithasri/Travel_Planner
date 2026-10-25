@@ -376,14 +376,37 @@ def test_a_bullet_that_cites_only_another_days_tags_goes_back_to_that_day():
     assert sum("moved a bullet to day 2" in a for a in actions) == 2 and report.status == "passed"
 
 
-def test_rebalancing_never_moves_a_bullet_to_a_day_of_another_place():
+def two_place_ctx():
     stops = [PlanStop(place="Hampi", state="KA", nights=1, evidence_class="full"),
              PlanStop(place="Badami", state="KA", nights=1, evidence_class="full")]
     plan = Plan(feasible=True, stops=stops, limit_hours=5.0, backups=[{"place": "Gokarna"}],
                 days=[PlanDay(day=1, place="Hampi"), PlanDay(day=2, place="Badami")])
-    ctx = ctx_for(plan, ev={"Hampi": [item("h1", text="Hampi fact one is here.")],
-                            "Badami": [item("b1", place="Badami", text="Badami fact is here.")]})
-    draft = ("## Day 1: Hampi\n- Hampi fact one. [S1]\n- Wrong tag. [S2]\n"
-             "## Day 2: Badami\n- Badami fact. [S2]\n## Backup options\n- Gokarna\n")
+    ev = {"Hampi": [item("h1", text="Hampi fact one is here.")],
+          "Badami": [item("b1", place="Badami", text="Badami cave fact is here.")]}
+    return plan, ctx_for(plan, ev=ev)
+
+
+def test_a_bullet_citing_a_source_about_another_place_goes_to_that_places_day():
+    plan, ctx = two_place_ctx()
+    assert ctx.packed.day_items == {1: ["S1"], 2: ["S2"]}
+    draft = ("## Day 1: Hampi\n- Hampi fact one. [S1]\n- The caves are carved in rock. [S2]\n"
+             "## Day 2: Badami\n- Badami museum. [S2]\n## Backup options\n- Gokarna\n")
     text, report, actions = C.run_cycle(draft, ctx)
-    assert not any("moved a bullet" in a for a in actions)
+    day1 = text.split("## Day 1: Hampi")[1].split("## Day 2")[0]
+    day2 = text.split("## Day 2: Badami")[1].split("## Backup")[0]
+    assert "caves are carved" in day2 and "caves" not in day1 and report.status == "passed"
+    assert any("moved a bullet to day 2" in a for a in actions)
+
+
+def test_a_bullet_citing_a_source_about_another_place_with_no_day_is_removed():
+    from src.agents.evidence import PackedItem
+
+    plan, ctx = two_place_ctx()  # a packed source about Kochi, which has no day in this plan
+    ctx.packed.items.append(PackedItem("S3", item("k1", place="Kochi", text="Kochi fact."),
+                                       "Kochi fact."))
+    draft = ("## Day 1: Hampi\n- Hampi fact one. [S1]\n- Off-plan fact. [S3]\n"
+             "## Day 2: Badami\n- Badami museum. [S2]\n## Backup options\n- Gokarna\n")
+    assert any("source about another place" in f.message for f in C.check(draft, ctx))
+    text, report, actions = C.run_cycle(draft, ctx)
+    assert "Off-plan" not in text and any("another place" in a for a in actions)
+    assert report.status == "repaired"
