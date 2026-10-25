@@ -564,3 +564,15 @@ def test_the_critic_accepts_the_day_trip_places_sources_on_the_host_day():
     ctx = C.CriticContext(st.request, st.plan, st.packed_obj, st.live_status,
                           deps.excluded_labels, deps.holdout_names)
     assert not any("another place" in f.message for f in C.check(draft, ctx))
+
+
+# ---- demo-quality: the trip month reaches the packer (D132) ------------------------------------
+
+def test_an_item_naming_another_month_is_kept_back_for_a_trip_in_a_different_month(monkeypatch):
+    fest = row("fest1", "Hampi", "The car festival in mid-August is famous in Hampi.", score=0.99,
+               aspect="timing")
+    _llm(monkeypatch, ["fest1", *[f"Fil{j}" for j in range(9)]])
+    rows = _scarce_rows([fest])
+    december = run_local(make_deps(rows=rows), TEXT, {**NEUTRAL, "month": 12})
+    august = run_local(make_deps(rows=rows), TEXT, {**NEUTRAL, "month": 8})
+    assert "fest1" not in _packed_ids(december) and "fest1" in _packed_ids(august)

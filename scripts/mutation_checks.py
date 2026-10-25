@@ -864,7 +864,8 @@ DEMO_MUTATIONS = [
     ("M275 one other place is enough to call a text about elsewhere", "src/agents/scope.py",
      "min_others: int = 2", "min_others: int = 1"),
     ("M276 the write node does not pass the foreign-place matcher", "src/agents/nodes.py",
-     "elsewhere=foreign_place_matcher(deps.registry_entries))", "elsewhere=None)"),
+     "elsewhere=foreign_place_matcher(deps.registry_entries), month=req.month)",
+     "elsewhere=None, month=req.month)"),
     ("M277 the write node does not pass the constraints", "src/agents/nodes.py",
      "                    constraints=req.constraints,\n", "                    constraints=(),\n"),
     ("M278 mismatched interests do not fall back to the sights", EV,
@@ -915,6 +916,15 @@ DEMO_MUTATIONS = [
      "item.provenance == \"llm\" and item.aspect != \"history\"", "item.provenance == \"llm\""),
     ("M298 the warning cue is searched in the whole text, not what the writer sees", EV,
      "    return bool(WARNING_CUE.search(item.text[:WARNING_CHARS]))\n", "    return bool(WARNING_CUE.search(item.text))\n"),
+    ("M299 no text is ever off-season", EV,
+     "    return bool(named) and month not in named\n", "    return False\n"),
+    ("M300 a month next to a year counts as a time of year", EV,
+     "        if not _dated(text, m.start(), m.end()):\n", "        if True:\n"),
+    ("M301 a month range is not expanded", EV,
+     "    for m in MONTH_RANGE.finditer(text):\n", "    for m in []:\n"),
+    ("M302 the write node does not pass the trip month", "src/agents/nodes.py",
+     "foreign_place_matcher(deps.registry_entries), month=req.month)",
+     "foreign_place_matcher(deps.registry_entries))"),
 ]
 
 

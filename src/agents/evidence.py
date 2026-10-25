@@ -243,12 +243,63 @@ def logistics_wanted(constraints) -> bool:
     return any(word in joined for word in LOGISTICS_WORDS)
 
 
-def low_value_ids(items: list[EvidenceItem], constraints=(), elsewhere=None) -> set[str]:
+# A month named as a time of year (D132), not a calendar: "mid-August", "in July", "from October to
+# March". A month next to a year is a date in history ("In October 2019") and is ignored. "Mar" is
+# not read as a month (Mar Thoma church), nor is lower-case "may" or "march".
+MONTH_WORD = (r"(?:January|February|March|April|May|June|July|August|September|October|November|"
+              r"December|Jan|Feb|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)")
+MONTH_NUMBER = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7, "aug": 8,
+                "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+MONTH_RE = re.compile(rf"\b({MONTH_WORD})\b")
+MONTH_RANGE = re.compile(rf"\b({MONTH_WORD})\b\s*(?:to|until|through|-|–|—)\s*"
+                         rf"\b({MONTH_WORD})\b")
+YEAR = re.compile(r"\b(?:1[0-9]|20)\d\d\b")
+
+
+def _number(word: str) -> int:
+    return MONTH_NUMBER[word[:3].lower()]
+
+
+def _dated(text: str, start: int, end: int) -> bool:
+    return bool(YEAR.search(text[max(start - 8, 0):end + 8]))
+
+
+def months_named(text: str) -> set[int]:
+    """The months the text names as a time of year, a range such as 'October to March' expanded
+    (cyclic). Dates with a year are history and do not count."""
+    named: set[int] = set()
+    for m in MONTH_RE.finditer(text):
+        if not _dated(text, m.start(), m.end()):
+            named.add(_number(m.group(1)))
+    for m in MONTH_RANGE.finditer(text):
+        if _dated(text, m.start(), m.end()):
+            continue
+        a, b = _number(m.group(1)), _number(m.group(2))
+        while True:
+            named.add(a)
+            if a == b:
+                break
+            a = a % 12 + 1
+    return named
+
+
+def is_off_season(text: str, month: int | None) -> bool:
+    """True when the text names months and the trip month is not among them."""
+    if not month:
+        return False
+    named = months_named(text[:WARNING_CHARS])
+    return bool(named) and month not in named
+
+
+def low_value_ids(items: list[EvidenceItem], constraints=(), elsewhere=None, month=None
+                  ) -> set[str]:
     """Chunk ids of a stop that rank below its sights: logistics text (unless a constraint asks
-    for it) and text about other places (`elsewhere(text, place)` -> bool)."""
+    for it), text about other places (`elsewhere(text, place)` -> bool) and text that names other
+    months than the trip month."""
     keep = logistics_wanted(constraints)
     return {i.chunk_id for i in items
-            if (not keep and is_logistics(i.text)) or (elsewhere and elsewhere(i.text, i.place))}
+            if (not keep and is_logistics(i.text)) or (elsewhere and elsewhere(i.text, i.place))
+            or is_off_season(i.text, month)}
 
 
 def is_low_value(item: EvidenceItem, elsewhere=None) -> bool:
@@ -301,7 +352,7 @@ def drop_one(packed: Packed) -> PackedItem:
 
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
          cfg: dict | None = None, interests=(), named_places=(), scope_check=None,
-         constraints=(), elsewhere=None) -> Packed:
+         constraints=(), elsewhere=None, month=None) -> Packed:
     """Per planned stop at most `items_per_night` corpus items for each night, never more than
     `items_per_stop_max`, with at most `warnings_per_stop` model-written warnings ranked first
     (D129), and `live_items` live items. Order is the plan's stop order, then live; aliases follow
@@ -324,7 +375,7 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
         first = len(out.items)
         out.place_days[stop.place] = max(len(days), 1)
         items = corpus.get(stop.place, [])
-        low = low_value_ids(items, constraints, elsewhere)
+        low = low_value_ids(items, constraints, elsewhere, month)
         # interests that match nothing at this stop: rank its best sights instead (no message)
         eff = interests
         if interests and not any(interest_match(i, interests) for i in items):

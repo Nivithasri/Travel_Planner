@@ -770,3 +770,50 @@ def test_the_cue_is_read_from_the_text_the_writer_sees_and_the_window_matches_th
     late = item("l1", text="x " * 200 + "Beware of touts.", aspect="safety", warn=True, score=0.1)
     timing = item("t1", text="The fort opens at nine.", aspect="timing", score=0.9)
     assert first_id([timing, late]) == "t1"  # the cue lies beyond what the writer is shown
+
+
+# ---- demo-quality: text that names other months than the trip month ranks lower (D132) ----------
+
+def test_months_are_read_as_a_time_of_year_not_as_dates_or_other_words():
+    from src.agents.evidence import months_named
+
+    assert months_named("The car festival in mid-August is famous.") == {8}
+    assert months_named("Fair in July and Aug.") == {7, 8} and months_named("on 10 October") == {10}
+    assert months_named("In October 2019, Kochi was ranked seventh.") == set()  # a dated event
+    assert months_named("Built 1 January 1799 by the king.") == set()
+    assert months_named("The Mar Thoma church may be visited; we march on.") == set()
+    assert months_named("Best from October to March.") == {10, 11, 12, 1, 2, 3}  # cyclic range
+    assert months_named("Open from May to July.") == {5, 6, 7}
+
+
+def test_a_text_is_off_season_only_when_it_names_months_and_not_the_trip_month():
+    from src.agents.evidence import is_off_season
+
+    festival = "The car festival in mid-August is famous."
+    assert is_off_season(festival, 12) and not is_off_season(festival, 8)
+    assert not is_off_season(festival, None)  # no trip month: nothing to compare
+    assert not is_off_season("The fort opens at nine.", 12)  # no month named
+    assert not is_off_season("Best from October to March.", 12)
+    assert is_off_season("Best from October to March.", 6)
+    assert not is_off_season("In October 2019 it was ranked seventh.", 12)
+
+
+def _festival_order(month):
+    ev = {"Hampi": [item("f1", text="The car festival in mid-August is famous.", aspect="timing",
+                         score=0.9),
+                    item("s1", text="The Virupaksha temple is the oldest shrine.",
+                         aspect="history", score=0.1)]}
+    return [x.item.chunk_id for x in pack(plan_for(["Hampi"]), ev, [], CFG, month=month).items]
+
+
+def test_an_off_season_item_ranks_below_the_places_other_items_and_is_not_dropped():
+    assert _festival_order(None) == ["f1", "s1"] and _festival_order(8) == ["f1", "s1"]
+    assert _festival_order(12) == ["s1", "f1"]  # demoted, still available
+
+
+def test_an_off_season_warning_loses_the_warning_first_slot():
+    ev = {"Hampi": [item("w1", text="Beware: the fort gate is closed in July.", aspect="safety",
+                         warn=True, score=0.1),
+                    item("t1", text="The fort opens at nine.", aspect="timing", score=0.9)]}
+    first = lambda m: pack(plan_for(["Hampi"]), ev, [], CFG, month=m).items[0].item.chunk_id  # noqa: E731
+    assert first(7) == "w1" and first(12) == "t1"

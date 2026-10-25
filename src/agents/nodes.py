@@ -274,7 +274,7 @@ def write_node(state: RunState, deps: Deps) -> dict:
                     interests=req.interests, named_places=req.named_places,
                     scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed),
                     constraints=req.constraints,
-                    elsewhere=foreign_place_matcher(deps.registry_entries))
+                    elsewhere=foreign_place_matcher(deps.registry_entries), month=req.month)
     messages = W.build_messages(req, plan, packed, deps.pipeline_cfg)
     before = deps.tokens_used()
     draft = W.write(deps.client, deps.model, messages, deps.pipeline_cfg, deps.on_piece)
