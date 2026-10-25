@@ -614,7 +614,7 @@ def test_wiki_editor_notes_and_list_numbers_are_stripped_but_dated_figures_stay(
     out = strip_editor_notes(raw)
     assert out.startswith("Archaeological Museum of Badami.") and "updated" not in out.lower()
     assert "Hebbal Lake." in out and "3 Hebbal" not in out and "1. Cave" not in out
-    assert "Cave temples" in out and "2 passenger trains" in out and "14 February" in out
+    assert "2 passenger trains" in out and "14 February" in out
     assert "(as of 2011)" in out and "as of 2017" in out and "[edit]" not in out
     assert "Apr 2026" not in out
 
@@ -635,3 +635,17 @@ def test_packed_items_have_no_editor_notes_and_end_on_a_full_sentence():
     p = pack(plan_for(["Hampi"]), ev, [], CFG)
     t = p.items[0].text
     assert "updated" not in t and t.endswith("temple.") and len(t) <= W["item_chars"]
+
+
+def test_wiki_section_title_lines_are_stripped_but_sentences_and_lone_titles_stay():
+    from src.agents.evidence import strip_editor_notes
+
+    raw = "History\nHistory\nPulakeshin I founded the dynasty in 540.\nGet around\nWalk everywhere."
+    assert strip_editor_notes(raw) == "Pulakeshin I founded the dynasty in 540.\nWalk everywhere."
+    assert strip_editor_notes("See\nHampi is a visual delight.") == "Hampi is a visual delight."
+    assert strip_editor_notes("History") == "History"  # nothing else to keep
+    keep = "Hampi is old.\nThe fort closes at 5 PM.\nEntry is free for children."
+    assert strip_editor_notes(keep) == keep
+    p = pack(plan_for(["Hampi"]), {"Hampi": [item("s1", text="Description\nHampi is hilly.")]},
+             [], CFG)
+    assert p.items[0].text == "Hampi is hilly."

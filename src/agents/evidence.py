@@ -80,12 +80,24 @@ LIST_PREFIX = re.compile(
     rf"(?m)^[ \t]*\d{{1,2}}[.)]?[ \t]+(?=(?!(?i:{MONTHS})[a-z]*\b)[A-Z][a-z])")
 
 
+HEADER_LINE = re.compile(r"[A-Z][A-Za-z'’-]*(?: [A-Za-z'’-]+){0,2}")
+
+
 def strip_editor_notes(text: str) -> str:
     """Remove wiki editor notes and list-number prefixes from raw chunk text (before cleaning, so
     line starts are still visible)."""
     t = UPDATED_LINE.sub("", str(text))
     t = EDITOR_NOTE.sub(" ", t)
-    return LIST_PREFIX.sub("", t)
+    t = LIST_PREFIX.sub("", t)
+    kept = [ln for ln in t.split("\n") if not _is_header_line(ln)]
+    return "\n".join(kept) if any(ln.strip() for ln in kept) else t
+
+
+def _is_header_line(line: str) -> bool:
+    """A wiki section title on its own line: one to three words, no digits or sentence marks
+    ('See', 'History', 'Get around'). Text that is only such lines is left alone by the caller."""
+    s = line.strip()
+    return bool(s) and len(s) <= 28 and bool(HEADER_LINE.fullmatch(s))
 
 
 def clean_text(text: str, max_chars: int, sentences: bool = False) -> str:

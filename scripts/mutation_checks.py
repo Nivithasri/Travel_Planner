@@ -848,11 +848,14 @@ DEMO_MUTATIONS = [
     ("M269 editor notes stay in the packed text", EV,
      "clean_text(strip_editor_notes(item.text), w[", "clean_text(item.text, w["),
     ("M270 list-number prefixes are not stripped", EV,
-     "    return LIST_PREFIX.sub(\"\", t)\n", "    return t\n"),
+     "    t = LIST_PREFIX.sub(\"\", t)\n", "    t = t\n"),
     ("M271 every as-of date is stripped as an editor note", EV,
      "(?:updated|revised|edited)", "(?:updated|revised|edited|as of)"),
     ("M272 packed items are cut in the middle of a sentence again", EV,
      "w[\"item_chars\"], sentences=True)", "w[\"item_chars\"])"),
+    ("M273 wiki section title lines stay in the text", EV,
+     "    return bool(s) and len(s) <= 28 and bool(HEADER_LINE.fullmatch(s))\n",
+     "    return False\n"),
 ]
 
 
