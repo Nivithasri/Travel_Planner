@@ -387,9 +387,11 @@ def test_the_page_shows_a_counts_only_live_status_line(tmp_path, monkeypatch, na
     at = submit(at, **{"checkbox__f_live": True})
     page = blob(at)
     assert line in page
-    caption = next(str(c.value) for c in at.caption if str(c.value).startswith("live search:")
-                   and "terms" not in str(c.value))
+    caption = next(str(c.value)[2:] for c in at.markdown if str(c.value).startswith(
+        "- live search:") and "terms" not in str(c.value))
     assert caption == line  # the line itself carries counts and labels only
+    details = next(e for e in at.expander if e.label == S.DETAILS_TITLE)
+    assert details.proto.expanded is False  # the status line lives in the collapsed expander
     assert not any(w in caption for w in ("ruins", "Badami", "Paris", "http"))
     assert files_in(tmp_path) == []  # a live-on answer writes nothing
     sources = next(d for d in at.dataframe if "Chunk id" in d.value.columns).value
@@ -430,3 +432,44 @@ def test_the_itinerary_shows_short_linked_markers_while_the_table_keeps_the_chun
     assert list(sources["Chunk id"]) == ["chunk:abc", "chunk:blog1"]
     stored = " ".join(p.read_text(encoding="utf-8") for p in files(fake))
     assert "[chunk:abc]" in stored and "[[S1]]" not in stored  # the cache keeps the raw ids
+
+
+# ---- demo-quality: one collapsed expander for notes, caveats and warnings (D131) ---------------
+
+NOTED = ("# South India itinerary\n\n## Route, season and budget (computed)\n"
+         "- Transfer: Bengaluru to Hampi, about 6 h by road (computed: travel_time, "
+         "provisional)\n\n"
+         "## Day 1: Hampi\n- Ruins. [chunk:abc]\n\n## Notes and warnings\n"
+         "- critic: day 2: wrote the no-details bullet\n")
+
+
+def test_notes_caveats_and_warnings_are_in_one_collapsed_expander(fake):
+    fake.next = lambda use_live: make_state(text=NOTED, repaired=True)
+    at = submit(app())
+    details = next(e for e in at.expander if e.label == S.DETAILS_TITLE)
+    assert details.proto.expanded is False
+    inside = [str(m.value) for m in details.markdown]
+    for want in ("- critic: day 2: wrote the no-details bullet", "- thin evidence for Hampi",
+                 f"- {S.RECENCY_NOTE}", f"- {S.CORPUS_ONLY_NOTE}", f"- {S.REPAIRED_NOTE}"):
+        assert want in inside
+    assert not list(at.warning) and not list(at.info)  # nothing else is boxed on the page
+    outside = [str(c.value) for c in at.caption]
+    assert S.RECENCY_NOTE not in outside and S.MARKER_NOTE not in outside
+
+
+def test_the_itinerary_shows_short_labels_and_no_notes_block(fake):
+    fake.next = lambda use_live: make_state(text=NOTED)
+    page = blob(submit(app()))
+    assert "about 6 h by road (provisional)" in page and "(computed:" not in page
+    assert f"**Legs** ({S.TRAVEL_LABEL})" in page and f"({S.BUDGET_SHORT})" in page
+    shown = [str(m.value) for m in submit(app()).markdown if "Day 1" in str(m.value)]
+    assert shown and all("Notes and warnings" not in m for m in shown)
+
+
+def test_a_failed_rule_check_and_the_live_terms_notice_stay_on_screen(fake):
+    fake.next = lambda use_live: make_state(critic="failed_rules")
+    at = submit(app())
+    assert any("still reports problems" in str(e.value) for e in at.error)
+    fake.next = lambda use_live: make_state(live=use_live)
+    at = submit(app(), **{"checkbox__f_live": True})
+    assert any(TERMS_NOTICE in str(w.value) for w in at.warning)

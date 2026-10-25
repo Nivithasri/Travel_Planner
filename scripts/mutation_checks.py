@@ -896,6 +896,19 @@ DEMO_MUTATIONS = [
     ("M289 the write node gives no evidence to day-trip places", "src/agents/nodes.py",
      "    places = [*(s.place for s in plan.stops), *sorted(extra)]\n",
      "    places = [s.place for s in plan.stops]\n"),
+    ("M290 the notes block stays in the itinerary text", "app/state.py",
+     "    return \"\\n\".join(lines[:idx]).rstrip() + \"\\n\", notes\n",
+     "    return str(text), notes\n"),
+    ("M291 the long budget caveat stays in the itinerary", "app/state.py",
+     "    t = str(text).replace(long_budget, f\" ({BUDGET_SHORT})\")\n", "    t = str(text)\n"),
+    ("M292 the repaired line is left out of the details", "app/state.py",
+     "    if view.get(\"repaired\"):\n        lines.append(REPAIRED_NOTE)\n", "    if False:\n        lines.append(REPAIRED_NOTE)\n"),
+    ("M293 the details expander is open by default", "app/streamlit_app.py",
+     "with st.expander(S.DETAILS_TITLE, expanded=False):", "with st.expander(S.DETAILS_TITLE, expanded=True):"),
+    ("M294 a failed rule check is no longer shown on the page", "app/streamlit_app.py",
+     "    if critic.get(\"status\") == \"failed_rules\":\n", "    if False:\n"),
+    ("M295 the live terms notice is hidden", "app/streamlit_app.py",
+     "    if S.terms_notice_visible(view):\n        st.warning(TERMS_NOTICE)\n", "    if False:\n        st.warning(TERMS_NOTICE)\n"),
 ]
 
 

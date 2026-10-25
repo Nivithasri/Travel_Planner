@@ -695,3 +695,66 @@ def leg_rows(plan: dict) -> list[dict]:
     return [{"From": leg["origin"], "To": leg["destination"], "Hours": leg["hours"],
              "Travel days": leg["days"], "Kind": leg.get("kind", "between")}
             for leg in plan.get("legs", [])]
+
+
+# ---- quiet display: notes and caveats in one collapsed expander (D131) -------------------------
+
+NOTES_HEADING = "## Notes and warnings"
+BUDGET_SHORT = "estimate"
+DETAILS_TITLE = "Details and sources notes"
+REPAIRED_NOTE = "The rule checker repaired the draft once; the text above is the repaired one."
+CORPUS_ONLY_NOTE = "corpus only: no live search was used for this answer"
+
+
+def split_notes(text: str) -> tuple[str, list[str]]:
+    """(the itinerary without its 'Notes and warnings' block, the lines of that block)."""
+    lines = str(text).splitlines()
+    idx = next((i for i, ln in enumerate(lines) if ln.strip() == NOTES_HEADING), None)
+    if idx is None:
+        return str(text), []
+    notes = [ln.strip()[2:].strip() if ln.strip().startswith("- ") else ln.strip()
+             for ln in lines[idx + 1:] if ln.strip()]
+    return "\n".join(lines[:idx]).rstrip() + "\n", notes
+
+
+def short_labels(text: str) -> str:
+    """The computed lines with short labels: 'provisional' beside travel times, 'estimate' beside
+    the budget; the long caveat sentences are shown in the details instead."""
+    from src.agents.budget import LABEL
+
+    long_budget = f". {LABEL[0].upper()}{LABEL[1:]}. (computed: budget table)"
+    t = str(text).replace(long_budget, f" ({BUDGET_SHORT})")
+    t = t.replace("(computed: travel_time, provisional)", f"({TRAVEL_LABEL})")
+    return t.replace(" (computed: check_season)", "").replace(" (computed: budget table)", "")
+
+
+def detail_lines(view: dict, final: dict, prep_notes=()) -> list[str]:
+    """Everything the page used to print as notices and caveats, in one list: the notes block of
+    the itinerary, warnings, the live status, the recency, marker and label lines. The terms
+    notice of a live answer is NOT here (it stays on screen, D109)."""
+    from src.agents.budget import LABEL
+
+    _, note_lines = split_notes(str(final.get("text", "")))
+    lines: list[str] = []
+    if view.get("repaired"):
+        lines.append(REPAIRED_NOTE)
+    lines += note_lines
+    lines += [*(final.get("warnings") or []), *(view.get("warnings") or []), *prep_notes]
+    status = view.get("live_status")
+    if live_ran(view):
+        if status != "ok":
+            lines.append(view.get("live_note") or "live search returned nothing usable; "
+                         "answers use the corpus only")
+    elif status in ("no_key", "quota", "terms_not_verified"):
+        lines.append(view.get("live_note")
+                     or "live search unavailable; answers use the corpus only")
+    else:
+        lines.append(CORPUS_ONLY_NOTE)
+    count_line = live_status_line(view)
+    if count_line:
+        lines.append(count_line)
+    lines += [RECENCY_NOTE, MARKER_NOTE,
+              f"Travel times are {TRAVEL_LABEL}. Budget figures are a {BUDGET_LABEL}. "
+              f"Place-card items are {CARD_LABEL}.",
+              f"Budget: {LABEL[0].upper()}{LABEL[1:]}."]
+    return list(dict.fromkeys(ln.strip() for ln in lines if ln and ln.strip()))

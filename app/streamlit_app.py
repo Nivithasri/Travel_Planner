@@ -172,12 +172,12 @@ if handle is not None:
 if ss.get("error"):
     st.error(show(f"The run did not finish: {ss['error']}"))
 
-for note in ss.get("notes", []):
-    st.info(show(note))
-
 # ---- result ------------------------------------------------------------------------------------
 
 view = ss.get("view")
+if not view:
+    for note in ss.get("notes", []):
+        st.info(show(note))
 if view:
     view = S.redact_deep(S.display_view(view))
     final = view.get("final") or {}
@@ -189,33 +189,19 @@ if view:
     else:
         st.caption("fresh run")
 
+    # kept on screen: the terms notice of a live answer (D109) and a failed rule check (D104);
+    # every other notice, caveat and warning is in the one collapsed expander below
     if S.terms_notice_visible(view):
         st.warning(TERMS_NOTICE)
-        if view.get("live_status") != "ok":
-            st.warning(view.get("live_note") or "live search returned nothing usable; "
-                       "answers use the corpus only")
-    elif view.get("live_status") in ("no_key", "quota", "terms_not_verified"):
-        st.warning(view.get("live_note") or "live search unavailable; answers use the corpus only")
-    else:
-        st.caption("corpus only: no live search was used for this answer")
-    status_line = S.live_status_line(view)
-    if status_line:
-        st.caption(status_line)
-    st.caption(S.RECENCY_NOTE)
-
     critic = final.get("critic") or {}
-    if view.get("repaired"):
-        st.info("The rule checker repaired the draft once; the text below is the repaired one.")
     if critic.get("status") == "failed_rules":
         st.error("The rule checker still reports problems:\n\n" + "\n".join(
             f"- {f.get('rule')}: {f.get('message')}" for f in critic.get("findings", [])))
 
     st.header("Itinerary")
     shown_text, _ = S.cited_text(final)
-    st.markdown(shown_text)
-    st.caption(S.MARKER_NOTE)
-    st.caption(f"Travel times are {S.TRAVEL_LABEL}. Budget figures are a {S.BUDGET_LABEL}. "
-               f"Place-card items are {S.CARD_LABEL}.")
+    body, _notes = S.split_notes(shown_text)
+    st.markdown(S.short_labels(body))
 
     plan = final.get("plan") or {}
     cards = S.load_cards()
@@ -233,12 +219,12 @@ if view:
                       for s in plan["stops"]], hide_index=True)
         legs = S.leg_rows(plan)
         if legs:
-            st.markdown(f"**Legs** (hours are {S.TRAVEL_LABEL})")
+            st.markdown(f"**Legs** ({S.TRAVEL_LABEL})")
             st.dataframe(legs, hide_index=True)
         budget_info = plan.get("budget") or {}
         if budget_info.get("total"):
             st.markdown(f"**Budget:** about INR {budget_info['total']:,} in total "
-                        f"({budget_info.get('tier')} tier) - {S.BUDGET_LABEL}")
+                        f"({budget_info.get('tier')} tier) ({S.BUDGET_SHORT})")
         with st.expander(f"Place cards ({S.CARD_LABEL})"):
             for stop in plan["stops"]:
                 card = cards.get(stop["place"]) or {}
@@ -251,12 +237,6 @@ if view:
                     st.markdown(f"- {kind}: {str(it.get('text', ''))[:300]} "
                                 f"([source]({it.get('url', '')}))")
 
-    warnings = list(dict.fromkeys([*(final.get("warnings") or []), *(view.get("warnings") or [])]))
-    if warnings:
-        st.subheader("Warnings")
-        for w in warnings:
-            st.warning(w)
-
     rows = S.source_rows(final, attribution, S.card_warning_chunk_ids(cards))
     with st.expander(f"Sources ({len(rows)})", expanded=True):
         if rows:
@@ -265,6 +245,10 @@ if view:
         else:
             st.caption("no sources were cited")
         st.caption(S.CC_BY_SA + ". Blog pages are listed by title and link only.")
+
+    with st.expander(S.DETAILS_TITLE, expanded=False):
+        for line in S.detail_lines(view, final, ss.get("notes", [])):
+            st.markdown(f"- {show(line)}")
 
     t_rows, total = S.timing_rows(view.get("timings") or {})
     with st.expander("Timing per node", expanded=False):
