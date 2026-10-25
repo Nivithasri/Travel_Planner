@@ -261,3 +261,21 @@ def test_the_repair_call_skips_the_cache_only_when_the_prompt_holds_live_text():
     C.make_repair(plain, "m", ctx_for(make_plan()), CFG)(draft, [finding])
     C.make_repair(withlive, "m", ctx_for(make_plan(), live=[live_item]), CFG)(draft, [finding])
     assert plain.kwargs == {} and withlive.kwargs == {"cache": False}
+
+
+# ---- demo-quality: hyphen look-alikes in model output (D131) ---------------------------------
+
+def test_a_non_breaking_hyphen_in_the_no_details_line_is_not_an_uncited_bullet():
+    ctx = ctx_for(make_plan(), ev={"Hampi": []})
+    draft = "## Day 1: Hampi\n- No source\u2011backed details for this day.\n"
+    assert C.check(draft, ctx) == []
+    text, report, actions = C.run_cycle(draft, ctx)
+    assert report.status == "passed" and actions == [] and "\u2011" not in text
+
+
+def test_repair_output_is_normalised_before_it_is_merged():
+    ctx = ctx_for(make_plan(verdict="poor"))
+    draft = "## Day 1: Hampi\n- A fact about Hampi. [S1]\n## Backup options\n- Gokarna\n"
+    fixed = "## Day 1: Hampi\n- Heavy rain\u2011season access is limited. [S1]\n"
+    text, report, _ = C.run_cycle(draft, ctx, lambda t, f: fixed)
+    assert report.status == "repaired" and "rain-season" in text and "\u2011" not in text

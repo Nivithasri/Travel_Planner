@@ -36,6 +36,15 @@ SYSTEM = (
 ALIAS = re.compile(r"\[((?:S|L)\d+)\]")
 LIVE_BLOCK = re.compile(r"<<L\d+ \|")  # an evidence block of a live item (evidence_block)
 NO_DETAILS = "- No source-backed details for this day."
+# Typographic variants the model sometimes writes: the non-breaking hyphen made the no-details
+# line unrecognisable (it was then stripped as an uncited bullet and the draft counted as repaired).
+_NORMALISE = {0x2010: "-", 0x2011: "-", 0x2012: "-", 0x00AD: None, 0x00A0: " ", 0x202F: " ",
+              0x2009: " ", 0x2007: " "}
+
+
+def normalize_output(text: str) -> str:
+    """Hyphen look-alikes become '-', the soft hyphen goes, odd spaces become ' '."""
+    return str(text).translate(_NORMALISE)
 
 
 def plan_block(plan: Plan, limit: int) -> str:
@@ -122,7 +131,7 @@ def write(client, model: str, messages: list[dict], cfg: dict | None = None,
         parts.append(piece)
         if on_piece:
             on_piece(piece)
-    return "".join(parts)
+    return normalize_output("".join(parts))
 
 
 def citations(text: str) -> list[str]:

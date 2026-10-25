@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 
 from src.agents.evidence import INJECTION, Packed
 from src.agents.state import CriticFinding, CriticReport, ParsedRequest, Plan
-from src.agents.writer import ALIAS, NO_DETAILS
+from src.agents.writer import ALIAS, NO_DETAILS, normalize_output
 
 HEADING = re.compile(r"^#{2,3}\s*Day\s+(\d+)\s*[:\-]\s*(.+?)\s*$", re.I)
 BACKUP = re.compile(r"^#{2,3}\s*Backup options\s*$", re.I)
@@ -50,7 +50,7 @@ def parse_draft(text: str) -> Draft:
     pre: list[str] = []
     cur: DaySection | None = None
     in_backup = False
-    for line in text.splitlines():
+    for line in normalize_output(text).splitlines():
         m = HEADING.match(line.strip())
         if m:
             cur = DaySection(int(m.group(1)), m.group(2).strip(), [], [line])
@@ -294,7 +294,7 @@ def run_cycle(draft_text: str, ctx: CriticContext,
     """critic -> deterministic fix -> critic -> ONE LLM repair of the offending days -> critic.
     Returns (final draft, report, actions). `repair(draft, findings)` returns replacement day
     sections (or '' to give up); it is called at most once."""
-    text = ensure_status_line(draft_text, ctx.request, ctx.live_status)
+    text = ensure_status_line(normalize_output(draft_text), ctx.request, ctx.live_status)
     first = check(text, ctx)
     if not first:
         return text, CriticReport(ok=True, status="passed"), []
@@ -347,8 +347,8 @@ def make_repair(client, model: str, ctx: CriticContext, cfg: dict | None = None
     def repair(draft_text: str, findings: list[CriticFinding]) -> str:
         msgs = repair_messages(ctx, draft_text, findings, cfg)
         extra = {"cache": False} if holds_live_text(msgs) else {}
-        return client.chat(msgs, model, options={"max_tokens": r["max_tokens"],
-                                                 "reasoning_effort": r["reasoning_effort"]},
-                           **extra)
+        return normalize_output(client.chat(
+            msgs, model, options={"max_tokens": r["max_tokens"],
+                                  "reasoning_effort": r["reasoning_effort"]}, **extra))
 
     return repair

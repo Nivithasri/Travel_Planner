@@ -798,6 +798,24 @@ EVIDENCE_MUTATIONS = [
 ]
 
 
+# demo-quality (D131): one mutation per new rule, run with --demo.
+DEMO_TESTS = ["tests/test_writer.py", "tests/test_critic.py", "tests/test_graph.py",
+              "tests/test_planner.py", "tests/test_state.py", "tests/test_app_logic.py",
+              "tests/test_app_page.py"]
+WR = "src/agents/writer.py"
+CR = "src/agents/critic.py"
+DEMO_MUTATIONS = [
+    ("M252 hyphen look-alikes are not normalised", WR,
+     "    return str(text).translate(_NORMALISE)\n", "    return str(text)\n"),
+    ("M253 the draft parser does not normalise", CR,
+     "    for line in normalize_output(text).splitlines():\n",
+     "    for line in text.splitlines():\n"),
+    ("M254 the writer returns the raw text", WR,
+     "    return normalize_output(\"\".join(parts))\n",
+     "    return \"\".join(parts)\n"),
+]
+
+
 def restore(path, original, tries=8):
     """Write the original bytes back, retrying a transient OS error (seen once on Windows)."""
     import time
@@ -825,7 +843,10 @@ def main() -> int:
     phase8 += [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]
     phase9 = [(m, PHASE9_TESTS) for m in PHASE9_MUTATIONS]
     phase9 += [(m, EVIDENCE_TESTS) for m in EVIDENCE_MUTATIONS]
-    if "--evidence" in sys.argv[1:]:  # --evidence runs only M241 to M248 (D129)
+    demo = [(m, DEMO_TESTS) for m in DEMO_MUTATIONS]
+    if "--demo" in sys.argv[1:]:  # --demo runs only the demo-quality mutations (D131)
+        plan = demo
+    elif "--evidence" in sys.argv[1:]:  # --evidence runs only M241 to M248 (D129)
         plan = [(m, EVIDENCE_TESTS) for m in EVIDENCE_MUTATIONS]
     elif "--phase9" in sys.argv[1:]:  # --phase9 runs M213 to M248 (D123 to D129)
         plan = phase9
@@ -842,7 +863,7 @@ def main() -> int:
     elif "--retrieval" in sys.argv[1:]:  # --retrieval runs only M42+
         plan = retrieval
     else:
-        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7 + phase8 + phase9
+        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7 + phase8 + phase9 + demo
     for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()

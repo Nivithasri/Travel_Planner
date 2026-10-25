@@ -466,3 +466,19 @@ def test_the_scope_check_is_word_bounded_and_only_runs_on_items_that_passed_the_
     p = pack(plan_for(["Pondicherry"]), {}, live, CFG, scope_check=real_matcher())
     assert live_ids(p) == ["live:w", "live:left"] or live_ids(p) == ["live:left", "live:w"]
     assert reasons(p) == {"live:out": "live_out_of_plan", "live:none": "live_unresolved"}
+
+
+# ---- demo-quality: output normalisation (D131) -------------------------------------------------
+
+def test_normalize_output_maps_hyphen_lookalikes_and_odd_spaces():
+    raw = ("No source\u2011backed, well\u2010known, 3\u201212, "
+           "soft\u00adhyphen\u202fnarrow\u00a0space")
+    want = "No source-backed, well-known, 3-12, softhyphen narrow space"
+    assert writer.normalize_output(raw) == want
+    assert writer.normalize_output("en\u2013dash stays") == "en\u2013dash stays"
+
+
+def test_write_returns_normalised_text():
+    c = FakeClient(["## Day 1: Hampi\n", "- No source\u2011backed details for this day."])
+    out = writer.write(c, "m", [{"role": "user", "content": "u"}], CFG)
+    assert out == "## Day 1: Hampi\n" + writer.NO_DETAILS
