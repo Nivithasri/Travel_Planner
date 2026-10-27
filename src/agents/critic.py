@@ -13,9 +13,9 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from src.agents.evidence import INJECTION, Packed
+from src.agents.evidence import INJECTION, Packed, lead
 from src.agents.state import CriticFinding, CriticReport, ParsedRequest, Plan
-from src.agents.writer import ALIAS, NO_DETAILS
+from src.agents.writer import ALIAS, NO_DETAILS, normalize_output
 
 HEADING = re.compile(r"^#{2,3}\s*Day\s+(\d+)\s*[:\-]\s*(.+?)\s*$", re.I)
 BACKUP = re.compile(r"^#{2,3}\s*Backup options\s*$", re.I)
@@ -50,7 +50,7 @@ def parse_draft(text: str) -> Draft:
     pre: list[str] = []
     cur: DaySection | None = None
     in_backup = False
-    for line in text.splitlines():
+    for line in normalize_output(text).splitlines():
         m = HEADING.match(line.strip())
         if m:
             cur = DaySection(int(m.group(1)), m.group(2).strip(), [], [line])
@@ -98,8 +98,32 @@ def _mentions(text: str, name: str) -> bool:
     return re.search(rf"\b{re.escape(name)}\b", text, re.I) is not None
 
 
+NO_DETAILS_WORDS = re.compile(r"no source[- ]backed details", re.I)
+
+
+def is_no_details(bullet: str) -> bool:
+    """The no-details line, also when the model wraps it in brackets or changes the full stop."""
+    return bool(NO_DETAILS_WORDS.search(bullet)) and len(bullet) <= 70 and not ALIAS.search(bullet)
+
+
 def _is_exempt(bullet: str) -> bool:
-    return f"- {bullet}".strip() == NO_DETAILS or bullet.startswith("Current status")
+    return (f"- {bullet}".strip() == NO_DETAILS or bullet.startswith("Current status")
+            or is_no_details(bullet))
+
+
+def _wrong_place(packed: Packed, alias: str, day_place: str, also=()) -> bool:
+    """True when the packed corpus source behind `alias` is about a different place than the
+    day's or than a place the day also visits (live items are checked elsewhere)."""
+    p = packed.by_alias(alias)
+    if p is None or p.item.is_live or not p.item.place:
+        return False
+    a = p.item.place.casefold()
+    return all(a not in b.casefold() and b.casefold() not in a for b in (day_place, *also))
+
+
+def _also(plan: Plan, day: int) -> tuple[str, ...]:
+    """The extra places a plan day visits (named places that fit as a day trip)."""
+    return next((tuple(r.also_visit) for r in plan.days if r.day == day), ())
 
 
 def blocked_names(ctx: CriticContext) -> list[str]:
@@ -121,10 +145,10 @@ def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
         f.append(CriticFinding(rule="R1", message="the plan is infeasible: "
                                f"{plan.infeasible_reason}", fixable=False))
     for row in plan.days:
-        if row.travel_hours > plan.limit_hours + 1e-9:
+        if row.travel_hours + row.trip_hours > plan.limit_hours + 1e-9:
             f.append(CriticFinding(rule="R1", day=row.day, fixable=False, message=(
-                f"day {row.day} travel {row.travel_hours:g} h exceeds the {plan.limit_hours:g} h "
-                "daily limit")))
+                f"day {row.day} travel {row.travel_hours + row.trip_hours:g} h exceeds the "
+                f"{plan.limit_hours:g} h daily limit")))
     nums = [x.number for x in d.days]
     if nums != list(range(1, len(plan.days) + 1)):
         f.append(CriticFinding(rule="R1", fixable=False, message=(
@@ -176,6 +200,9 @@ def check(draft_text: str, ctx: CriticContext) -> list[CriticFinding]:
                 f.append(CriticFinding(rule="R4", day=x.number, message=(
                     f"day {x.number}: uncited bullet: {b[:80]!r}")))
             for t in tags:
+                if _wrong_place(ctx.packed, t, x.place, _also(ctx.plan, x.number)):
+                    f.append(CriticFinding(rule="R4", day=x.number, message=(
+                        f"day {x.number}: [{t}] is a source about another place")))
                 if t not in amap:
                     f.append(CriticFinding(rule="R4", day=x.number, message=(
                         f"day {x.number}: unknown source tag [{t}]")))
@@ -232,7 +259,8 @@ def ensure_status_line(draft_text: str, request: ParsedRequest, live_status: str
 
 
 def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Packed,
-                      blocked: tuple[str, ...] = ()) -> tuple[str, list[str]]:
+                      blocked: tuple[str, ...] = (), extra: dict[int, tuple[str, ...]] | None = None
+                      ) -> tuple[str, list[str]]:
     """Strip uncited or wrongly tagged bullets, URLs and bullets that name a blocked place (D122);
     give an emptied day the no-details bullet. Returns (new text, actions)."""
     d = parse_draft(draft_text)
@@ -255,6 +283,11 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
                 seen_text.add(key)
             if b and not _is_exempt(b.group(1).strip()):
                 tags = ALIAS.findall(b.group(1))
+                if any(_wrong_place(packed, t, x.place, (extra or {}).get(x.number, ()))
+                       for t in tags):
+                    actions.append(f"day {x.number}: removed a bullet that cites a source about "
+                                   "another place")
+                    continue
                 if not tags or any(t not in amap for t in tags):
                     actions.append(f"day {x.number}: removed bullet {b.group(1)[:60]!r}")
                     continue
@@ -276,6 +309,90 @@ def deterministic_fix(draft_text: str, findings: list[CriticFinding], packed: Pa
     return render(d), actions
 
 
+def _real(day: DaySection) -> list[str]:
+    return [b for b in day.bullets if not _is_exempt(b)]
+
+
+def fill_empty_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]]:
+    """No LLM: a day with no real bullet (nothing, or only the no-details line) is filled while its
+    place still has packed sources the draft did not use. Order: the sources assigned to that day,
+    then any unused source of the place (the opening sentences of the source, with its tag); if the
+    place has none left, the last bullet of a day of the same place that has three or more moves
+    here. The no-details line stays only when nothing at all can be given to the day."""
+    d = parse_draft(draft_text)
+    by_alias = {p.alias: p for p in ctx.packed.items if p.alias.startswith("S")}
+    place_of = {row.day: row.place for row in ctx.plan.days}
+    used = {t for x in d.days for b in x.bullets for t in ALIAS.findall(b)}
+    actions: list[str] = []
+    for x in d.days:
+        if _real(x):
+            continue
+        place = place_of.get(x.number)
+        cand = [a for a in ctx.packed.day_items.get(x.number, [])
+                if a in by_alias and a not in used]
+        cand += [a for a, p in by_alias.items() if place and p.item.place == place
+                 and a not in used and a not in cand]
+        new = [f"- {lead(by_alias[a].text, 220)} [{a}]" for a in cand[:2]]
+        how = "from unused sources of the place"
+        if not new and place:
+            donors = sorted((y for y in d.days if y is not x and place_of.get(y.number) == place
+                             and len(_real(y)) >= 3), key=lambda y: -len(_real(y)))
+            if donors:
+                moved = _real(donors[0])[-1]
+                donors[0].bullets.remove(moved)
+                idx = max(i for i, ln in enumerate(donors[0].lines)
+                          if (m := BULLET.match(ln)) and m.group(1).strip() == moved)
+                del donors[0].lines[idx]
+                new, how = [f"- {moved}"], f"by moving a bullet from day {donors[0].number}"
+        if not new:
+            continue
+        used.update(t for line in new for t in ALIAS.findall(line))
+        keep = [ln for ln in x.lines[1:]
+                if not ((m := BULLET.match(ln)) and is_no_details(m.group(1)))]
+        x.lines = [x.lines[0], *new, *keep]
+        x.bullets = [n[2:] for n in new] + [b for b in x.bullets if not is_no_details(b)]
+        actions.append(f"day {x.number}: filled {how}")
+    return render(d), actions
+
+
+def rebalance_days(draft_text: str, ctx: CriticContext) -> tuple[str, list[str]]:
+    """No LLM: a bullet whose tags are all listed for ANOTHER day goes to that day (the writer was
+    told to use only a day's own tags); when that day is of another place, the bullet is
+    about that place and belongs there. Text is moved, never changed."""
+    d = parse_draft(draft_text)
+    owner: dict[str, int] = {}
+    for day in sorted(ctx.packed.day_items):
+        for a in ctx.packed.day_items[day]:
+            owner.setdefault(a, day)
+    by_num = {x.number: x for x in d.days}
+    actions: list[str] = []
+    moves = []
+    for x in d.days:
+        for b in _real(x):
+            tags = [t for t in ALIAS.findall(b) if t.startswith("S")]
+            homes = {owner.get(t) for t in tags}
+            if not tags or x.number in homes or None in homes or len(homes) != 1:
+                continue
+            home = by_num.get(homes.pop())
+            if home is not None:  # a source serves the place it is about, wherever it was cited
+                moves.append((x, home, b))
+    for x, home, b in moves:
+        idx = next(i for i, ln in enumerate(x.lines)
+                   if (m := BULLET.match(ln)) and m.group(1).strip() == b)
+        line = x.lines.pop(idx)
+        x.bullets.remove(b)
+        home.lines = [ln for ln in home.lines
+                      if not ((m := BULLET.match(ln)) and is_no_details(m.group(1)))]
+        home.bullets = [t for t in home.bullets if not is_no_details(t)]
+        last = max((i for i, ln in enumerate(home.lines)
+                    if (m := BULLET.match(ln)) and not _is_exempt(m.group(1).strip())),
+                   default=0)
+        home.lines.insert(last + 1, line)
+        home.bullets.append(b)
+        actions.append(f"day {x.number}: moved a bullet to day {home.number}, which lists its tag")
+    return render(d), actions
+
+
 def repair_days(findings: list[CriticFinding]) -> list[int]:
     return sorted({f.day for f in findings if f.fixable and f.day is not None})
 
@@ -294,11 +411,17 @@ def run_cycle(draft_text: str, ctx: CriticContext,
     """critic -> deterministic fix -> critic -> ONE LLM repair of the offending days -> critic.
     Returns (final draft, report, actions). `repair(draft, findings)` returns replacement day
     sections (or '' to give up); it is called at most once."""
-    text = ensure_status_line(draft_text, ctx.request, ctx.live_status)
+    text = ensure_status_line(normalize_output(draft_text), ctx.request, ctx.live_status)
+    text, moved = rebalance_days(text, ctx)
+    text, filled = fill_empty_days(text, ctx)
+    filled = [*moved, *filled]
     first = check(text, ctx)
     if not first:
-        return text, CriticReport(ok=True, status="passed"), []
-    text, actions = deterministic_fix(text, first, ctx.packed, tuple(blocked_names(ctx)))
+        return text, CriticReport(ok=True, status="passed"), filled
+    extra = {row.day: tuple(row.also_visit) for row in ctx.plan.days if row.also_visit}
+    text, actions = deterministic_fix(text, first, ctx.packed, tuple(blocked_names(ctx)), extra)
+    text, filled_again = fill_empty_days(text, ctx)
+    actions = [*filled, *actions, *filled_again]
     findings = check(text, ctx)
     days = repair_days(findings)
     if findings and days and repair is not None:
@@ -325,10 +448,12 @@ def repair_messages(ctx: CriticContext, draft_text: str, findings: list[CriticFi
     body = "\n".join("\n".join(x.lines) for x in sections)
     issues = "\n".join(f"- {f.rule}: {f.message}" for f in findings)
     packed = Packed(list(ctx.packed.items), list(ctx.packed.dropped))
+    tags = "\n".join(f"Day {n}: " + (", ".join(ctx.packed.day_items.get(n, [])) or "no sources")
+                     for n in sorted(days))
     while True:
         user = (f"FIX ONLY these day sections and return them in the same format "
                 f"('## Day N: Place' then bullets). Findings:\n{issues}\n\nDAYS TO FIX:\n{body}\n"
-                f"\nSOURCES:\n{evidence_block(packed)}")
+                f"\nTAGS PER DAY:\n{tags}\n\nSOURCES:\n{evidence_block(packed)}")
         if len(SYSTEM) + len(user) <= limit or not packed.items:
             break
         packed.items.pop()
@@ -347,8 +472,8 @@ def make_repair(client, model: str, ctx: CriticContext, cfg: dict | None = None
     def repair(draft_text: str, findings: list[CriticFinding]) -> str:
         msgs = repair_messages(ctx, draft_text, findings, cfg)
         extra = {"cache": False} if holds_live_text(msgs) else {}
-        return client.chat(msgs, model, options={"max_tokens": r["max_tokens"],
-                                                 "reasoning_effort": r["reasoning_effort"]},
-                           **extra)
+        return normalize_output(client.chat(
+            msgs, model, options={"max_tokens": r["max_tokens"],
+                                  "reasoning_effort": r["reasoning_effort"]}, **extra))
 
     return repair

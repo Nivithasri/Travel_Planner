@@ -444,3 +444,135 @@ def test_a_named_excluded_place_may_appear_in_live_text():
     st = run_local(make_deps(live=FakeLive([item])), "Munnar please",
                    {**OVER, "duration_days": 3, "named_places": ["Munnar"]})
     assert {p.item.chunk_id for p in st.packed_obj.items if p.item.is_live} == {item.chunk_id}
+
+
+# ---- demo-quality: logistics and day-trip lists rank below a stop's own sights (D131) ----------
+
+NEUTRAL = {**OVER, "interests": ["jazz"]}  # no interest matches, so aspect order decides
+
+
+def _scarce_rows(extra):
+    """Hampi rows: the extra chunk scores highest; nine plain fillers fill the stop's slots."""
+    fillers = [row(f"Fil{j}", "Hampi", f"Hampi filler fact {j}: stone carvings in morning light.",
+                   score=0.80 - j / 100, aspect="scenery") for j in range(9)]
+    return [*extra, *fillers, *corpus()]  # the retrieval keeps the first rows
+
+
+def _packed_ids(state):
+    return {p.item.chunk_id for p in state.packed_obj.items}
+
+
+def _llm(monkeypatch, ids):
+    for cid in ids:
+        monkeypatch.setitem(PROV, cid, "llm")
+
+
+def test_a_day_trip_list_filed_under_a_stop_does_not_take_one_of_its_slots(monkeypatch):
+    trip = row("trip1", "Hampi", "Excursions: Badami (140 km), Gokarna (300 km), Mysuru (500 km).",
+               score=0.99, aspect="timing")
+    _llm(monkeypatch, ["trip1", *[f"Fil{j}" for j in range(9)]])
+    st = run_local(make_deps(rows=_scarce_rows([trip])), TEXT, NEUTRAL)
+    ids = _packed_ids(st)
+    assert "trip1" not in ids and any(i.startswith("Fil") for i in ids)
+
+
+def test_a_bus_listing_is_kept_back_unless_a_constraint_is_about_roads(monkeypatch):
+    bus = row("bus1", "Hampi", "From Hospet take a bus to Hampi; the stand is near the market.",
+              score=0.99, aspect="timing")
+    _llm(monkeypatch, ["bus1", *[f"Fil{j}" for j in range(9)]])
+    rows = _scarce_rows([bus])
+    plain = run_local(make_deps(rows=rows), TEXT, NEUTRAL)
+    roads = run_local(make_deps(rows=rows), TEXT, {**NEUTRAL, "constraints": ["avoid hill roads"]})
+    assert "bus1" not in _packed_ids(plain) and "bus1" in _packed_ids(roads)
+
+
+# ---- demo-quality: interests that match nothing retrieved add the place's main sights ----------
+
+def _spy_deps(rows):
+    queries = []
+    base = fake_retrieve(rows)
+
+    def retrieve(query, filters=None, k=10):
+        queries.append(query)
+        return base(query, filters, k)
+
+    deps = make_deps(rows=rows)
+    deps.retrieve = retrieve
+    return deps, queries
+
+
+def test_a_mismatched_interest_asks_once_more_for_each_places_main_sights():
+    deps, queries = _spy_deps(corpus())
+    run_local(deps, TEXT, {**OVER, "interests": ["hill stations"]})
+    assert any(q.endswith("main sights and attractions") for q in queries)
+
+
+def test_a_matching_interest_makes_no_extra_sights_query():
+    deps, queries = _spy_deps(corpus())
+    run_local(deps, TEXT, {**OVER, "interests": ["heritage"]})  # the fake rows are heritage
+    assert not any("main sights" in q for q in queries)
+
+
+# ---- demo-quality: named places that do not get a stop are kept (D131) -------------------------
+
+def _near_hampi_badami(deps):
+    real = deps.hours
+
+    def hours(a, b):
+        return 1.0 if {a, b} == {"Hampi", "Badami"} else real(a, b)
+
+    deps.hours = hours
+    return deps
+
+
+NAMED3 = {**OVER, "duration_days": 2, "named_places": ["Hampi", "Badami", "Gokarna"]}
+
+
+def test_a_named_place_with_no_stop_is_listed_first_under_backup_options():
+    st = run_local(make_deps(), TEXT, NAMED3)  # real hours: Hampi is 2.7 h from Badami
+    assert [s.place for s in st.plan.stops] == ["Badami", "Gokarna"]
+    assert st.plan.backups[0]["place"] == "Hampi"
+    assert any("Hampi (named) could not be fitted" in n for n in st.final["text"].splitlines())
+    assert st.final["text"].count("## Backup options") == 1
+    assert "- Hampi" in st.final["text"].split("## Backup options")[1]
+
+
+def test_a_day_trip_place_gets_its_own_sources_on_that_day_and_the_plan_line_says_so():
+    deps = _near_hampi_badami(make_deps())
+    st = run_local(deps, TEXT, NAMED3)
+    day1 = st.plan.days[0]
+    assert day1.place == "Badami" and day1.also_visit == ["Hampi"] and day1.trip_hours == 2.0
+    assert all(b["place"] != "Hampi" for b in st.plan.backups)
+    hampi = [p.alias for p in st.packed_obj.items if p.item.place == "Hampi"]
+    assert hampi and set(hampi) <= set(st.packed_obj.day_items[1])
+    user = deps.client.messages[0][1]["content"]
+    assert "Day 1: Badami (+ also visit Hampi)" in user
+    assert any(line.startswith("Day trip on day 1: Badami to Hampi") for line in
+               st.plan.computed_lines)
+    assert st.critic.status == "passed"
+
+
+def test_the_critic_accepts_the_day_trip_places_sources_on_the_host_day():
+    deps = _near_hampi_badami(make_deps())
+    st = run_local(deps, TEXT, NAMED3)
+    tag = next(p.alias for p in st.packed_obj.items if p.item.place == "Hampi")
+    draft = (f"## Day 1: Badami\n- Visitors enjoy the old Hampi ruins. [{tag}]\n"
+             "## Day 2: Gokarna\n- No source-backed details for this day.\n"
+             "## Backup options\n- Mysuru\n")
+    from src.agents import critic as C
+
+    ctx = C.CriticContext(st.request, st.plan, st.packed_obj, st.live_status,
+                          deps.excluded_labels, deps.holdout_names)
+    assert not any("another place" in f.message for f in C.check(draft, ctx))
+
+
+# ---- demo-quality: the trip month reaches the packer (D132) ------------------------------------
+
+def test_an_item_naming_another_month_is_kept_back_for_a_trip_in_a_different_month(monkeypatch):
+    fest = row("fest1", "Hampi", "The car festival in mid-August is famous in Hampi.", score=0.99,
+               aspect="timing")
+    _llm(monkeypatch, ["fest1", *[f"Fil{j}" for j in range(9)]])
+    rows = _scarce_rows([fest])
+    december = run_local(make_deps(rows=rows), TEXT, {**NEUTRAL, "month": 12})
+    august = run_local(make_deps(rows=rows), TEXT, {**NEUTRAL, "month": 8})
+    assert "fest1" not in _packed_ids(december) and "fest1" in _packed_ids(august)

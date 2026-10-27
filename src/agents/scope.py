@@ -50,3 +50,27 @@ def out_of_scope_matcher(registry_entries: Iterable, excluded: Iterable[str],
         return leak_scan(text, holdout) is not None
 
     return names_out_of_scope
+
+
+def foreign_place_matcher(registry_entries: Iterable, min_others: int = 2
+                          ) -> Callable[[str, str], bool]:
+    """A function (text, own_place) -> True when the text names at least `min_others` other
+    registry places (names, and aliases of four letters or more; hold-outs are not places of this
+    planner). A day-trip list filed under one city ('Pondicherry 163 km, Rameswaram, Tirupati') is
+    about elsewhere, not about the city it is filed under (D131)."""
+    labels: dict[str, str] = {}
+    for e in registry_entries:
+        if getattr(e, "holdout", False):
+            continue
+        for t in [e.name, *[a for a in e.aliases if len(a) >= 4]]:
+            labels[t.casefold()] = e.name
+    pattern = _word_re(labels)
+
+    def about_elsewhere(text: str, own_place: str) -> bool:
+        if pattern is None:
+            return False
+        found = {labels[m.group(0).casefold()] for m in pattern.finditer(text)}
+        found.discard(own_place)
+        return len(found) >= min_others
+
+    return about_elsewhere

@@ -17,7 +17,7 @@ from src.agents import critic as C
 from src.agents import evidence as E
 from src.agents import writer as W
 from src.agents.planner import Candidate, plan_trip
-from src.agents.scope import out_of_scope_matcher
+from src.agents.scope import foreign_place_matcher, out_of_scope_matcher
 from src.agents.state import (
     CriticFinding,
     CriticReport,
@@ -184,6 +184,11 @@ def retrieve_node(state: RunState, deps: Deps) -> dict:
         for t in card.get("tips", []):
             seen.setdefault(t["chunk_id"], item_from_row({**t, "place": p, "score": 0.3},
                                                          deps.provenance))
+        if req.interests and not any(E.interest_match(i, req.interests) for i in seen.values()):
+            # the interests match nothing retrieved for this place: add its main sights (D131)
+            for r in deps.retrieve(f"{p} main sights and attractions", None, rcfg["k_place"]):
+                if r["place"] == p:
+                    seen.setdefault(r["chunk_id"], item_from_row(r, deps.provenance))
         evidence[p] = list(seen.values())
     return {"candidates": cands, "corpus_evidence": evidence}
 
@@ -261,11 +266,15 @@ def write_node(state: RunState, deps: Deps) -> dict:
     plan, req = state.plan, state.request
     if not plan.feasible:
         return {"draft": "", "packed": {}, "packed_obj": E.Packed()}
-    stop_ev = {s.place: state.corpus_evidence.get(s.place, []) for s in plan.stops}
+    extra = {x for d in plan.days for x in d.also_visit}  # named places visited as day trips
+    places = [*(s.place for s in plan.stops), *sorted(extra)]
+    stop_ev = {p: state.corpus_evidence.get(p, []) for p in places}
     allowed = {s.place for s in plan.stops} | set(req.named_places)
     packed = E.pack(plan, stop_ev, state.live_evidence, deps.pipeline_cfg,
                     interests=req.interests, named_places=req.named_places,
-                    scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed))
+                    scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed),
+                    constraints=req.constraints,
+                    elsewhere=foreign_place_matcher(deps.registry_entries), month=req.month)
     messages = W.build_messages(req, plan, packed, deps.pipeline_cfg)
     before = deps.tokens_used()
     draft = W.write(deps.client, deps.model, messages, deps.pipeline_cfg, deps.on_piece)

@@ -577,8 +577,8 @@ PHASE8B_MUTATIONS = [
      "    if item.provenance != \"llm\":\n        return False\n",
      "    if False:\n        return False\n"),
     ("M179 the interest match ranks below the aspect priority", "src/agents/evidence.py",
-     "(0 if is_warn else 1, matched, PRIORITY.get(key, 5), -item.score, item.chunk_id)",
-     "(0 if is_warn else 1, PRIORITY.get(key, 5), matched, -item.score, item.chunk_id)"),
+     "(0 if is_warn else 1, 1 if is_low else 0, matched, PRIORITY.get(key, 5), -item.score,",
+     "(0 if is_warn else 1, 1 if is_low else 0, PRIORITY.get(key, 5), matched, -item.score,"),
     ("M180 the temples interest maps to the wrong place type", "src/agents/evidence.py",
      "\"temples\": {\"place_types\": (\"temple\",)",
      "\"temples\": {\"place_types\": (\"beach\",)"),
@@ -661,8 +661,8 @@ PHASE8B_MUTATIONS = [
      "        elif e.name in excluded and e.name not in allowed:\n",
      "        elif e.name in excluded:\n"),
     ("M207 the write node does not pass the out-of-scope check to the packer", "src/agents/nodes.py",
-     "scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed))",
-     "scope_check=None)"),
+     "scope_check=out_of_scope_matcher(deps.registry_entries, deps.excluded, allowed),",
+     "scope_check=None,"),
 ]
 # D122: the critic strips bullets that name a place outside the plan and R5 carries the day.
 PHASE8_TESTS_CRITIC = ["tests/test_critic.py"]
@@ -683,7 +683,7 @@ CRITIC_MUTATIONS = [
      "]\n"),
     ("M212 the cycle does not pass the blocked names to the deterministic fix",
      "src/agents/critic.py",
-     "ctx.packed, tuple(blocked_names(ctx)))", "ctx.packed)"),
+     "ctx.packed, tuple(blocked_names(ctx)), extra)", "ctx.packed, (), extra)"),
 ]
 
 
@@ -775,19 +775,19 @@ EVIDENCE_TESTS = ["tests/test_writer.py", "tests/test_graph.py", "tests/test_cri
 EV = "src/agents/evidence.py"
 EVIDENCE_MUTATIONS = [
     ("M241 evidence per stop ignores the nights", EV,
-     "        limit = min(w[\"items_per_night\"] * max(stop.nights, 1), w[\"items_per_stop_max\"])\n",
-     "        limit = w[\"items_per_night\"]\n"),
+     "        limit = cap or min(w[\"items_per_night\"] * span, w[\"items_per_stop_max\"])\n",
+     "        limit = cap or w[\"items_per_night\"]\n"),
     ("M242 evidence per stop has no maximum", EV,
-     "        limit = min(w[\"items_per_night\"] * max(stop.nights, 1), w[\"items_per_stop_max\"])\n",
-     "        limit = w[\"items_per_night\"] * max(stop.nights, 1)\n"),
+     "        limit = cap or min(w[\"items_per_night\"] * span, w[\"items_per_stop_max\"])\n",
+     "        limit = cap or w[\"items_per_night\"] * span\n"),
     ("M243 every model-written warning still ranks first", EV,
      "    return {i.chunk_id for i in warns[cap:]}\n", "    return set()\n"),
     ("M244 the warning cap keeps the worst warning", EV,
-     "    warns = sorted(usable, key=lambda i: _rank(i, interests))\n",
-     "    warns = sorted(usable, key=lambda i: _rank(i, interests), reverse=True)\n"),
+     "    warns = sorted(usable, key=lambda i: _rank(i, interests, low=low))\n",
+     "    warns = sorted(usable, key=lambda i: _rank(i, interests, low=low), reverse=True)\n"),
     ("M245 the warning cap is not read from the config", EV,
-     "demoted = _demoted(items, w, interests, w[\"warnings_per_stop\"])",
-     "demoted = _demoted(items, w, interests, 99)"),
+     "demoted = _demoted(items, w, eff, w[\"warnings_per_stop\"], low)",
+     "demoted = _demoted(items, w, eff, 99, low)"),
     ("M246 an instruction-like warning uses up the cap", EV,
      "              and not injection_flags(i.text)]\n", "              ]\n"),
     ("M247 a blog warning uses up the cap", EV,
@@ -795,6 +795,142 @@ EVIDENCE_MUTATIONS = [
     ("M248 rule-based warning flags count as model-written", EV,
      "    return bool(item.is_warning and item.provenance == \"llm\")\n",
      "    return bool(item.is_warning)\n"),
+]
+
+
+# demo-quality (D131): one mutation per new rule, run with --demo.
+DEMO_TESTS = ["tests/test_writer.py", "tests/test_critic.py", "tests/test_graph.py",
+              "tests/test_planner.py", "tests/test_state.py", "tests/test_app_logic.py",
+              "tests/test_app_page.py"]
+WR = "src/agents/writer.py"
+CR = "src/agents/critic.py"
+PL = "src/agents/planner.py"
+DEMO_MUTATIONS = [
+    ("M252 hyphen look-alikes are not normalised", WR,
+     "    return str(text).translate(_NORMALISE)\n", "    return str(text)\n"),
+    ("M253 the draft parser does not normalise", CR,
+     "    for line in normalize_output(text).splitlines():\n",
+     "    for line in text.splitlines():\n"),
+    ("M254 the writer returns the raw text", WR,
+     "    return normalize_output(\"\".join(parts))\n",
+     "    return \"\".join(parts)\n"),
+    ("M255 the items are not dealt over the days", EV,
+     "                out.day_items.setdefault(days[i % len(days)], []).append(packed_item.alias)\n",
+     "                out.day_items.setdefault(days[0], []).append(packed_item.alias)\n"),
+    ("M256 evidence per stop ignores the plan days", EV,
+     "        span = max(stop.nights, len(days), 1)\n", "        span = max(stop.nights, 1)\n"),
+    ("M257 the plan block does not list the day tags", WR,
+     "plan_block(plan, w['plan_chars_max'], packed.day_items)", "plan_block(plan, w['plan_chars_max'])"),
+    ("M258 the budget guard takes the last stop first again", EV,
+     "    gone = packed.items.pop(max(by_place[place]))\n",
+     "    gone = packed.items.pop(max(max(v) for v in by_place.values()))\n"),
+    ("M259 empty days are not filled", CR,
+     "    text, filled = fill_empty_days(text, ctx)\n", "    filled: list[str] = []\n"),
+    ("M260 a day with fewer than three bullets gives one away", CR,
+     "                             and len(_real(y)) >= 3)", "                             and len(_real(y)) >= 1)"),
+    ("M261 a source already used is used again to fill a day", CR,
+     "                 and a not in used and a not in cand]\n", "                 and a not in cand]\n"),
+    ("M262 the repair prompt leaves out the day tags", CR,
+     "f\"\\nTAGS PER DAY:\\n{tags}\\n\\nSOURCES:", "f\"\\nSOURCES:"),
+    ("M263 a bracketed no-details line is an uncited bullet again", CR,
+     "            or is_no_details(bullet))", "            )"),
+    ("M264 other days' tags are not returned to their day", CR,
+     "    text, moved = rebalance_days(text, ctx)\n", "    moved: list[str] = []\n"),
+    ("M265 the critic does not flag a source about another place", CR,
+     "                if _wrong_place(ctx.packed, t, x.place, _also(ctx.plan, x.number)):\n",
+     "                if False:\n"),
+    ("M266 logistics text is not ranked below sights", EV,
+     "    return (0 if is_warn else 1, 1 if is_low else 0, matched,", "    return (0 if is_warn else 1, 0, matched,"),
+    ("M267 a logistics warning keeps the warning-first slot", EV,
+     "    is_warn = _is_warning(item) and item.chunk_id not in demoted and not is_low\n",
+     "    is_warn = _is_warning(item) and item.chunk_id not in demoted\n"),
+    ("M268 a constraint about roads does not lift the logistics rule", EV,
+     "    keep = logistics_wanted(constraints)\n", "    keep = False\n"),
+    ("M269 editor notes stay in the packed text", EV,
+     "clean_text(strip_editor_notes(item.text), w[", "clean_text(item.text, w["),
+    ("M270 list-number prefixes are not stripped", EV,
+     "    t = LIST_PREFIX.sub(\"\", t)\n", "    t = t\n"),
+    ("M271 every as-of date is stripped as an editor note", EV,
+     "(?:updated|revised|edited)", "(?:updated|revised|edited|as of)"),
+    ("M272 packed items are cut in the middle of a sentence again", EV,
+     "w[\"item_chars\"], sentences=True)", "w[\"item_chars\"])"),
+    ("M273 wiki section title lines stay in the text", EV,
+     "    return bool(s) and len(s) <= 28 and bool(HEADER_LINE.fullmatch(s))\n",
+     "    return False\n"),
+    ("M274 a bullet citing another place's source is kept", CR,
+     "                if any(_wrong_place(packed, t, x.place, (extra or {}).get(x.number, ()))\n"
+     "                       for t in tags):\n",
+     "                if False:\n"),
+    ("M275 one other place is enough to call a text about elsewhere", "src/agents/scope.py",
+     "min_others: int = 2", "min_others: int = 1"),
+    ("M276 the write node does not pass the foreign-place matcher", "src/agents/nodes.py",
+     "elsewhere=foreign_place_matcher(deps.registry_entries), month=req.month)",
+     "elsewhere=None, month=req.month)"),
+    ("M277 the write node does not pass the constraints", "src/agents/nodes.py",
+     "                    constraints=req.constraints,\n", "                    constraints=(),\n"),
+    ("M278 mismatched interests do not fall back to the sights", EV,
+     "            eff = SIGHT_INTERESTS\n", "            eff = interests\n"),
+    ("M279 the retrieve node does not ask for the main sights", "src/agents/nodes.py",
+     "        if req.interests and not any(E.interest_match(i, req.interests) for i in seen.values()):\n",
+     "        if False:\n"),
+    ("M280 the sights query is asked even when the interests match", "src/agents/nodes.py",
+     "        if req.interests and not any(E.interest_match(i, req.interests) for i in seen.values()):\n",
+     "        if req.interests:\n"),
+    ("M281 no named place is ever fitted as a day trip", PL,
+     "            if 2 * hh + row.travel_hours <= limit + 1e-9:\n", "            if False:\n"),
+    ("M282 the day trip ignores the days own travel", PL,
+     "            if 2 * hh + row.travel_hours <= limit + 1e-9:\n", "            if 2 * hh <= limit + 1e-9:\n"),
+    ("M283 a day may get several extra places", PL,
+     "            if row.also_visit:\n                continue\n", "            if False:\n                continue\n"),
+    ("M284 a named place that did not fit is not listed first", PL,
+     "    for k in [*first, *rest]:\n", "    for k in rest:\n"),
+    ("M285 day-trip places get no sources of their own", EV,
+     "        for x in d.also_visit:\n            cls =", "        for x in []:\n            cls ="),
+    ("M286 the plan block does not say which place a day also visits", WR,
+     "            if d.also_visit:\n", "            if False:\n"),
+    ("M287 the critic flags the day-trip place's sources on the host day", CR,
+     "                if _wrong_place(ctx.packed, t, x.place, _also(ctx.plan, x.number)):\n",
+     "                if _wrong_place(ctx.packed, t, x.place):\n"),
+    ("M288 R1 ignores the day-trip hours", CR,
+     "        if row.travel_hours + row.trip_hours > plan.limit_hours + 1e-9:\n",
+     "        if row.travel_hours > plan.limit_hours + 1e-9:\n"),
+    ("M289 the write node gives no evidence to day-trip places", "src/agents/nodes.py",
+     "    places = [*(s.place for s in plan.stops), *sorted(extra)]\n",
+     "    places = [s.place for s in plan.stops]\n"),
+    ("M290 the notes block stays in the itinerary text", "app/state.py",
+     "    return \"\\n\".join(lines[:idx]).rstrip() + \"\\n\", notes\n",
+     "    return str(text), notes\n"),
+    ("M291 the long budget caveat stays in the itinerary", "app/state.py",
+     "    t = str(text).replace(long_budget, f\" ({BUDGET_SHORT})\")\n", "    t = str(text)\n"),
+    ("M292 the repaired line is left out of the details", "app/state.py",
+     "    if view.get(\"repaired\"):\n        lines.append(REPAIRED_NOTE)\n", "    if False:\n        lines.append(REPAIRED_NOTE)\n"),
+    ("M293 the details expander is open by default", "app/streamlit_app.py",
+     "with st.expander(S.DETAILS_TITLE, expanded=False):", "with st.expander(S.DETAILS_TITLE, expanded=True):"),
+    ("M294 a failed rule check is no longer shown on the page", "app/streamlit_app.py",
+     "    if critic.get(\"status\") == \"failed_rules\":\n", "    if False:\n"),
+    ("M295 the live terms notice is hidden", "app/streamlit_app.py",
+     "    if S.terms_notice_visible(view):\n        st.warning(TERMS_NOTICE)\n", "    if False:\n        st.warning(TERMS_NOTICE)\n"),
+    ("M296 a flagged chunk keeps the warning slot without a warning cue", EV,
+     "                and has_warning_cue(item))", "                )"),
+    ("M297 a history chunk may keep the warning slot", EV,
+     "item.provenance == \"llm\" and item.aspect != \"history\"", "item.provenance == \"llm\""),
+    ("M298 the warning cue is searched in the whole text, not what the writer sees", EV,
+     "    return bool(WARNING_CUE.search(item.text[:WARNING_CHARS]))\n", "    return bool(WARNING_CUE.search(item.text))\n"),
+    ("M299 no text is ever off-season", EV,
+     "    return bool(named) and month not in named\n", "    return False\n"),
+    ("M300 a month next to a year counts as a time of year", EV,
+     "        if not _dated(text, m.start(), m.end()):\n", "        if True:\n"),
+    ("M301 a month range is not expanded", EV,
+     "    for m in MONTH_RANGE.finditer(text):\n", "    for m in []:\n"),
+    ("M302 the write node does not pass the trip month", "src/agents/nodes.py",
+     "foreign_place_matcher(deps.registry_entries), month=req.month)",
+     "foreign_place_matcher(deps.registry_entries))"),
+    ("M303 the writer rule no longer forbids added qualifiers", WR,
+     "Add no qualifier the source does not state (only, best, renowned, \"\n"
+     "    \"famous, must-see), no long copied runs, and never merge",
+     "No long copied runs, and never merge"),
+    ("M304 the writer rule no longer forbids merging two sources", WR,
+     "and never merge the facts of two sources into one \"\n    \"sentence.", "\"\n    \"."),
 ]
 
 
@@ -825,7 +961,10 @@ def main() -> int:
     phase8 += [(m, PHASE8_TESTS_CRITIC) for m in CRITIC_MUTATIONS]
     phase9 = [(m, PHASE9_TESTS) for m in PHASE9_MUTATIONS]
     phase9 += [(m, EVIDENCE_TESTS) for m in EVIDENCE_MUTATIONS]
-    if "--evidence" in sys.argv[1:]:  # --evidence runs only M241 to M248 (D129)
+    demo = [(m, DEMO_TESTS) for m in DEMO_MUTATIONS]
+    if "--demo" in sys.argv[1:]:  # --demo runs only the demo-quality mutations (D131)
+        plan = demo
+    elif "--evidence" in sys.argv[1:]:  # --evidence runs only M241 to M248 (D129)
         plan = [(m, EVIDENCE_TESTS) for m in EVIDENCE_MUTATIONS]
     elif "--phase9" in sys.argv[1:]:  # --phase9 runs M213 to M248 (D123 to D129)
         plan = phase9
@@ -842,7 +981,7 @@ def main() -> int:
     elif "--retrieval" in sys.argv[1:]:  # --retrieval runs only M42+
         plan = retrieval
     else:
-        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7 + phase8 + phase9
+        plan = [(m, TESTS) for m in MUTATIONS] + plan + routing + retrieval + phase7 + phase8 + phase9 + demo
     for (name, rel, old, new), tests in plan:
         path = ROOT / rel
         original = path.read_bytes()

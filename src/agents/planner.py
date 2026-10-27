@@ -288,9 +288,19 @@ def plan_trip(request: ParsedRequest, candidates: Sequence[Candidate], *, hours:
                          f"the {limit:g} h daily limit: plan an extra travel day after the trip")
     b = estimate(request.duration_days, request.budget_tier, total_hours,
                  cap_inr=request.budget_cap_inr, cfg=budget_cfg)
+    fitted, unfitted = _fit_named_extras(pool, scores, order, rows, h, limit,
+                                         request.duration_days)
+    for x, row, hh in fitted:
+        notes.append(f"{x} (named) is a day trip from {row.place} on day {row.day}, about "
+                     f"{hh:g} h each way")
+    for x, why in unfitted:
+        notes.append(f"{x} (named) could not be fitted into {request.duration_days} days: {why}; "
+                     "it is listed under Backup options")
     plan = Plan(feasible=True, stops=plan_stops, legs=legs, days=rows, limit_hours=limit,
                 total_travel_hours=total_hours, budget=b, notes=notes)
-    plan.backups = _backups(pool, scores, order, h, season, request, cfg)
+    plan.backups = _backups(pool, scores, order, h, season, request, cfg,
+                            first=[x for x, _ in unfitted],
+                            skip={x for x, _, _ in fitted})
     plan.computed_lines = _computed_lines(plan, request)
     return plan
 
@@ -329,12 +339,56 @@ def _spread_nights(order: list[str], scores: dict[str, float], spare: int) -> di
     return nights
 
 
+def _fit_named_extras(pool: dict[str, Candidate], scores: dict[str, float], order: list[str],
+                      rows: list[PlanDay], hours: HoursFn, limit: float, n_days: int
+                      ) -> tuple[list[tuple[str, PlanDay, float]], list[tuple[str, str]]]:
+    """A named place without a stop of its own is never dropped silently (D131): it becomes a day
+    trip on the day with the shortest trip where the round trip still fits the daily travel limit
+    on top of that day's own travel (one extra place per day), else it is returned with the reason
+    so the plan can list it under Backup options."""
+    missing = sorted((k for k, c in pool.items() if c.named and k not in order),
+                     key=lambda k: (-scores[k], k))
+    fitted: list[tuple[str, PlanDay, float]] = []
+    unfitted: list[tuple[str, str]] = []
+    for x in missing:
+        best = None
+        for row in rows:
+            if row.also_visit:
+                continue
+            hh = hours(row.place, x)
+            if 2 * hh + row.travel_hours <= limit + 1e-9:
+                key = (hh, row.travel_hours, row.day)
+                if best is None or key < best[0]:
+                    best = (key, row, hh)
+        if best is not None:
+            _, row, hh = best
+            row.also_visit.append(x)
+            if pool[x].limited:
+                row.also_limited.append(x)
+            row.trip_hours = round(2 * hh, 2)
+            fitted.append((x, row, round(hh, 2)))
+            continue
+        near = min(order, key=lambda s: (hours(x, s), s))
+        d = hours(x, near)
+        if 2 * d > limit:
+            why = (f"it is {d:.1f} h from {near}, too far for a day trip under the {limit:g} h "
+                   "daily limit")
+        else:
+            why = (f"there are only {n_days} days and none has room for it "
+                   "(an extra place already, or a long leg)")
+        unfitted.append((x, why))
+    return fitted, unfitted
+
+
 def _backups(pool: dict[str, Candidate], scores: dict[str, float], order: list[str], hours: HoursFn,
-             season: SeasonFn | None, request: ParsedRequest, cfg: dict) -> list[dict]:
-    rest = sorted((k for k in pool if k not in order and not pool[k].limited),
-                  key=lambda k: (-scores[k], k))[:cfg["backups"]]
+             season: SeasonFn | None, request: ParsedRequest, cfg: dict,
+             first: Sequence[str] = (), skip: set[str] = frozenset()) -> list[dict]:
+    """Named places that did not fit come first (always, even with limited evidence); then the
+    best other places, `backups` of them."""
+    rest = sorted((k for k in pool if k not in order and k not in first and k not in skip
+                   and not pool[k].limited), key=lambda k: (-scores[k], k))[:cfg["backups"]]
     out = []
-    for k in rest:
+    for k in [*first, *rest]:
         near = min(order, key=lambda s: (hours(k, s), s))
         sd = _season(season, k, request.month)
         out.append({"kind": "destination", "place": k, "state": pool[k].state,
@@ -353,6 +407,10 @@ def _computed_lines(plan: Plan, request: ParsedRequest) -> list[str]:
         hill = " (includes a ghat/hill road: allow extra time)" if leg.hill_note else ""
         lines.append(f"{what.capitalize()}: {leg.origin} to {leg.destination}, about "
                      f"{leg.hours:g} h by road{extra}{hill} (computed: travel_time, provisional)")
+    for row in plan.days:
+        for x in row.also_visit:
+            lines.append(f"Day trip on day {row.day}: {row.place} to {x} and back, about "
+                         f"{row.trip_hours:g} h in all (computed: travel_time, provisional)")
     if request.month is not None:
         for s in plan.stops:
             if s.season_verdict is None:

@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from src.agents.state import EvidenceItem, Plan
+from src.agents.state import EvidenceItem, Plan, PlanStop
 from src.common.schemas import REPO_ROOT
 
 PIPELINE_CONFIG = REPO_ROOT / "config" / "pipeline.json"
@@ -52,6 +52,9 @@ INTEREST_MAP = {
                "aspects": ("scenery",)},
     "food": {"place_types": (), "aspects": ("food",)},
 }
+# What a stop falls back to when the chosen interests match none of its sources: every sight
+# category of the list above (food is a meal, not a sight, and keeps its own aspect priority).
+SIGHT_INTERESTS = tuple(k for k in INTEREST_MAP if k != "food")
 PRIORITY = {"warning": 0, "timing": 1, "closure": 1, "price": 2, "safety": 2, "food": 3,
             "scenery": 4, "history": 4, "other": 5}
 
@@ -64,15 +67,103 @@ def injection_flags(text: str) -> list[str]:
     return sorted({m.group(0).strip().lower() for m in INJECTION.finditer(text)})
 
 
-def clean_text(text: str, max_chars: int) -> str:
-    """Whitespace collapsed, URLs and tag/delimiter-like strings removed, cut at a word boundary."""
+MONTHS = ("jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec")
+# Wiki editor notes (D131). Only a parenthetical that is nothing but "updated <month> <year>" goes;
+# every "as of 2017" stays, so a dated figure never looks current.
+EDITOR_NOTE = re.compile(
+    r"\(\s*(?:last\s+)?(?:updated|revised|edited)\s+(?:in\s+)?"
+    rf"(?:(?:{MONTHS})[a-z]*\.?\s+)?(?:\d{{1,2}}\s+)?\d{{4}}\s*\)|"
+    r"\[\s*edit\s*\]|\(?\bcitation needed\b\)?", re.I)
+UPDATED_LINE = re.compile(
+    rf"(?m)^[ \t]*(?:last\s+)?updated:?\s+(?:in\s+)?(?:(?:{MONTHS})[a-z]*\.?\s+)?\d{{4}}\.?[ \t]*$",
+    re.I)
+# "3 Hebbal Lake." / "1. Cave temples": a list number at the start of a line before a capitalised
+# word (not a month, which would be a date).
+LIST_PREFIX = re.compile(
+    rf"(?m)^[ \t]*\d{{1,2}}[.)]?[ \t]+(?=(?!(?i:{MONTHS})[a-z]*\b)[A-Z][a-z])")
+
+
+HEADER_LINE = re.compile(r"[A-Z][A-Za-z'’-]*(?: [A-Za-z'’-]+){0,2}")
+
+
+def strip_editor_notes(text: str) -> str:
+    """Remove wiki editor notes and list-number prefixes from raw chunk text (before cleaning, so
+    line starts are still visible)."""
+    t = UPDATED_LINE.sub("", str(text))
+    t = EDITOR_NOTE.sub(" ", t)
+    t = LIST_PREFIX.sub("", t)
+    kept = [ln for ln in t.split("\n") if not _is_header_line(ln)]
+    return "\n".join(kept) if any(ln.strip() for ln in kept) else t
+
+
+def _is_header_line(line: str) -> bool:
+    """A wiki section title on its own line: one to three words, no digits or sentence marks
+    ('See', 'History', 'Get around'). Text that is only such lines is left alone by the caller."""
+    s = line.strip()
+    return bool(s) and len(s) <= 28 and bool(HEADER_LINE.fullmatch(s))
+
+
+def clean_text(text: str, max_chars: int, sentences: bool = False) -> str:
+    """Whitespace collapsed, URLs and tag/delimiter-like strings removed, cut at a word boundary.
+    With sentences=True the cut is at the last full sentence that fits (when one of at least 40
+    characters does) and no ellipsis is added there."""
     t = MOJIBAKE.sub(_repair, str(text)).replace("\u202f", " ").replace("\u00a0", " ")
     t = URL.sub("[link removed]", t)
     t = TAGLIKE.sub(" ", t).replace("[", "(").replace("]", ")")
     t = " ".join(t.split())
     if len(t) <= max_chars:
         return t
+    if sentences:
+        cut = _sentence_cut(t, max_chars)
+        if cut:
+            return cut
     return t[:max_chars].rsplit(" ", 1)[0].rstrip(",;:- ") + "..."
+
+
+def _sentence_cut(t: str, max_chars: int, min_chars: int = 40) -> str | None:
+    out = ""
+    for s in split_sentences(t):
+        nxt = f"{out} {s}".strip()
+        if len(nxt) > max_chars:
+            break
+        out = nxt
+    return out if len(out) >= min_chars else None
+
+
+SENTENCE_END = re.compile(r"(?<=[.!?])[\"')]?\s+(?=[\"'(]?[A-Z0-9])")
+ABBREV = re.compile(r"(?:\b(?:St|Dr|Mr|Mrs|Ms|No|Rs|approx|vs|etc|Sr|Jr|Mt|Fr)|\b[A-Z])\.$")
+
+
+def split_sentences(text: str) -> list[str]:
+    """Split on sentence ends, not after an abbreviation or a single capital letter."""
+    out: list[str] = []
+    start = 0
+    for m in SENTENCE_END.finditer(text):
+        piece = text[start:m.start()]
+        if ABBREV.search(piece.rstrip("\"') ")):
+            continue
+        out.append(text[start:m.end()].strip())
+        start = m.end()
+    tail = text[start:].strip()
+    if tail:
+        out.append(tail)
+    return out
+
+
+def lead(text: str, max_chars: int) -> str:
+    """The first sentence(s) of a cleaned text, up to max_chars, never cut mid-sentence unless the
+    first sentence alone is longer (then cut at a word and marked with '...')."""
+    parts = split_sentences(text)
+    if not parts:
+        return ""
+    out = parts[0]
+    if len(out) > max_chars:
+        return out[:max_chars].rsplit(" ", 1)[0].rstrip(",;:- ") + "..."
+    for nxt in parts[1:]:
+        if len(out) + 1 + len(nxt) > max_chars or len(out) >= max_chars * 0.6:
+            break
+        out += " " + nxt
+    return out
 
 
 @dataclass
@@ -87,6 +178,9 @@ class PackedItem:
 class Packed:
     items: list[PackedItem] = field(default_factory=list)
     dropped: list[dict] = field(default_factory=list)
+    # plan day -> the S aliases that day may use (D131); place -> its number of plan days
+    day_items: dict[int, list[str]] = field(default_factory=dict)
+    place_days: dict[str, int] = field(default_factory=dict)
 
     @property
     def alias_map(self) -> dict[str, str]:
@@ -107,33 +201,158 @@ def interest_match(item: EvidenceItem, interests) -> bool:
     return False
 
 
+# The model-written is_warning flag is only about 61% right (D106). A chunk keeps the warning-first
+# position only when the text the writer will see holds an explicit warning cue and is not
+# history (D132); every other flagged chunk ranks like any other chunk.
+WARNING_CUE = re.compile(
+    r"\b(?:avoid|beware|scams?|scammers?|closed|banned|unsafe|dangerous|not allowed|prohibited|"
+    r"risks?|risky|shut|extortion|touts?)\b", re.I)
+WARNING_CHARS = 300  # the writer.item_chars of config/pipeline.json (a test pins the two)
+
+
+def has_warning_cue(item: EvidenceItem) -> bool:
+    return bool(WARNING_CUE.search(item.text[:WARNING_CHARS]))
+
+
 def _is_warning(item: EvidenceItem) -> bool:
-    return bool(item.is_warning and item.provenance == "llm")
+    return bool(item.is_warning and item.provenance == "llm" and item.aspect != "history"
+                and has_warning_cue(item))
 
 
-def _rank(item: EvidenceItem, interests=(), demoted=frozenset()) -> tuple:
-    """Model-written warnings first (except the ones beyond the per-stop cap, D129), then chunks
-    that match an interest, then the aspect priority; with no interest and no cap the order is the
-    old one."""
-    is_warn = _is_warning(item) and item.chunk_id not in demoted
+# Text about getting there, where to sleep and road conditions (D131): useful sometimes, but a
+# sight, a dish or a timing is what a day should be built from. Ranked below them, not dropped.
+LOGISTICS_STRONG = re.compile(
+    r"\b(?:by (?:bus|train|road|air|car|taxi|flight|rail)|take an? (?:bus|train|taxi|cab|auto)|"
+    r"(?:bus|railway|train) (?:stand|station|stop|junction)|airports?|taxis?|cabs?|"
+    r"auto[- ]?rickshaws?|accommodation|guest ?houses?|lodges?|dormitor(?:y|ies)|check[- ]?in|"
+    r"public transport(?:ation)?|national highway|NH ?\d+|ghat road|"
+    r"\d+(?:\.\d+)? ?km (?:from|away|south|north|east|west))\b", re.I)
+LOGISTICS_WEAK = re.compile(
+    r"\b(?:hotels?|resorts?|rooms?|fares?|highway|roads?|buses|trains?)\b", re.I)
+LOGISTICS_WORDS = ("road", "train", "bus", "airport", "taxi", "hotel", "stay", "accommodation",
+                   "transport", "drive", "driving", "highway", "ghat", "rail", "flight")
+
+
+def is_logistics(text: str) -> bool:
+    return bool(LOGISTICS_STRONG.search(text) or len(LOGISTICS_WEAK.findall(text)) >= 2)
+
+
+def logistics_wanted(constraints) -> bool:
+    """True when a constraint of the request is about roads, transport or where to stay."""
+    joined = " ".join(str(c) for c in constraints or ()).casefold()
+    return any(word in joined for word in LOGISTICS_WORDS)
+
+
+# A month named as a time of year (D132), not a calendar: "mid-August", "in July", "from October to
+# March". A month next to a year is a date in history ("In October 2019") and is ignored. "Mar" is
+# not read as a month (Mar Thoma church), nor is lower-case "may" or "march".
+MONTH_WORD = (r"(?:January|February|March|April|May|June|July|August|September|October|November|"
+              r"December|Jan|Feb|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)")
+MONTH_NUMBER = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7, "aug": 8,
+                "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+MONTH_RE = re.compile(rf"\b({MONTH_WORD})\b")
+MONTH_RANGE = re.compile(rf"\b({MONTH_WORD})\b\s*(?:to|until|through|-|–|—)\s*"
+                         rf"\b({MONTH_WORD})\b")
+YEAR = re.compile(r"\b(?:1[0-9]|20)\d\d\b")
+
+
+def _number(word: str) -> int:
+    return MONTH_NUMBER[word[:3].lower()]
+
+
+def _dated(text: str, start: int, end: int) -> bool:
+    return bool(YEAR.search(text[max(start - 8, 0):end + 8]))
+
+
+def months_named(text: str) -> set[int]:
+    """The months the text names as a time of year, a range such as 'October to March' expanded
+    (cyclic). Dates with a year are history and do not count."""
+    named: set[int] = set()
+    for m in MONTH_RE.finditer(text):
+        if not _dated(text, m.start(), m.end()):
+            named.add(_number(m.group(1)))
+    for m in MONTH_RANGE.finditer(text):
+        if _dated(text, m.start(), m.end()):
+            continue
+        a, b = _number(m.group(1)), _number(m.group(2))
+        while True:
+            named.add(a)
+            if a == b:
+                break
+            a = a % 12 + 1
+    return named
+
+
+def is_off_season(text: str, month: int | None) -> bool:
+    """True when the text names months and the trip month is not among them."""
+    if not month:
+        return False
+    named = months_named(text[:WARNING_CHARS])
+    return bool(named) and month not in named
+
+
+def low_value_ids(items: list[EvidenceItem], constraints=(), elsewhere=None, month=None
+                  ) -> set[str]:
+    """Chunk ids of a stop that rank below its sights: logistics text (unless a constraint asks
+    for it), text about other places (`elsewhere(text, place)` -> bool) and text that names other
+    months than the trip month."""
+    keep = logistics_wanted(constraints)
+    return {i.chunk_id for i in items
+            if (not keep and is_logistics(i.text)) or (elsewhere and elsewhere(i.text, i.place))
+            or is_off_season(i.text, month)}
+
+
+def is_low_value(item: EvidenceItem, elsewhere=None) -> bool:
+    return bool(low_value_ids([item], (), elsewhere))
+
+
+def _rank(item: EvidenceItem, interests=(), demoted=frozenset(), low=frozenset()) -> tuple:
+    """Model-written warnings first (except the ones beyond the per-stop cap, D129, and logistics
+    or off-place text), then sights before logistics, then chunks that match an interest, then the
+    aspect priority; with no interest, no cap and no logistics the order is the old one."""
+    is_low = item.chunk_id in low
+    is_warn = _is_warning(item) and item.chunk_id not in demoted and not is_low
     key = "warning" if is_warn else (item.aspect or "other")
     matched = 0 if interest_match(item, interests) else 1
-    return (0 if is_warn else 1, matched, PRIORITY.get(key, 5), -item.score, item.chunk_id)
+    return (0 if is_warn else 1, 1 if is_low else 0, matched, PRIORITY.get(key, 5), -item.score,
+            item.chunk_id)
 
 
-def _demoted(items: list[EvidenceItem], w: dict, interests, cap: int) -> set[str]:
+def _demoted(items: list[EvidenceItem], w: dict, interests, cap: int,
+             low=frozenset()) -> set[str]:
     """The model-written warnings of one stop beyond the best `cap`, among the items that can be
-    packed at all (no live, no blog, no instruction-like text). They are not dropped: they rank
-    like any other chunk (D129; the warning flag is only about 61% right, D106)."""
-    usable = [i for i in items if _is_warning(i) and not i.is_live
+    packed at all (no live, no blog, no instruction-like text, no logistics). They are not
+    dropped: they rank like any other chunk (D129; the warning flag is only about 61% right,
+    D106)."""
+    usable = [i for i in items if _is_warning(i) and not i.is_live and i.chunk_id not in low
               and not (i.source_type == "blog" and not w["allow_blog"])
               and not injection_flags(i.text)]
-    warns = sorted(usable, key=lambda i: _rank(i, interests))
+    warns = sorted(usable, key=lambda i: _rank(i, interests, low=low))
     return {i.chunk_id for i in warns[cap:]}
 
 
+def drop_one(packed: Packed) -> PackedItem:
+    """Remove and return the corpus item that costs a day the least: the lowest-ranked item of the
+    place with the most items per day (the later place on a tie), so the last stop does not lose
+    all its evidence first. Falls back to the last item when only live items are left."""
+    s_idx = [i for i, p in enumerate(packed.items) if p.alias.startswith("S")]
+    if not s_idx:
+        return packed.items.pop()
+    by_place: dict[str, list[int]] = {}
+    for i in s_idx:
+        by_place.setdefault(packed.items[i].item.place, []).append(i)
+    place = max(by_place, key=lambda pl: (len(by_place[pl]) / packed.place_days.get(pl, 1),
+                                          max(by_place[pl])))
+    gone = packed.items.pop(max(by_place[place]))
+    for aliases in packed.day_items.values():
+        if gone.alias in aliases:
+            aliases.remove(gone.alias)
+    return gone
+
+
 def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceItem],
-         cfg: dict | None = None, interests=(), named_places=(), scope_check=None) -> Packed:
+         cfg: dict | None = None, interests=(), named_places=(), scope_check=None,
+         constraints=(), elsewhere=None, month=None) -> Packed:
     """Per planned stop at most `items_per_night` corpus items for each night, never more than
     `items_per_stop_max`, with at most `warnings_per_stop` model-written warnings ranked first
     (D129), and `live_items` live items. Order is the plan's stop order, then live; aliases follow
@@ -142,12 +361,27 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
     out = Packed()
     n_s = n_l = 0
     seen: set[str] = set()
-    for stop in plan.stops:
+    units = [(stop, [d.day for d in plan.days if d.place == stop.place], None)
+             for stop in plan.stops]
+    for d in plan.days:  # a named place visited as a day trip: two sources, for that day only
+        for x in d.also_visit:
+            cls = "limited" if x in d.also_limited else "full"
+            units.append((PlanStop(place=x, state="", nights=1, evidence_class=cls), [d.day],
+                          w["items_per_extra_place"]))
+    for stop, days, cap in units:
         taken = 0
-        limit = min(w["items_per_night"] * max(stop.nights, 1), w["items_per_stop_max"])
+        span = max(stop.nights, len(days), 1)
+        limit = cap or min(w["items_per_night"] * span, w["items_per_stop_max"])
+        first = len(out.items)
+        out.place_days[stop.place] = max(len(days), 1)
         items = corpus.get(stop.place, [])
-        demoted = _demoted(items, w, interests, w["warnings_per_stop"])
-        for item in sorted(items, key=lambda i: _rank(i, interests, demoted)):
+        low = low_value_ids(items, constraints, elsewhere, month)
+        # interests that match nothing at this stop: rank its best sights instead (no message)
+        eff = interests
+        if interests and not any(interest_match(i, interests) for i in items):
+            eff = SIGHT_INTERESTS
+        demoted = _demoted(items, w, eff, w["warnings_per_stop"], low)
+        for item in sorted(items, key=lambda i: _rank(i, eff, demoted, low)):
             if taken >= limit:
                 break
             if item.chunk_id in seen or item.is_live:
@@ -160,13 +394,17 @@ def pack(plan: Plan, corpus: dict[str, list[EvidenceItem]], live: list[EvidenceI
                 out.dropped.append({"chunk_id": item.chunk_id, "reason": "injection_pattern",
                                     "flags": flags})
                 continue
-            text = clean_text(item.text, w["item_chars"])
+            text = clean_text(strip_editor_notes(item.text), w["item_chars"], sentences=True)
             if not text:
                 continue
             n_s += 1
             seen.add(item.chunk_id)
             out.items.append(PackedItem(f"S{n_s}", item, text, stop.evidence_class == "limited"))
             taken += 1
+        # the stop's items, best first, are dealt over its days: every day gets its own share
+        for i, packed_item in enumerate(out.items[first:]):
+            if days:
+                out.day_items.setdefault(days[i % len(days)], []).append(packed_item.alias)
     taken = 0
     # D119: a live item reaches the writer only if its resolved place is a stop of the plan or a
     # place the request named; items about other places, or about no resolved place, are dropped.

@@ -752,3 +752,58 @@ def test_a_real_pipeline_answer_has_no_raw_cited_ids_left_and_every_marker_has_a
     markers = set(__import__("re").findall(r"\[\[([SL][0-9]+)\]\]\(", text))
     assert markers and markers <= {r["Alias"] for r in S.source_rows(final, {}, set())}
     assert final["text"].count("[chunk:") >= len(raw_ids)  # the stored text is untouched
+
+
+# ---- demo-quality: notes and caveats go into one collapsed expander (D131) ---------------------
+
+NOTES_TEXT = ("# South India itinerary\n\n## Day 1: Hampi\n- Ruins. [chunk:abc]\n\n"
+              "## Notes and warnings\n- critic: day 2: wrote the no-details bullet\n"
+              "- The budget uses assumed tier figures, not corpus data (D101).\n")
+
+
+def test_split_notes_separates_the_notes_block_and_keeps_the_itinerary():
+    body, notes = S.split_notes(NOTES_TEXT)
+    assert body.endswith("- Ruins. [chunk:abc]\n") and "Notes and warnings" not in body
+    assert notes == ["critic: day 2: wrote the no-details bullet",
+                     "The budget uses assumed tier figures, not corpus data (D101)."]
+    assert S.split_notes("# only an itinerary\n") == ("# only an itinerary\n", [])
+    assert S.split_notes("") == ("", [])
+
+
+def test_short_labels_keep_provisional_and_estimate_and_drop_the_long_caveats():
+    from src.agents.budget import LABEL
+
+    text = ("- Transfer: A to B, about 2 h by road (computed: travel_time, provisional)\n"
+            "- Hampi in January: good (climate normals, confidence medium) "
+            "(computed: check_season)\n"
+            "- Rough budget (mid tier, 4 days): about INR 22,411 in total (stay 12,000). "
+            f"{LABEL[0].upper()}{LABEL[1:]}. (computed: budget table)\n")
+    out = S.short_labels(text)
+    assert "about 2 h by road (provisional)" in out
+    assert "in total (stay 12,000) (estimate)" in out and "ASSUMED" not in out
+    assert "computed" not in out and "confidence medium)" in out
+
+
+def view_of(**kw):
+    return {"final": {"text": NOTES_TEXT, "warnings": ["thin evidence for Hampi"]},
+            "live_status": "disabled", "live_note": None, "repaired": False, "warnings": [], **kw}
+
+
+def test_detail_lines_hold_every_notice_once_and_never_the_terms_notice():
+    v = view_of(repaired=True, warnings=["thin evidence for Hampi"])
+    lines = S.detail_lines(v, v["final"], ["trip spans several months"])
+    assert lines[0] == S.REPAIRED_NOTE
+    for want in ("critic: day 2: wrote the no-details bullet", "thin evidence for Hampi",
+                 "trip spans several months", S.CORPUS_ONLY_NOTE, S.RECENCY_NOTE, S.MARKER_NOTE):
+        assert want in lines
+    assert lines.count("thin evidence for Hampi") == 1  # the same warning is listed once
+    assert not any("terms not verified" in ln for ln in lines)
+
+
+def test_detail_lines_for_a_live_answer_carry_the_counts_line_and_not_the_corpus_only_note():
+    v = view_of(live_status="ok", use_live=True, live_note="live search: terms not verified",
+                live_counts={"searches": 2, "results": 8, "in_scope": 2, "in_plan": 2,
+                             "dropped_scope": 0, "merged": 2, "cited": 1, "not_cited": 1})
+    lines = S.detail_lines(v, v["final"])
+    assert S.CORPUS_ONLY_NOTE not in lines
+    assert any(ln.startswith("live search: ok, 2 searches") for ln in lines)
