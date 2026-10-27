@@ -20,6 +20,7 @@ os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 import streamlit as st  # noqa: E402
 
+from app import reference_examples as R  # noqa: E402
 from app import state as S  # noqa: E402
 from app.query_cache import QueryCache  # noqa: E402
 from src.live.config import TERMS_NOTICE  # noqa: E402
@@ -94,6 +95,8 @@ with st.form("plan"):
     if not avail["key_present"]:
         st.caption("No live-search key is set in .env: a live run would be skipped.")
     force = st.checkbox("Ignore the cache for this run", value=False, key="f_force")
+    use_ref = st.checkbox("Show the hand-written reference itinerary when the inputs match one "
+                          "(no model is run; the page says so)", value=True, key="f_reference")
     submitted = st.form_submit_button("Plan my trip")
 
 cache = QueryCache(memory=ss.setdefault("memo", {}))
@@ -119,9 +122,14 @@ if submitted:
         for msg in prep.errors:
             st.error(show(msg))
     else:
-        hit = None if (form.use_live or form.force_refresh) else cache.get(
+        ref = R.match(prep.overrides) if (use_ref and not form.use_live) else None
+        ss["reference"] = ref.id if ref is not None else None
+        hit = None if (form.use_live or form.force_refresh or ref is not None) else cache.get(
             prep.text, prep.overrides, False)
-        if hit is not None:
+        if ref is not None:  # a hand-written reference is shown instead of a run (D133)
+            for key in ("view", "view_meta", "handle", "ctx"):
+                ss.pop(key, None)
+        elif hit is not None:
             ss["view"] = hit
             ss["view_meta"] = {"state": "cached", "at": hit.get("cached_at", "")}
             ss.pop("handle", None)
@@ -173,6 +181,13 @@ if ss.get("error"):
     st.error(show(f"The run did not finish: {ss['error']}"))
 
 # ---- result ------------------------------------------------------------------------------------
+
+reference = R.by_id(ss.get("reference") or "")
+if reference is not None:
+    st.warning(R.BANNER)  # always shown with a reference; there is no way to turn it off
+    st.caption(f"Reference for these inputs: {reference.title}")
+    st.markdown(reference.text)
+    st.caption(R.LEGEND)
 
 view = ss.get("view")
 if not view:

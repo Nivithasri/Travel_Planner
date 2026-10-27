@@ -473,3 +473,80 @@ def test_a_failed_rule_check_and_the_live_terms_notice_stay_on_screen(fake):
     fake.next = lambda use_live: make_state(live=use_live)
     at = submit(app(), **{"checkbox__f_live": True})
     assert any(TERMS_NOTICE in str(w.value) for w in at.warning)
+
+
+# ---- D133: a hand-written reference itinerary for four exact sets of inputs --------------------
+
+def hampi_inputs():
+    import datetime
+
+    return {"number_input__f_days": 3, "text_input__f_start": "Bangalore",
+            "date_input__f_start_date": datetime.date(2026, 11, 4),
+            "text_input__f_constraints": "no night travel",
+            "multiselect__f_places": ["Badami", "Hampi"]}
+
+
+def test_matching_inputs_show_the_labelled_reference_and_run_no_model(fake):
+    from app import reference_examples as R
+
+    at = submit(app(), **hampi_inputs())
+    assert fake.calls == [] and files(fake) == []  # nothing ran, nothing was cached
+    assert any(R.BANNER in str(w.value) for w in at.warning)  # the label is on screen, as a box
+    page = blob(at)
+    assert "## Day 3: Badami" in page or "Day 3: Badami" in page
+    assert "Bangalore to Hampi, about 5.92 h by road" in page and R.LEGEND in page
+    assert "fresh run" not in page and "cached answer" not in page  # it is not presented as a run
+    assert not at.dataframe  # no sources table: nothing was retrieved
+
+
+def test_other_inputs_run_the_real_pipeline_and_show_no_reference_banner(fake):
+    from app import reference_examples as R
+
+    inputs = {**hampi_inputs(), "number_input__f_days": 4}  # one day more: not the reference
+    at = submit(app(), **inputs)
+    assert len(fake.calls) == 1 and "fresh run" in blob(at)
+    assert not any(R.BANNER in str(w.value) for w in at.warning)
+
+
+def test_unticking_the_box_runs_the_pipeline_even_for_matching_inputs(fake):
+    from app import reference_examples as R
+
+    at = submit(app(), **{**hampi_inputs(), "checkbox__f_reference": False})
+    assert len(fake.calls) == 1
+    assert not any(R.BANNER in str(w.value) for w in at.warning)
+
+
+def test_a_live_search_request_is_never_answered_with_the_reference(fake):
+    from app import reference_examples as R
+
+    at = submit(app(), **{**hampi_inputs(), "checkbox__f_live": True})
+    assert len(fake.calls) == 1 and fake.calls[0]["live"] is True
+    assert not any(R.BANNER in str(w.value) for w in at.warning)
+
+
+def test_every_reference_page_carries_the_banner_and_a_later_real_run_replaces_it(fake):
+    import datetime
+
+    from app import reference_examples as R
+
+    forms = {
+        "coast": {"number_input__f_days": 4, "selectbox__f_party": "couple",
+                  "text_input__f_start": "Chennai",
+                  "date_input__f_start_date": datetime.date(2026, 12, 10),
+                  "multiselect__f_interests": ["temples", "beaches"],
+                  "multiselect__f_places": ["Mahabalipuram", "Pondicherry"]},
+        "madurai": {"number_input__f_days": 2, "text_input__f_start": "Coimbatore",
+                    "date_input__f_start_date": datetime.date(2026, 12, 4),
+                    "multiselect__f_interests": ["temples"], "multiselect__f_places": ["Madurai"]},
+        "kochi": {"number_input__f_days": 3, "date_input__f_start_date": datetime.date(2026, 1, 15),
+                  "multiselect__f_interests": ["food", "heritage"],
+                  "multiselect__f_places": ["Kochi"]},
+    }
+    for ref_id, widgets in forms.items():
+        at = submit(app(), **widgets)
+        assert any(R.BANNER in str(w.value) for w in at.warning), ref_id
+        assert R.by_id(ref_id).title in blob(at)
+    assert fake.calls == []
+    at = submit(at, **{"checkbox__f_reference": False})  # same inputs, box unticked: a real run
+    assert len(fake.calls) == 1 and not any(R.BANNER in str(w.value) for w in at.warning)
+    assert "fresh run" in blob(at)
