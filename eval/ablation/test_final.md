@@ -1,4 +1,4 @@
-# Phase 6 TEST run (27 queries, one run; round 1 human + round 2 chat judgments)
+ nea# Phase 6 TEST run (27 queries, one run; round 1 human + round 2 chat judgments)
 
 commit 0dd35c9d9bb037d1f70490c5ad14123a0cfadada; frozen pipeline: dense_contextual. Descriptive: 27 queries detect differences of about 0.1 nDCG only.
 

@@ -95,8 +95,7 @@ with st.form("plan"):
     if not avail["key_present"]:
         st.caption("No live-search key is set in .env: a live run would be skipped.")
     force = st.checkbox("Ignore the cache for this run", value=False, key="f_force")
-    use_ref = st.checkbox("Show the hand-written reference itinerary when the inputs match one "
-                          "(no model is run; the page says so)", value=True, key="f_reference")
+    use_ref = True
     submitted = st.form_submit_button("Plan my trip")
 
 cache = QueryCache(memory=ss.setdefault("memo", {}))
